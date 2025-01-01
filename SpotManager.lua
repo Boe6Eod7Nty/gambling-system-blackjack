@@ -1,3 +1,4 @@
+SpotManager = { version = '1.0.0' }
 --===================
 --CODE BY Boe6
 --DO NOT DISTRIBUTE
@@ -5,7 +6,6 @@
 --DO NOT REUPLOAD TO OTHER SITES
 --Feel free to ask via nexus/discord, I just dont want my stuff stolen :)
 --===================
-SpotManager = { version = '1.0.0' }
 
 local Cron = require('External/Cron.lua')
 local world = require('External/worldInteraction.lua')
