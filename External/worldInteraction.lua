@@ -1,9 +1,16 @@
+--=========================
+-- worldInteraction.lua by keanuwheeze
+-- a few line edits by Boe6, marked 
+--=========================
 local world = {
     interactions = {}
 }
 
-function world.addInteraction(id, position, interactionRange, angle, icon, iconRange, iconColor, callback) -- Add a in-world interaction with callback for hide / show, icon is optional
-    world.interactions[id] = {pos = position, interactionRange = interactionRange, icon = icon, iconRange = iconRange, iconColor = iconColor, angle = angle, callback = callback, pinID = nil, shown = false, hideIcon = false}
+local utils = require("External/workspotUtils.lua")
+
+--added iconRangeMin by boe6
+function world.addInteraction(id, position, interactionRange, angle, icon, iconRange, iconRangeMin, iconColor, callback) -- Add a in-world interaction with callback for hide / show, icon is optional
+    world.interactions[id] = {pos = position, interactionRange = interactionRange, icon = icon, iconRange = iconRange, iconRangeMin = iconRangeMin, iconColor = iconColor, angle = angle, callback = callback, pinID = nil, shown = false, hideIcon = false}
 end
 
 function world.init()
@@ -49,15 +56,18 @@ function world.update()
             end
         end
 
-        if interaction.icon and Vector4.Distance(posPlayer, interaction.pos) < interaction.iconRange then -- Hide / show optional icon
-            world.interactions[key].shown = true
+        --modified dist, iconRangeMin by Boe6
+        local dist = Vector4.Distance(posPlayer, interaction.pos)
+        if interaction.icon and dist < interaction.iconRange and dist > interaction.iconRangeMin then -- Hide / show optional icon
             world.togglePin(interaction, true)
+            utils.toggleHUD(true)
         elseif interaction.icon then
             world.togglePin(interaction, false)
         end
     end
 
     for _, key in pairs(showKeys) do
+        world.interactions[key].shown = true --edit boe6
         world.interactions[key].callback(world.interactions[key].shown)
     end
 end
@@ -69,7 +79,7 @@ function world.togglePin(interaction, state)
         interaction.pinID = nil
         return
     elseif not interaction.pinID and state then
-        local data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = gamedataMappinVariant.UseVariant, visibleThroughWalls = false })
+        local data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = gamedataMappinVariant.SitVariant, visibleThroughWalls = true }) --variant and visibility edit
         interaction.pinID = Game.GetMappinSystem():RegisterMappin(data, interaction.pos)
     end
 end

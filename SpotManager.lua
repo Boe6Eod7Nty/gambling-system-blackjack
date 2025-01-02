@@ -10,14 +10,18 @@ SpotManager = { version = '1.0.0' }
 local Cron = require('External/Cron.lua')
 local world = require('External/worldInteraction.lua')
 local GameUI = require("External/GameUI.lua")
+local interactionUI = require("External/interactionUI.lua")
 
 local inMenu = true --libaries requirement
 local inGame = false
-
+local SpotManager = {
+    spots = {}
+}
 
 --Register Events (passed from parent)
 --===============
-function SpotManager.init()
+function SpotManager.init() --runs on game launch
+    interactionUI.init()
 
     Observe('RadialWheelController', 'OnIsInMenuChanged', function(_, isInMenu) -- Setup observer and GameUI to detect inGame / inMenu, credit: keanuwheeze | init.lua from the sitAnywhere mod
         inMenu = isInMenu
@@ -35,69 +39,60 @@ function SpotManager.init()
 
     world.init()
 
-    world.addInteraction('demofirst', Vector4.new(-1041.2463, 1341.5469, 6.21331358, 1), 1.0, 80, "ChoiceIcons.SitIcon", 6.5, 0.5, nil, function(state)
-        --  (id, position, interactionRange, angle, icon, iconRange, iconRangeMin, iconColor, callback)
-        if state then -- Show
-            DualPrint('Show')
-        else -- Hide
-            DualPrint('Hide')
-        end
-    end)
 end
-function SpotManager.update() --runs every frame
+function SpotManager.update(dt) --runs every frame
     if  not inMenu and inGame then
         Cron.Update(dt) -- This is required for Cron to function
         world.update()
+        interactionUI.update()
     end
 end
 
 
 --Methods
 --=======
-function SpotManager.Animate()
+function SpotManager.ExitSpot(id) --Exit spot
+    local spot = SpotManager.spots[id]
+    SpotManager.ChangeAnimation(spot.animObj.exitAnim, spot.animObj.exitTime + 3, spot.animObj.defaultAnim)
+    Cron.After(spot.animObj.exitTime, function() -- Wait for animation to finish
+        local player = Game.GetPlayer()
+        local playerTransform = player:GetWorldTransform()
+        local position = playerTransform:GetWorldPosition()
+        local x = position:GetX() + 0.5
+        local y = position:GetY()
+        local z = position:GetZ()
+        local o = spot.animObj.orientation
+        Game.GetTeleportationFacility():Teleport(player, Vector4.new(x, y, z, 1), EulerAngles.new(o.x,o.y,o.z+150))
+
+        local workspotSystem = Game.GetWorkspotSystem()
+        workspotSystem:SendFastExitSignal(player)
+
+        spot.active = false
+    end)
+end
+function SpotManager.AddSpot(id, worldPinUI, animObj) --Create spot
+    SpotManager.spots[id] = {active = false, startTriggered = false, worldPinUI = worldPinUI, animObj = animObj}
+    world.addInteraction(id, worldPinUI.position, 1.0, 80, "ChoiceIcons.SitIcon", 6.5, 0.5, nil, function(state)
+                    --  (id, position, interactionRange, angle, icon, iconRange, iconRangeMin, iconColor, callback)
+        if state then -- Show
+            local UIcallback = function()
+                DualPrint('Callback SM executed')
+                AnimateEnteringSpot(animObj)
+                SpotManager.spots[id].active = true
+            end
+            BasicInteractionUIPrompt("Blackjack", "Join Table", "ChoiceCaptionParts.SitIcon", gameinteractionsChoiceType.QuestImportant, UIcallback) --Display interactionUI menu
+        else -- Hide
+            interactionUI.hideHub()
+        end
+    end)
+end
+function SpotManager.ChangeAnimation(animName, duration, returnAnimName)
     local player = Game.GetPlayer()
-    local playerTransform = player:GetWorldTransform()
-    local dynamicEntitySystem = Game.GetDynamicEntitySystem()
     local workspotSystem = Game.GetWorkspotSystem()
-    -- Create entity spec
-    DualPrint('vars created')
-    local spec = DynamicEntitySpec.new()
-    spec.templatePath = "boe6\\GamblingSystemBlackjack\\workspot_anim.ent"
-    --local xyzw = playerTransform:GetWorldPosition()
-    local newX = -1041.2463
-    local newY = 1341.5469
-    local newZ = 5.2774734
-    spec.position = Vector4.new(newX, newY, newZ, 1)
-    local quat = EulerAngles.new(0,0,0):ToQuat()
-    spec.orientation = quat
-    --spec.orientation = playerTransform:GetOrientation()
-    spec.tags = {"SpotManager"}
-    DualPrint('spec created')
-    -- Spawn entity
-    local entID = dynamicEntitySystem:CreateEntity(spec)
-    DualPrint('entity spawned')
-
-    callback1 = function()
-        local entity = Game.FindEntityByID(entID)
-        DualPrint('entity found')
-        -- Play workspot
-        workspotSystem:PlayInDevice(entity, player)
-        DualPrint('workspot played')
-        -- Start animation
-        --workspotSystem:SendJumpToAnimEnt(player, "sit_chair_table_lean0__2h_on_table__01", true)
-    end
-    Cron.After(1, callback1)
-
-
-    DualPrint('Animation started')
-end
-function SpotManager.ExitAnim()
-    local workspotSystem = Game.GetWorkspotSystem()
-    workspotSystem:SendFastExitSignal(Game.GetPlayer())
-    DualPrint('SendFastExitSignal')
-end
-function SpotManager.workspotUI()
-    
+    workspotSystem:SendJumpToAnimEnt(player, animName, true)
+    Cron.After(duration, function()
+        workspotSystem:SendJumpToAnimEnt(player, returnAnimName, true)
+    end)
 end
 
 --Functions
@@ -106,6 +101,36 @@ function DualPrint(string) --prints to both CET console and local .log file
     if not string then return end
     print('[Gambling System] ' .. string) -- CET console
     spdlog.error('[Gambling System] ' .. string) -- .log
+end
+function BasicInteractionUIPrompt(hubText, choiceText, icon, choiceType, callback) --Display interactionUI menu
+    local choice = interactionUI.createChoice(choiceText, TweakDBInterface.GetChoiceCaptionIconPartRecord(icon), choiceType)
+    local hub = interactionUI.createHub(hubText, {choice})
+    interactionUI.setupHub(hub)
+    interactionUI.showHub()
+    interactionUI.callbacks[1] = function()
+        interactionUI.hideHub()
+        callback()
+    end
+end
+function AnimateEnteringSpot(animObj) --Triggers workspot animation
+    local player = Game.GetPlayer()
+    local dynamicEntitySystem = Game.GetDynamicEntitySystem()
+    local workspotSystem = Game.GetWorkspotSystem()
+    local spec = DynamicEntitySpec.new()
+    spec.templatePath = animObj.templatePath
+    spec.position = animObj.position
+    local o = animObj.orientation
+    spec.orientation = EulerAngles.new(o.x,o.y,o.z):ToQuat()
+    spec.tags = {"SpotManager"} --note; I don't know if this needs to be a unique value or what exactly
+    -- Spawn entity
+    local entID = dynamicEntitySystem:CreateEntity(spec)
+    animObj.entID = entID
+
+    callback = function()
+        local entity = Game.FindEntityByID(entID)
+        workspotSystem:PlayInDevice(entity, player) --Play workspot
+    end
+    Cron.After(1, callback)
 end
 
 return SpotManager
