@@ -66,6 +66,8 @@ registerHotkey('DevHotkey1', 'Dev Hotkey 1', function()
 end)
 registerHotkey('DevHotkey2', 'Dev Hotkey 2', function()
     DualPrint('||=2  Dev hotkey 2 Pressed =')
+    DualPrint('HAHA FUNNY UPDATE')
+    DualPrint('HAHA FUNNY UPDATE2')
 
 end)
 registerHotkey('DevHotkey3', 'Dev Hotkey 3', function()
