@@ -1,4 +1,7 @@
-SpotManager = { version = '1.0.0' }
+SpotManager = {
+    version = '1.0.0',
+    spots = {}
+}
 --===================
 --CODE BY Boe6
 --DO NOT DISTRIBUTE
@@ -14,9 +17,6 @@ local interactionUI = require("External/interactionUI.lua")
 
 local inMenu = true --libaries requirement
 local inGame = false
-local SpotManager = {
-    spots = {}
-}
 
 --Register Events (passed from parent)
 --===============
@@ -51,6 +51,9 @@ end
 
 --Methods
 --=======
+
+--- Animate player leaving spot
+--- @param id any identification id
 function SpotManager.ExitSpot(id) --Exit spot
     local spot = SpotManager.spots[id]
     SpotManager.ChangeAnimation(spot.animObj.exitAnim, spot.animObj.exitTime + 3, spot.animObj.defaultAnim)
@@ -70,8 +73,12 @@ function SpotManager.ExitSpot(id) --Exit spot
         spot.active = false
     end)
 end
+--- Add spot to SpotManager's managed list of spots
+---@param id any identification id
+---@param worldPinUI table worldPinUI information
+---@param animObj table spot's animation information
 function SpotManager.AddSpot(id, worldPinUI, animObj) --Create spot
-    SpotManager.spots[id] = {active = false, startTriggered = false, worldPinUI = worldPinUI, animObj = animObj}
+    SpotManager.spots[id] = {worldPinUI = worldPinUI, animObj = animObj, active = false, startTriggered = false}
     world.addInteraction(id, worldPinUI.position, 1.0, 80, "ChoiceIcons.SitIcon", 6.5, 0.5, nil, function(state)
                     --  (id, position, interactionRange, angle, icon, iconRange, iconRangeMin, iconColor, callback)
         if state then -- Show
@@ -86,6 +93,10 @@ function SpotManager.AddSpot(id, worldPinUI, animObj) --Create spot
         end
     end)
 end
+--- Change Animation for set time, then return to 'default' animation position
+---@param animName string Animation to trigger
+---@param duration number Duration of animation
+---@param returnAnimName string Animation to reset to as default
 function SpotManager.ChangeAnimation(animName, duration, returnAnimName)
     local player = Game.GetPlayer()
     local workspotSystem = Game.GetWorkspotSystem()
@@ -97,11 +108,19 @@ end
 
 --Functions
 --=========
+--- Prints string to both CET console and local .log file
+---@param string string String to print
 function DualPrint(string) --prints to both CET console and local .log file
     if not string then return end
     print('[Gambling System] ' .. string) -- CET console
     spdlog.error('[Gambling System] ' .. string) -- .log
 end
+--- Display Basic UI interaction prompt
+---@param hubText string "hub" text, left side
+---@param choiceText string option text, right side
+---@param icon string UI icon tweak record
+---@param choiceType string gameinteractionsChoiceType
+---@param callback function callback when UI is selected
 function BasicInteractionUIPrompt(hubText, choiceText, icon, choiceType, callback) --Display interactionUI menu
     local choice = interactionUI.createChoice(choiceText, TweakDBInterface.GetChoiceCaptionIconPartRecord(icon), choiceType)
     local hub = interactionUI.createHub(hubText, {choice})
@@ -112,6 +131,8 @@ function BasicInteractionUIPrompt(hubText, choiceText, icon, choiceType, callbac
         callback()
     end
 end
+--- Animate player entering spot
+---@param animObj table spot's animation information
 function AnimateEnteringSpot(animObj) --Triggers workspot animation
     local player = Game.GetPlayer()
     local dynamicEntitySystem = Game.GetDynamicEntitySystem()

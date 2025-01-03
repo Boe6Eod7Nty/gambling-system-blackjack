@@ -18,6 +18,7 @@
 --=======
 local Cron = require('External/Cron.lua') --Time handling
 local SpotManager = require('SpotManager.lua') --workspot management
+local CardEngine = require('CardEngine.lua') --Card Entity Handler
 
 
 
@@ -48,6 +49,7 @@ end)
 registerForEvent('onUpdate', function(dt)
     Cron.Update(dt)
     SpotManager.update(dt)
+    CardEngine.update(dt)
 
     for i, spot in pairs(SpotManager.spots) do
         if spot.active == true and spot.startTriggered == false then
@@ -66,17 +68,21 @@ registerHotkey('DevHotkey1', 'Dev Hotkey 1', function()
 end)
 registerHotkey('DevHotkey2', 'Dev Hotkey 2', function()
     DualPrint('||=2  Dev hotkey 2 Pressed =')
-    DualPrint('HAHA FUNNY UPDATE')
-    DualPrint('HAHA FUNNY UPDATE2')
 
+    local cardID = CardEngine.CreateCard('7h', Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
+    Cron.After(1, function()
+        DualPrint('cardID: '..cardID)
+    end)
 end)
 registerHotkey('DevHotkey3', 'Dev Hotkey 3', function()
     DualPrint('||=3  Dev hotkey 3 Pressed =')
 
+    CardEngine.DeleteCard('TEMP')
 end)
 registerHotkey('DevHotkey4', 'Dev Hotkey 4', function()
     DualPrint('||=4  Dev hotkey 4 Pressed =')
 
+    CardEngine.MoveCard('TEMP', Vector4.new(-1041.189, 1340.711, 6.085, 1), { r = 0, p = 180, y = -90 }, 'smooth')
 end)
 
 --[[ animations tested
@@ -106,8 +112,6 @@ one palm up:
     SpotManager.ChangeAnimation("sit_chair_table_lean0__2h_on_table__01__stop__angry__01", 2.4333, "sit_chair_table_lean0__2h_on_table__01")
     SpotManager.ChangeAnimation("sit_chair_table_lean0__2h_on_table__01__yes__01", 2.4, "sit_chair_table_lean0__2h_on_table__01")
 ]]--
-
-
 
 
 --Methods
