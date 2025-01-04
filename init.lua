@@ -31,6 +31,7 @@ GamblingSystemBlackjack = {
 --================
 registerForEvent( "onInit", function() 
     SpotManager.init()
+    CardEngine.init()
 
     -- Define Hooh location
     local worldPinUI = {
@@ -82,7 +83,73 @@ end)
 registerHotkey('DevHotkey4', 'Dev Hotkey 4', function()
     DualPrint('||=4  Dev hotkey 4 Pressed =')
 
-    CardEngine.MoveCard('TEMP', Vector4.new(-1041.189, 1340.711, 6.085, 1), { r = 0, p = 180, y = -90 }, 'smooth')
+    CardEngine.MoveCard('TEMP', Vector4.new(-1041.189, 1340.711, 6.085, 1), { r = 0, p = 0, y = -90 }, 'smooth')
+end)
+registerHotkey('DevHotkey5', 'Dev Hotkey 5', function()
+    DualPrint('||=5  Dev hotkey 5 Pressed =')
+    local quat1 = EulerAngles.ToQuat(EulerAngles.new(0,0,0))
+    local quat2 = EulerAngles.ToQuat(EulerAngles.new(0,0,-90))
+    local quat3 = EulerAngles.ToQuat(EulerAngles.new(0,0,90))
+    local quat4 = EulerAngles.ToQuat(EulerAngles.new(0,180,-90))
+    local quat5 = EulerAngles.ToQuat(EulerAngles.new(90,0,-90))
+    local entQuat1 = quat4
+    local cardSpec = StaticEntitySpec.new()
+    cardSpec.templatePath = "boe6\\gambling_props\\boe6_playing_card.ent"
+    cardSpec.appearanceName = "7h"
+    cardSpec.position = Vector4.new(-1041.759, 1340.421, 6.085, 1)
+    cardSpec.orientation = entQuat1
+    cardSpec.tags = {"quatTest"}
+    DualPrint('Start euler: '..tostring(entQuat1:ToEulerAngles()))
+
+    local entityID = Game.GetStaticEntitySystem():SpawnEntity(cardSpec)
+
+    Cron.Every(0.1, function()
+        DualPrint('-=- cron every start -=-')
+        local entity = Game.FindEntityByID(entityID)
+        local entQuat = entity:GetWorldOrientation() --Quaternion
+        local entEuler = entQuat:ToEulerAngles()
+        DualPrint('entEuler: '..tostring(entEuler))
+
+
+        local forwardVector = entQuat:GetForward() --Vector4
+        DualPrint('forward vector4: x: '..forwardVector.x..' y: '..forwardVector.y..' z: '..forwardVector.z..' w: '..forwardVector.w)
+        local upVector = entQuat:GetUp() --Vector4
+        DualPrint('up vector4: x: '..upVector.x..' y: '..upVector.y..' z: '..upVector.z..' w: '..upVector.w)
+        local rightVector = entQuat:GetRight() --Vector4 forward, rotates card on long axis
+        DualPrint('right vector4: x: '..rightVector.x..' y: '..rightVector.y..' z: '..rightVector.z..' w: '..rightVector.w)
+        local xAxis = entQuat:GetXAxis() --Vector4 forward, rotates card on long axis
+        local yAxis = entQuat:GetYAxis() --Vector4
+        local zAxis = entQuat:GetZAxis() --Vector4 forward, rotates card on its face
+
+        local angleRadians = 10 * (math.pi / 180)
+        local rotatedAxis = forwardVector.RotateAxis(forwardVector, xAxis, angleRadians)
+        DualPrint('rotatedAxis vector4: x: '..rotatedAxis.x..' y: '..rotatedAxis.y..' z: '..rotatedAxis.z..' w: '..rotatedAxis.w)
+
+        local outQuat = entQuat.BuildFromDirectionVector(rotatedAxis, upVector)
+
+        local entityVector4 = entity:GetWorldPosition()
+        local outEuler = outQuat:ToEulerAngles()
+        DualPrint('out euler: '..tostring(outEuler))
+
+        Game.GetTeleportationFacility():Teleport(entity, entityVector4, outEuler)
+
+        --[[
+        Cron.After(5, function()
+            
+            local nforward = outQuat:GetForward() --Vector4
+            local nup = outQuat:GetUp() --Vector4
+            local nright = outQuat:GetRight() --Vector4
+            local lastOutQuat = outQuat.BuildFromDirectionVector(nright, nup)
+            Game.GetTeleportationFacility():Teleport(entity, entityVector4, lastOutQuat:ToEulerAngles())
+        end)
+        ]]--
+    end)
+
+end)
+registerHotkey('DevHotkey6', 'Dev Hotkey 6', function()
+    DualPrint('||=6  Dev hotkey 6 Pressed =')
+
+    CardEngine.FlipCard('TEMP', true)
 end)
 
 --[[ animations tested
