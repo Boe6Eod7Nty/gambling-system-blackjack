@@ -21,12 +21,20 @@ local SpotManager = require('SpotManager.lua') --workspot management
 CardEngine = require('CardEngine.lua') --Card Entity Handler
 local singleRoundLogic = require('SingleRoundLogic.lua') --Handles 1 round of blackjack
 
-
-
 GamblingSystemBlackjack = {
     loaded = false,
     ready = false
 }
+
+--Functions
+--=========
+--- Prints string to both CET console and local .log file
+---@param string string String to print
+function DualPrint(string) --prints to both CET console and local .log file
+    if not string then return end
+    print('[Gambling System] ' .. string) -- CET console
+    spdlog.error('[Gambling System] ' .. string) -- .log
+end
 
 -- Register Events
 --================
@@ -146,18 +154,9 @@ one palm up:
     SpotManager.ChangeAnimation("sit_chair_table_lean0__2h_on_table__01__yes__01", 2.4, "sit_chair_table_lean0__2h_on_table__01")
 ]]--
 
-
 --Methods
 --=======
 
-
---Functions
---=========
-function DualPrint(string) --prints to both CET console and local .log file
-    if not string then return end
-    print('[Gambling System] ' .. string) -- CET console
-    spdlog.error('[Gambling System] ' .. string) -- .log
-end
 
 --End of File
 --===========

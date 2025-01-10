@@ -64,7 +64,7 @@ local function dealStartOfRound()
     Cron.After(1.5, function()
         CardEngine.MoveCard('dCard02', Vector4.new(dFirstCardXYZ.x-0.005, dFirstCardXYZ.y+0.004, dFirstCardXYZ.z, 1), standardOri, 'smooth')
     end)
-    Cron.After(1.8, function()
+    Cron.After(1.7, function()
         CardEngine.FlipCard('pCard01', 'horizontal', 'left')
     end)
     Cron.After(2.0, function()
@@ -75,13 +75,33 @@ local function dealStartOfRound()
     end)
 end
 
-
+local function collectRoundCards()
+    for i = 1, SingleRoundLogic.playerCardCount do
+        CardEngine.MoveCard('pCard0'..tostring(i), Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), standardOri, 'smooth')
+    end
+    for i = 1, SingleRoundLogic.dealerCardCount do
+        CardEngine.MoveCard('dCard0'..tostring(i), Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth')
+    end
+    Cron.After(2, function()
+        for i = 1, SingleRoundLogic.playerCardCount do
+            CardEngine.DeleteCard('pCard0'..tostring(i))
+        end
+        for i = 1, SingleRoundLogic.dealerCardCount do
+            CardEngine.DeleteCard('dCard0'..tostring(i))
+        end
+    end)
+end
 
 
 ---Signal the start of a round
 function SingleRoundLogic.startRound(deckLocation, deckRotationRPY)
+    SingleRoundLogic.playerCardCount = 0
+    SingleRoundLogic.dealerCardCount = 0
     shuffleDeckInternal()
+
     dealStartOfRound()
+
+    Cron.After(10, collectRoundCards)
 end
 
 return SingleRoundLogic

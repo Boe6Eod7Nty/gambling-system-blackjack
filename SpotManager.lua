@@ -18,6 +18,47 @@ local interactionUI = require("External/interactionUI.lua")
 local inMenu = true --libaries requirement
 local inGame = false
 
+--Functions
+--=========
+--- Display Basic UI interaction prompt
+---@param hubText string "hub" text, left side
+---@param choiceText string option text, right side
+---@param icon string UI icon tweak record
+---@param choiceType string gameinteractionsChoiceType
+---@param callback function callback when UI is selected
+local function basicInteractionUIPrompt(hubText, choiceText, icon, choiceType, callback) --Display interactionUI menu
+    local choice = interactionUI.createChoice(choiceText, TweakDBInterface.GetChoiceCaptionIconPartRecord(icon), choiceType)
+    local hub = interactionUI.createHub(hubText, {choice})
+    interactionUI.setupHub(hub)
+    interactionUI.showHub()
+    interactionUI.callbacks[1] = function()
+        interactionUI.hideHub()
+        callback()
+    end
+end
+--- Animate player entering spot
+---@param animObj table spot's animation information
+local function animateEnteringSpot(animObj) --Triggers workspot animation
+    local player = Game.GetPlayer()
+    local dynamicEntitySystem = Game.GetDynamicEntitySystem()
+    local workspotSystem = Game.GetWorkspotSystem()
+    local spec = DynamicEntitySpec.new()
+    spec.templatePath = animObj.templatePath
+    spec.position = animObj.position
+    local o = animObj.orientation
+    spec.orientation = EulerAngles.new(o.x,o.y,o.z):ToQuat()
+    spec.tags = {"SpotManager"} --note; I don't know if this needs to be a unique value or what exactly
+    -- Spawn entity
+    local entID = dynamicEntitySystem:CreateEntity(spec)
+    animObj.entID = entID
+
+    callback = function()
+        local entity = Game.FindEntityByID(entID)
+        workspotSystem:PlayInDevice(entity, player) --Play workspot
+    end
+    Cron.After(1, callback)
+end
+
 --Register Events (passed from parent)
 --===============
 function SpotManager.init() --runs on game launch
@@ -48,10 +89,8 @@ function SpotManager.update(dt) --runs every frame
     end
 end
 
-
 --Methods
 --=======
-
 --- Animate player leaving spot
 --- @param id any identification id
 function SpotManager.ExitSpot(id) --Exit spot
@@ -84,10 +123,10 @@ function SpotManager.AddSpot(id, worldPinUI, animObj) --Create spot
         if state then -- Show
             local UIcallback = function()
                 DualPrint('Callback SM executed')
-                AnimateEnteringSpot(animObj)
+                animateEnteringSpot(animObj)
                 SpotManager.spots[id].active = true
             end
-            BasicInteractionUIPrompt("Blackjack", "Join Table", "ChoiceCaptionParts.SitIcon", gameinteractionsChoiceType.QuestImportant, UIcallback) --Display interactionUI menu
+            basicInteractionUIPrompt("Blackjack", "Join Table", "ChoiceCaptionParts.SitIcon", gameinteractionsChoiceType.QuestImportant, UIcallback) --Display interactionUI menu
         else -- Hide
             interactionUI.hideHub()
         end
@@ -106,52 +145,5 @@ function SpotManager.ChangeAnimation(animName, duration, returnAnimName)
     end)
 end
 
---Functions
---=========
---- Prints string to both CET console and local .log file
----@param string string String to print
-function DualPrint(string) --prints to both CET console and local .log file
-    if not string then return end
-    print('[Gambling System] ' .. string) -- CET console
-    spdlog.error('[Gambling System] ' .. string) -- .log
-end
---- Display Basic UI interaction prompt
----@param hubText string "hub" text, left side
----@param choiceText string option text, right side
----@param icon string UI icon tweak record
----@param choiceType string gameinteractionsChoiceType
----@param callback function callback when UI is selected
-function BasicInteractionUIPrompt(hubText, choiceText, icon, choiceType, callback) --Display interactionUI menu
-    local choice = interactionUI.createChoice(choiceText, TweakDBInterface.GetChoiceCaptionIconPartRecord(icon), choiceType)
-    local hub = interactionUI.createHub(hubText, {choice})
-    interactionUI.setupHub(hub)
-    interactionUI.showHub()
-    interactionUI.callbacks[1] = function()
-        interactionUI.hideHub()
-        callback()
-    end
-end
---- Animate player entering spot
----@param animObj table spot's animation information
-function AnimateEnteringSpot(animObj) --Triggers workspot animation
-    local player = Game.GetPlayer()
-    local dynamicEntitySystem = Game.GetDynamicEntitySystem()
-    local workspotSystem = Game.GetWorkspotSystem()
-    local spec = DynamicEntitySpec.new()
-    spec.templatePath = animObj.templatePath
-    spec.position = animObj.position
-    local o = animObj.orientation
-    spec.orientation = EulerAngles.new(o.x,o.y,o.z):ToQuat()
-    spec.tags = {"SpotManager"} --note; I don't know if this needs to be a unique value or what exactly
-    -- Spawn entity
-    local entID = dynamicEntitySystem:CreateEntity(spec)
-    animObj.entID = entID
-
-    callback = function()
-        local entity = Game.FindEntityByID(entID)
-        workspotSystem:PlayInDevice(entity, player) --Play workspot
-    end
-    Cron.After(1, callback)
-end
 
 return SpotManager

@@ -11,45 +11,78 @@ CardEngine = {
 --===================
 
 local Cron = require('External/Cron.lua')
-local world = require('External/worldInteraction.lua')
-local GameUI = require("External/GameUI.lua")
-local interactionUI = require("External/interactionUI.lua")
 
-local inMenu = true --libaries requirement
-local inGame = false
 local cardPath = "boe6\\gambling_props\\boe6_playing_card.ent"
 local movingCards = {}
 local flippingCards = {}
 local deckShuffling = false
 local deckShuffleAge = 0
 
---Functions
+
+--functions
 --=========
+---Processes 1 step of each current card in the flippingCards table
+local function flippingCardsProcess()
+    for k,v in pairs(flippingCards) do
+        if flippingCards[v.id] == nil then
+            break
+        end
 
-function CardEngine.init() --runs on game launch
-    Cron.Every(0.05, function()
-        FlippingCardsProcess()
-    end)
-    Cron.Every(0.1, function()
-        ShuffleDeckAnim()
-    end)
-end
+        local flipAngle = 20 --angle to move each step. Basically card flip speed.
+        local totalFlipDegrees = 180
+        local liftDistance = 0.01 --amount of height to add to the card during each step
+        if v.direction == 'left' then --inverts angle to swap direction
+            totalFlipDegrees = totalFlipDegrees * -1
+            flipAngle = flipAngle * -1
+        end
 
---- Runs every frame
----@param dt any delta time
-function CardEngine.update(dt)
-    --DualPrint('CardEngine update: '..tostring(dt))
-    --[[
-    if  not inMenu and inGame then
-        Cron.Update(dt) -- This is required for Cron to function
-        world.update()
-        interactionUI.update()
+        local steps = totalFlipDegrees / flipAngle --how many iterations of FlippingCardsProcess() to flip 180 degrees
+        if v.lifetime >= steps then --after steps (degrees x steps = 180) mark card as done flipping. ('delete')
+            flippingCards[v.id] = nil
+            break
+        end
+
+        local entity = Game.FindEntityByID(CardEngine.cards[v.id].entID)
+        local entQuat = v.curEuler:ToQuat()
+        local entityVector4 = entity:GetWorldPosition() --XYZ world position
+        local forwardVector = entQuat:GetForward()  --Vector4
+        local upVector = entQuat:GetUp()            --Vector4
+        local rightVector = entQuat:GetRight()      --Vector4 forward, rotates card on long axis
+        local outQuat
+        local angleRadians = (math.pi / 180) * flipAngle --convert degrees to radians
+
+        if v.flipAngle == 'horizontal' then
+            local rotatedVector = forwardVector.RotateAxis(forwardVector, rightVector, angleRadians)  --[ These 2 functions
+            outQuat = entQuat.BuildFromDirectionVector(rotatedVector, upVector)                       --[ Are black magic
+        elseif v.flipAngle == 'facewise' then
+            --TODO: Add vertical flip. quaternions are DUMB
+            local rotatedVector = forwardVector.RotateAxis(forwardVector, upVector, angleRadians)
+            outQuat = entQuat.BuildFromDirectionVector(rotatedVector, upVector)
+        end
+
+        --add height during first half of flip, subtract during second. no action when in the middle. (the 0.5 does this)
+        if v.flipAngle == 'horizontal' then
+            if v.lifetime < (steps / 2)-0.5 then
+                v.curHeight = v.curHeight + liftDistance
+            elseif v.lifetime > (steps / 2)-0.5 then
+                v.curHeight = v.curHeight - liftDistance
+            end
+        end
+        entityVector4.z = v.curHeight
+
+        local outEuler = outQuat:ToEulerAngles()
+        v.curEuler = outEuler
+
+        Game.GetTeleportationFacility():Teleport(entity, entityVector4, outEuler)
+
+        v.lifetime = v.lifetime + 1
     end
-    ]]--
-
+end
+---Processes 1 step of each current card in the movingCards table
+local function movingCardsProcess(dt)
     if next(movingCards) then
         for i, card in pairs(movingCards) do
-            local stepSize = 1
+            local stepSize = 1.0
             local moveDistance = stepSize * dt * 1
             local rotateDistance = stepSize * dt * 1
 
@@ -74,7 +107,7 @@ function CardEngine.update(dt)
             if magnitude <= moveDistance then
                 Game.GetTeleportationFacility():Teleport(entity, TargetVector4, euler)
                 movingCards[i] = nil
-                DualPrint('card move end triggered')
+                --DualPrint('card move end triggered')
                 break
             end
             local directionXYZ = {x=vectorXYZ.x/magnitude,y=vectorXYZ.y/magnitude,z=vectorXYZ.z/magnitude}
@@ -87,6 +120,42 @@ function CardEngine.update(dt)
             Game.GetTeleportationFacility():Teleport(entity, outPositionVector4, euler)
         end
     end
+end
+---If deck shuffling, process 1 step
+local function shuffleDeckAnim()
+    if not deckShuffling then
+        return
+    end
+    deckShuffleAge = deckShuffleAge + 1
+    if deckShuffleAge > 20 then
+        deckShuffleAge = 0
+        deckShuffling = false
+    end
+
+    local cardOrder = {14,5,36,22,28,13,39,9,3,12,35,2,34,19,23,30,20,37,17,25}
+    local direction = 'left'
+    if math.random(1,2) == 1 then --randomly set rotation direction, clockwise or counterclockwise.
+        direction = 'right'
+    end
+    CardEngine.FlipCard('deckCard_'..tostring(cardOrder[deckShuffleAge]), 'facewise', direction)
+end
+
+--Methods
+--=========
+---Runs on init
+function CardEngine.init() --runs on game launch
+    Cron.Every(0.05, function()
+        flippingCardsProcess()
+    end)
+    Cron.Every(0.1, function()
+        shuffleDeckAnim()
+    end)
+end
+
+--- Runs every frame
+---@param dt any delta time
+function CardEngine.update(dt)
+    movingCardsProcess(dt)
 end
 
 ---Create card entity and lua object
@@ -128,7 +197,7 @@ function CardEngine.MoveCard(id, positionVector4, orientationRPY, movementStyle)
         Game.GetTeleportationFacility():Teleport(entity, positionVector4, euler)
     elseif movementStyle == 'smooth' then
         movingCards[id] = {id = id, targetPos = positionVector4, TargetOriRPY = orientationRPY, movementStyle = movementStyle}
-        DualPrint('added card to move queue: '..tostring(id))
+        --DualPrint('added card to move queue: '..tostring(id))
     end
 end
 
@@ -139,72 +208,8 @@ end
 function CardEngine.FlipCard(id, flipAngle, direction)
     local entity = Game.FindEntityByID(CardEngine.cards[id].entID)
     local entityVector4 = entity:GetWorldPosition()
-    flippingCards[id] = {id = id, flipAngle = flipAngle, direction = direction, lifetime = 0, startHeight = entityVector4.z}
-end
-
----Processes 1 step of each current card in the flippingCards table
-function FlippingCardsProcess()
-    for k,v in pairs(flippingCards) do
-        if flippingCards[v.id] == nil then
-            break
-        end
-        --DualPrint('flipping card: '..tostring(v.id))
-
-        local flipAngle = 20 --angle to move each step. Basically card flip speed.
-        local totalFlipDegrees = 180
-
-        if v.direction == 'left' then --inverts angle to swap direction
-            totalFlipDegrees = totalFlipDegrees * -1
-            flipAngle = flipAngle * -1
-        end
-
-        local steps = totalFlipDegrees / flipAngle --how many iterations of FlippingCardsProcess() to flip 180 degrees
-        local liftDistance = 0.01 --amount of height to add to the card during each step
-        local entity = Game.FindEntityByID(CardEngine.cards[v.id].entID)
-        local entQuat = entity:GetWorldOrientation() --Quaternion datatype. Used as starting reference for each step
-        local entityVector4 = entity:GetWorldPosition() --XYZ world position
-        if v.lifetime >= steps then --after steps (degrees x steps = 180) mark card as done flipping. ('delete')
-            --[[
-            local entEuler = entQuat:ToEulerAngles()
-            local outPitch = entEuler.pitch
-            DualPrint('out eulers: '..tostring(entEuler))
-            local outEuler = EulerAngles.new(entEuler.roll, outPitch, entEuler.yaw)
-            local outPos = Vector4.new(entityVector4.x, entityVector4.y, flippingCards[v.startHeight], entityVector4.w)
-            Game.GetTeleportationFacility():Teleport(entity, outPos, outEuler)
-            ]]--
-            --DualPrint('attempted nil set on card: '..tostring(v.id))
-            flippingCards[v.id] = nil
-            break
-        end
-        local forwardVector = entQuat:GetForward()  --Vector4
-        local upVector = entQuat:GetUp()            --Vector4
-        local rightVector = entQuat:GetRight()      --Vector4 forward, rotates card on long axis
-        local outQuat
-        local angleRadians = (math.pi / 180) * flipAngle --convert degrees to radians
-
-        if v.flipAngle == 'horizontal' then
-            local rotatedVector = forwardVector.RotateAxis(forwardVector, rightVector, angleRadians)  --[ These 2 functions
-            outQuat = entQuat.BuildFromDirectionVector(rotatedVector, upVector)                       --[ Are black magic
-        elseif v.flipAngle == 'facewise' then
-            --TODO: Add vertical flip. quaternions are DUMB
-            local rotatedVector = forwardVector.RotateAxis(forwardVector, upVector, angleRadians)
-            outQuat = entQuat.BuildFromDirectionVector(rotatedVector, upVector)
-        end
-        local outEuler = outQuat:ToEulerAngles()
-
-        --add height during first half of flip, subtract during second. no action when in the middle. (the 0.5 does this)
-        if v.flipAngle == 'horizontal' then
-            if v.lifetime < (steps / 2)-0.5 then
-                entityVector4.z = entityVector4.z + liftDistance
-            elseif v.lifetime > (steps / 2)-0.5 then
-                entityVector4.z = entityVector4.z - liftDistance
-            end
-        end
-
-        Game.GetTeleportationFacility():Teleport(entity, entityVector4, outEuler)
-
-        v.lifetime = v.lifetime + 1
-    end
+    local curEuler = entity:GetWorldOrientation():ToEulerAngles()
+    flippingCards[id] = {id = id, flipAngle = flipAngle, direction = direction, lifetime = 0, curEuler = curEuler, curHeight = entityVector4.z}
 end
 
 ---Spawns card entities to look like a deck
@@ -228,25 +233,6 @@ end
 ---Flips deckShuffling to true, causing the deck 'shuffle' animation
 function CardEngine.TriggerDeckShuffle()
     deckShuffling = true
-end
-
----If deck shuffling, process 1 step
-function ShuffleDeckAnim()
-    if not deckShuffling then
-        return
-    end
-    deckShuffleAge = deckShuffleAge + 1
-    if deckShuffleAge > 20 then
-        deckShuffleAge = 0
-        deckShuffling = false
-    end
-
-    local cardOrder = {14,5,36,22,28,13,39,9,3,12,35,2,34,19,23,30,20,37,17,25}
-    local direction = 'left'
-    if math.random(1,2) == 1 then --randomly set rotation direction, clockwise or counterclockwise.
-        direction = 'right'
-    end
-    CardEngine.FlipCard('deckCard_'..tostring(cardOrder[deckShuffleAge]), 'facewise', direction)
 end
 
 
