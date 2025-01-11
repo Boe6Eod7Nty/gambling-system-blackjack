@@ -132,12 +132,21 @@ end)
 registerHotkey('DevHotkey6', 'Dev Hotkey 6', function()
     DualPrint('||=6  Dev hotkey 6 Pressed =')
 
-    CardEngine.BuildVisualDeck(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
+    local camera = GetPlayer():FindComponentByName('camera')
+    local quat = EulerAngles.new(0, 0, 0):ToQuat()
+    camera:SetLocalPosition(Vector4.new(0, 0, 0, 1))
+    camera:SetLocalOrientation(quat)
+    camera:Activate(5)
 end)
 registerHotkey('DevHotkey7', 'Dev Hotkey 7', function()
     DualPrint('||=7  Dev hotkey 7 Pressed =')
 
-    CardEngine.RemoveVisualDeck()
+    local camera = GetPlayer():FindComponentByName('camera')
+    local quatOri = EulerAngles.new(0, -70, 0):ToQuat()
+    camera:SetLocalPosition(Vector4.new(0, 0.5, 1, 1))
+    camera:SetLocalOrientation(quatOri)--this needs to be spammed, otherwise player mouse movement resets entire camera back to player
+    camera:Activate(5)
+    
 end)
 registerHotkey('DevHotkey8', 'Dev Hotkey 8', function()
     DualPrint('||=8  Dev hotkey 8 Pressed =')
