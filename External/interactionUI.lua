@@ -45,7 +45,7 @@ local function getDialogChoiceHubs()
     if not success then
         -- Handle the error here
         -- You can choose to ignore it, log it, or take any other appropriate action
-        DuelPrint(" }{ Error: " .. errorMessage)
+        DualPrint(" }{ Error: " .. errorMessage)
     end
 
     local ibd = GetAllBlackboardDefs().UIInteractions

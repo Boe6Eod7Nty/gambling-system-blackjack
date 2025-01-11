@@ -106,8 +106,10 @@ local function movingCardsProcess(dt)
             local magnitude = math.sqrt(vectorXYZ.x^2 + vectorXYZ.y^2 + vectorXYZ.z^2)
             if magnitude <= moveDistance then
                 Game.GetTeleportationFacility():Teleport(entity, TargetVector4, euler)
+                if card.flipEnd then
+                    Cron.After(0.5, CardEngine.FlipCard(card.id, 'horizontal', 'left'))
+                end
                 movingCards[i] = nil
-                --DualPrint('card move end triggered')
                 break
             end
             local directionXYZ = {x=vectorXYZ.x/magnitude,y=vectorXYZ.y/magnitude,z=vectorXYZ.z/magnitude}
@@ -180,24 +182,24 @@ end
 ---Delete card
 ---@param id any id of card to delete
 function CardEngine.DeleteCard(id)
-    DualPrint('card deleted: '..tostring(id))
-    DualPrint('entity deleted: '..tostring(CardEngine.cards[id].id))
+    --DualPrint('card deleted: '..tostring(id))
+    --DualPrint('entity deleted: '..tostring(CardEngine.cards[id].id))
     Game.GetStaticEntitySystem():DespawnEntity(CardEngine.cards[id].entID)
 end
 
 ---Move card to position with animation 'style'
 ---@param id any id of card to move
 ---@param positionVector4 any Vector4 target position of card
----@param orientationXYZ any orientation target as {r=,p=,y=}
+---@param orientationRPY any orientation target as {r=,p=,y=}
 ---@param movementStyle string animation style
-function CardEngine.MoveCard(id, positionVector4, orientationRPY, movementStyle)
+---@param flipEnd boolean flip card at end
+function CardEngine.MoveCard(id, positionVector4, orientationRPY, movementStyle, flipEnd)
     if movementStyle == 'snap' then
         local entity = Game.FindEntityByID(CardEngine.cards[id].entID)
         local euler = EulerAngles.new(orientationRPY.r, orientationRPY.p, orientationRPY.y)
         Game.GetTeleportationFacility():Teleport(entity, positionVector4, euler)
     elseif movementStyle == 'smooth' then
-        movingCards[id] = {id = id, targetPos = positionVector4, TargetOriRPY = orientationRPY, movementStyle = movementStyle}
-        --DualPrint('added card to move queue: '..tostring(id))
+        movingCards[id] = {id = id, targetPos = positionVector4, TargetOriRPY = orientationRPY, movementStyle = movementStyle, flipEnd = flipEnd}
     end
 end
 
@@ -233,6 +235,14 @@ end
 ---Flips deckShuffling to true, causing the deck 'shuffle' animation
 function CardEngine.TriggerDeckShuffle()
     deckShuffling = true
+end
+
+function CardEngine.PrintAllCards()
+    local cards = "CardEngine cards: "
+    for k,v in pairs(CardEngine.cards) do
+        cards = cards..tostring(k)..", "
+    end
+    DualPrint(cards)
 end
 
 

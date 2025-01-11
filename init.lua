@@ -17,9 +17,14 @@
 --Modules
 --=======
 local Cron = require('External/Cron.lua') --Time handling
+local interactionUI = require("External/interactionUI.lua")
 local SpotManager = require('SpotManager.lua') --workspot management
 CardEngine = require('CardEngine.lua') --Card Entity Handler
 local singleRoundLogic = require('SingleRoundLogic.lua') --Handles 1 round of blackjack
+local GameUI = require("External/GameUI.lua")
+
+local inMenu = true --libaries requirement
+local inGame = false
 
 GamblingSystemBlackjack = {
     loaded = false,
@@ -41,6 +46,22 @@ end
 registerForEvent( "onInit", function() 
     SpotManager.init()
     CardEngine.init()
+    interactionUI.init()
+
+    -- Setup observer and GameUI to detect inGame / inMenu, credit: keanuwheeze | init.lua from the sitAnywhere mod
+    Observe('RadialWheelController', 'OnIsInMenuChanged', function(_, isInMenu)
+        inMenu = isInMenu
+    end)
+    --Setup observer and GameUI to detect inGame / inMenu
+    --credit: keanuwheeze | init.lua from the sitAnywhere mod
+    inGame = false
+    GameUI.OnSessionStart(function()
+        inGame = true
+    end)
+    GameUI.OnSessionEnd(function()
+        inGame = false
+    end)
+    inGame = not GameUI.IsDetached() -- Required to check if ingame after reloading all mods
 
     -- Define Hooh location
     local worldPinUI = {
@@ -57,9 +78,12 @@ registerForEvent( "onInit", function()
     SpotManager.AddSpot('hooh', worldPinUI, animObj)
 end)
 registerForEvent('onUpdate', function(dt)
-    Cron.Update(dt)
-    SpotManager.update(dt)
-    CardEngine.update(dt)
+    if  not inMenu and inGame then
+        Cron.Update(dt)
+        SpotManager.update(dt)
+        CardEngine.update(dt)
+        interactionUI.update()
+    end
 
     for i, spot in pairs(SpotManager.spots) do
         if spot.active == true and spot.startTriggered == false then
@@ -88,15 +112,17 @@ registerHotkey('DevHotkey3', 'Dev Hotkey 3', function()
     DualPrint('||=3  Dev hotkey 3 Pressed =')
 
     --CardEngine.DeleteCard('TEMP')
-    CardEngine.DeleteCard('pCard01')
-    CardEngine.DeleteCard('pCard02')
-    CardEngine.DeleteCard('dCard01')
-    CardEngine.DeleteCard('dCard02')
+    for i=1, singleRoundLogic.playerCardCount do
+        CardEngine.DeleteCard('pCard'..string.format("%02d", i))
+    end
+    for i=1, singleRoundLogic.dealerCardCount do
+        CardEngine.DeleteCard('dCard'..string.format("%02d", i))
+    end
 end)
 registerHotkey('DevHotkey4', 'Dev Hotkey 4', function()
     DualPrint('||=4  Dev hotkey 4 Pressed =')
 
-    CardEngine.MoveCard('TEMP', Vector4.new(-1041.189, 1340.711, 6.085, 1), { r = 0, p = 0, y = -90 }, 'smooth')
+    CardEngine.MoveCard('dCard01', Vector4.new(dFirstCardXYZ.x+0.08, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
 end)
 registerHotkey('DevHotkey5', 'Dev Hotkey 5', function()
     DualPrint('||=5  Dev hotkey 5 Pressed =')

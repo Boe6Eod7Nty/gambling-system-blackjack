@@ -55,6 +55,8 @@ local function animateEnteringSpot(animObj) --Triggers workspot animation
     callback = function()
         local entity = Game.FindEntityByID(entID)
         workspotSystem:PlayInDevice(entity, player) --Play workspot
+
+        CardEngine.BuildVisualDeck(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
     end
     Cron.After(1, callback)
 end
@@ -62,7 +64,6 @@ end
 --Register Events (passed from parent)
 --===============
 function SpotManager.init() --runs on game launch
-    interactionUI.init()
 
     Observe('RadialWheelController', 'OnIsInMenuChanged', function(_, isInMenu) -- Setup observer and GameUI to detect inGame / inMenu, credit: keanuwheeze | init.lua from the sitAnywhere mod
         inMenu = isInMenu
@@ -85,7 +86,6 @@ function SpotManager.update(dt) --runs every frame
     if  not inMenu and inGame then
         Cron.Update(dt) -- This is required for Cron to function
         world.update()
-        interactionUI.update()
     end
 end
 
@@ -108,6 +108,8 @@ function SpotManager.ExitSpot(id) --Exit spot
 
         local workspotSystem = Game.GetWorkspotSystem()
         workspotSystem:SendFastExitSignal(player)
+
+        CardEngine.RemoveVisualDeck()
 
         spot.active = false
     end)
