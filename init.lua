@@ -85,6 +85,7 @@ registerForEvent('onUpdate', function(dt)
         interactionUI.update()
     end
 
+    --TODO: do i need this? seems like I was just passing a trigger from spot manager to init, but here i dont do anything with it..
     for i, spot in pairs(SpotManager.spots) do
         if spot.active == true and spot.startTriggered == false then
             DualPrint('spot start triggered')
@@ -122,36 +123,22 @@ end)
 registerHotkey('DevHotkey4', 'Dev Hotkey 4', function()
     DualPrint('||=4  Dev hotkey 4 Pressed =')
 
-    CardEngine.MoveCard('dCard01', Vector4.new(dFirstCardXYZ.x+0.08, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
 end)
 registerHotkey('DevHotkey5', 'Dev Hotkey 5', function()
     DualPrint('||=5  Dev hotkey 5 Pressed =')
 
-    CardEngine.FlipCard('TEMP', 'horizontal', 'left')
 end)
 registerHotkey('DevHotkey6', 'Dev Hotkey 6', function()
     DualPrint('||=6  Dev hotkey 6 Pressed =')
 
-    local camera = GetPlayer():FindComponentByName('camera')
-    local quat = EulerAngles.new(0, 0, 0):ToQuat()
-    camera:SetLocalPosition(Vector4.new(0, 0, 0, 1))
-    camera:SetLocalOrientation(quat)
-    camera:Activate(5)
 end)
 registerHotkey('DevHotkey7', 'Dev Hotkey 7', function()
     DualPrint('||=7  Dev hotkey 7 Pressed =')
 
-    local camera = GetPlayer():FindComponentByName('camera')
-    local quatOri = EulerAngles.new(0, -70, 0):ToQuat()
-    camera:SetLocalPosition(Vector4.new(0, 0.5, 1, 1))
-    camera:SetLocalOrientation(quatOri)--this needs to be spammed, otherwise player mouse movement resets entire camera back to player
-    camera:Activate(5)
-    
 end)
 registerHotkey('DevHotkey8', 'Dev Hotkey 8', function()
     DualPrint('||=8  Dev hotkey 8 Pressed =')
 
-    CardEngine.TriggerDeckShuffle()
 end)
 registerHotkey('DevHotkey9', 'Dev Hotkey 9', function()
     DualPrint('||=9  Dev hotkey 9 Pressed =')

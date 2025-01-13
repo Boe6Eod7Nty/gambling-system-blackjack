@@ -25,6 +25,7 @@ local standardOri = { r = 0, p = 0, y = -90 }
 --Functions
 --=========
 
+---Shuffle the deck referenced for card order
 local function shuffleDeckInternal()
     local allCards = {  'As','2s','3s','4s','5s','6s','7s','8s','9s','Ts','Js','Qs','Ks',
                         'Ah','2h','3h','4h','5h','6h','7h','8h','9h','Th','Jh','Qh','Kh',
@@ -39,6 +40,7 @@ local function shuffleDeckInternal()
     SingleRoundLogic.deckShuffle = newDeck
 end
 
+--- Animate first round deal.
 local function dealStartOfRound()
     local pCard01app = SingleRoundLogic.deckShuffle[1]
     local pCard01cardID = CardEngine.CreateCard('pCard01', pCard01app, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), { r = 0, p = 180, y = -90 })
@@ -74,6 +76,7 @@ local function dealStartOfRound()
     end)
 end
 
+--- Animate all cards back to the deck & delete
 local function collectRoundCards()
     for i = 1, SingleRoundLogic.playerCardCount do
         local curCard = 'pCard'..string.format("%02d", i)
@@ -93,6 +96,9 @@ local function collectRoundCards()
     end)
 end
 
+---Check if the 2 card board is blackjack
+---@param board table 2 card table list of card faces
+---@return boolean
 local function isBoardBJ(board)
     local twoCards = {string.sub(board[1],1,1),string.sub(board[2],1,1)}
     local totalValue = 0
@@ -114,6 +120,9 @@ local function isBoardBJ(board)
     end
 end
 
+---Checks if the board is busted, aka over 21
+---@param board table table list of card faces
+---@return boolean
 local function isBoardBusted(board)
     local runningTotal = 0
     for k,v in pairs(board) do
@@ -133,6 +142,9 @@ local function isBoardBusted(board)
     end
 end
 
+---Prompt player UI for turn action
+---@param hitCallback function callback for when player hits
+---@param standCallback function callback for when player stands
 local function promptPlayerActionUI(hitCallback, standCallback)
     local choice1 = interactionUI.createChoice("Hit", nil, gameinteractionsChoiceType.Selected) --change from Selected to AlreadyRead later
     local choice2 = interactionUI.createChoice("Stand", nil, gameinteractionsChoiceType.Selected)
@@ -155,6 +167,8 @@ local function promptPlayerActionUI(hitCallback, standCallback)
     end
 end
 
+---Returns BJ game value of a set of cards
+---@param board table table list of card faces
 local function calculateBoardScore(board)
     --board = {"7h","Ts"} example
     local runningTotal = 0
@@ -181,6 +195,8 @@ local function calculateBoardScore(board)
     return runningTotal
 end
 
+---If the value of current cards is soft, aka using an Ace as an 11 instead of 1.
+---@param board table table list of card faces
 local function isBoardSoft(board)
     local runningTotal = 0
     local aceCount = 0
@@ -208,6 +224,7 @@ local function isBoardSoft(board)
     return isSoft
 end
 
+--- 1 Step of dealer's action. Hit/Stand
 local function DealerAction()
     local score = calculateBoardScore(SingleRoundLogic.dealerBoardCards)
     local isSoft = isBoardSoft(SingleRoundLogic.dealerBoardCards)
@@ -243,7 +260,8 @@ local function DealerAction()
     end
 end
 
-local function startDealerAction()
+--- Start dealer's turn, animation then dealer action
+local function startDealerTurn()
     Cron.After(0.1, function()
         CardEngine.MoveCard('dCard01', Vector4.new(dFirstCardXYZ.x+0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
     end)
@@ -258,6 +276,7 @@ local function startDealerAction()
     end)
 end
 
+--- 1 Step of player's action. Hit/Stand/Etc
 local function playerAction()
     local function hitCallback()
         local pCardXapp = SingleRoundLogic.deckShuffle[1]
@@ -287,12 +306,14 @@ local function playerAction()
     end
     local function standCallback()
         --player done
-        startDealerAction()
+        startDealerTurn()
     end
     promptPlayerActionUI(hitCallback, standCallback)
 end
 
 ---Signal the start of a round
+---@param deckLocation Vector4 location of physical card deck
+---@param deckRotationRPY Vector3 rotation of physical card deck
 function SingleRoundLogic.startRound(deckLocation, deckRotationRPY)
     SingleRoundLogic.playerCardCount = 0
     SingleRoundLogic.dealerCardCount = 0
@@ -300,9 +321,13 @@ function SingleRoundLogic.startRound(deckLocation, deckRotationRPY)
     SingleRoundLogic.dealerBoardCards = {}
     shuffleDeckInternal()
 
-    dealStartOfRound()
+    CardEngine.TriggerDeckShuffle()
 
-    Cron.After(2, function()
+    Cron.After(2, function ()
+        dealStartOfRound()
+    end)
+
+    Cron.After(4, function()
         if isBoardBJ(SingleRoundLogic.playerBoardCards) and isBoardBJ(SingleRoundLogic.dealerBoardCards) then
             DualPrint('End Round: Both Blackjack! tie')
             Cron.After(5, collectRoundCards)

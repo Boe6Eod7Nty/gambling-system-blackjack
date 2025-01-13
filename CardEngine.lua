@@ -146,12 +146,8 @@ end
 --=========
 ---Runs on init
 function CardEngine.init() --runs on game launch
-    Cron.Every(0.05, function()
-        flippingCardsProcess()
-    end)
-    Cron.Every(0.1, function()
-        shuffleDeckAnim()
-    end)
+    Cron.Every(0.05, flippingCardsProcess)
+    Cron.Every(0.1, shuffleDeckAnim)
 end
 
 --- Runs every frame
@@ -237,6 +233,7 @@ function CardEngine.TriggerDeckShuffle()
     deckShuffling = true
 end
 
+---DualPrint a list of all cards currently spawned
 function CardEngine.PrintAllCards()
     local cards = "CardEngine cards: "
     for k,v in pairs(CardEngine.cards) do

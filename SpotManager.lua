@@ -17,6 +17,9 @@ local interactionUI = require("External/interactionUI.lua")
 
 local inMenu = true --libaries requirement
 local inGame = false
+local forcedCam = false
+local forcedCamOri = {r=0,p=-60,y=0}
+local localPlayer
 
 --Functions
 --=========
@@ -52,13 +55,49 @@ local function animateEnteringSpot(animObj) --Triggers workspot animation
     local entID = dynamicEntitySystem:CreateEntity(spec)
     animObj.entID = entID
 
-    callback = function()
+    Cron.After(1, function()
         local entity = Game.FindEntityByID(entID)
         workspotSystem:PlayInDevice(entity, player) --Play workspot
 
         CardEngine.BuildVisualDeck(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
+    end)
+end
+
+---Move player camera to forced position, typically above table
+---@param enable boolean to enable, or disable the forced camera perspective
+local function setForcedCamera(enable)
+    forcedCam = enable
+    if enable then
+        local camera = GetPlayer():GetFPPCameraComponent()
+        local quatOri = EulerAngles.new(forcedCamOri.r, forcedCamOri.p, forcedCamOri.y):ToQuat()
+        camera:SetLocalTransform(Vector4.new(0, 0.4, 0.7, 1), quatOri)
+        StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+        --camera:SetLocalPosition(Vector4.new(0, 0.4, 0.6, 1))
+        --camera:SetLocalOrientation(quatOri)--this needs to be spammed(?), otherwise player mouse movement resets entire camera back to player
+        --camera:Activate(5) --test if this line is needed
+        --camera.headingLocked = true
+        --camera:SceneDisableBlendingToStaticPosition()
+    else
+        local camera = GetPlayer():GetFPPCameraComponent()
+        camera:SetLocalPosition(Vector4.new(0, 0, 0, 1))
+        camera:SetLocalOrientation(EulerAngles.new(0, 0, 0):ToQuat())
+        StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+        --camera.SetLocalTransform(Vector4.new(0, 0, 0, 1), EulerAngles.new(0, 0, 0):ToQuat())
+        --camera:Activate(5)
+        --camera.headingLocked = false
     end
-    Cron.After(1, callback)
+end
+
+---Triggered on interactionUI choice to enter workspot
+---@param id any identification id
+---@param animObj table spot's animation information
+local function satAtSpot(id, animObj)
+    animateEnteringSpot(animObj)
+    SpotManager.spots[id].active = true
+    local callback = function()
+        setForcedCamera(true)
+    end
+    Cron.After(3, callback)
 end
 
 --Register Events (passed from parent)
@@ -73,6 +112,9 @@ function SpotManager.init() --runs on game launch
     GameUI.OnSessionStart(function() --  credit: keanuwheeze | init.lua from the sitAnywhere mod
         inGame = true
         world.onSessionStart()
+        Cron.After(1, function ()
+            localPlayer = Game.GetPlayer()
+        end)
     end)
     GameUI.OnSessionEnd(function()
         inGame = false
@@ -87,6 +129,16 @@ function SpotManager.update(dt) --runs every frame
         Cron.Update(dt) -- This is required for Cron to function
         world.update()
     end
+    if forcedCam then --fixes the camera being reset by workspot animation
+        local camera = localPlayer:GetFPPCameraComponent()
+        local o = camera:GetLocalOrientation():ToEulerAngles()
+        local targetP = forcedCamOri.p
+        if not (o.pitch < targetP+0.001 and o.pitch > targetP-0.001) then
+            setForcedCamera(true)
+        end
+    else
+        StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl") --insurance
+    end
 end
 
 --Methods
@@ -94,6 +146,7 @@ end
 --- Animate player leaving spot
 --- @param id any identification id
 function SpotManager.ExitSpot(id) --Exit spot
+    setForcedCamera(false) --disable forced camera perspective
     local spot = SpotManager.spots[id]
     SpotManager.ChangeAnimation(spot.animObj.exitAnim, spot.animObj.exitTime + 3, spot.animObj.defaultAnim)
     Cron.After(spot.animObj.exitTime, function() -- Wait for animation to finish
@@ -114,6 +167,7 @@ function SpotManager.ExitSpot(id) --Exit spot
         spot.active = false
     end)
 end
+
 --- Add spot to SpotManager's managed list of spots
 ---@param id any identification id
 ---@param worldPinUI table worldPinUI information
@@ -124,9 +178,7 @@ function SpotManager.AddSpot(id, worldPinUI, animObj) --Create spot
                     --  (id, position, interactionRange, angle, icon, iconRange, iconRangeMin, iconColor, callback)
         if state then -- Show
             local UIcallback = function()
-                DualPrint('Callback SM executed')
-                animateEnteringSpot(animObj)
-                SpotManager.spots[id].active = true
+                satAtSpot(id, animObj)
             end
             basicInteractionUIPrompt("Blackjack", "Join Table", "ChoiceCaptionParts.SitIcon", gameinteractionsChoiceType.QuestImportant, UIcallback) --Display interactionUI menu
         else -- Hide
@@ -146,6 +198,7 @@ function SpotManager.ChangeAnimation(animName, duration, returnAnimName)
         workspotSystem:SendJumpToAnimEnt(player, returnAnimName, true)
     end)
 end
+
 
 
 return SpotManager
