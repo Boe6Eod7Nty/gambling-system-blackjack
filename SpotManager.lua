@@ -10,6 +10,7 @@ SpotManager = {
 --Feel free to ask via nexus/discord, I just dont want my stuff stolen :)
 --===================
 
+local BlackjackMainMenu = require("BlackjackMainMenu.lua")
 local Cron = require('External/Cron.lua')
 local world = require('External/worldInteraction.lua')
 local GameUI = require("External/GameUI.lua")
@@ -72,8 +73,10 @@ local function setForcedCamera(enable)
         local quatOri = EulerAngles.new(forcedCamOri.r, forcedCamOri.p, forcedCamOri.y):ToQuat()
         camera:SetLocalTransform(Vector4.new(0, 0.4, 0.7, 1), quatOri)
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+        --StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.JohnnySicknessMedium")
+        --StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
         --camera:SetLocalPosition(Vector4.new(0, 0.4, 0.6, 1))
-        --camera:SetLocalOrientation(quatOri)--this needs to be spammed(?), otherwise player mouse movement resets entire camera back to player
+        --camera:SetLocalOrientation(quatOri)
         --camera:Activate(5) --test if this line is needed
         --camera.headingLocked = true
         --camera:SceneDisableBlendingToStaticPosition()
@@ -94,10 +97,11 @@ end
 local function satAtSpot(id, animObj)
     animateEnteringSpot(animObj)
     SpotManager.spots[id].active = true
-    local callback = function()
+    local callback1 = function()
         setForcedCamera(true)
+        BlackjackMainMenu.StartMainMenu()
     end
-    Cron.After(3, callback)
+    Cron.After(2, callback1)
 end
 
 --Register Events (passed from parent)

@@ -16,12 +16,13 @@
 
 --Modules
 --=======
+CardEngine = require('CardEngine.lua') --Card Entity Handler
 local Cron = require('External/Cron.lua') --Time handling
 local interactionUI = require("External/interactionUI.lua")
 local SpotManager = require('SpotManager.lua') --workspot management
-CardEngine = require('CardEngine.lua') --Card Entity Handler
 local singleRoundLogic = require('SingleRoundLogic.lua') --Handles 1 round of blackjack
 local GameUI = require("External/GameUI.lua")
+local BlackjackMainMenu = require("BlackjackMainMenu.lua")
 
 local inMenu = true --libaries requirement
 local inGame = false
@@ -122,7 +123,8 @@ registerHotkey('DevHotkey3', 'Dev Hotkey 3', function()
 end)
 registerHotkey('DevHotkey4', 'Dev Hotkey 4', function()
     DualPrint('||=4  Dev hotkey 4 Pressed =')
-
+    
+    CardEngine.PrintAllCards(true)
 end)
 registerHotkey('DevHotkey5', 'Dev Hotkey 5', function()
     DualPrint('||=5  Dev hotkey 5 Pressed =')

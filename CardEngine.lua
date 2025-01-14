@@ -89,6 +89,10 @@ local function movingCardsProcess(dt)
             local cardObj = CardEngine.cards[card.id]
             local entID = cardObj.entID
             local entity = Game.FindEntityByID(entID)
+            if entity == nil then
+                movingCards[i] = nil
+                break
+            end
 
             --instatiate output euler
             local euler = EulerAngles.new(card.TargetOriRPY.r, card.TargetOriRPY.p, card.TargetOriRPY.y)
@@ -157,9 +161,10 @@ function CardEngine.update(dt)
 end
 
 ---Create card entity and lua object
+---@param id any id of card
 ---@param faceType string card face, k4, 8s, Ah, etc
 ---@param positionVector4 any Vector4 spawn position of card
----@param orientationXYZ any orientation as {r=,p=,y=}
+---@param orientationRPY any orientation as {r=,p=,y=}
 ---@return any id card id output
 function CardEngine.CreateCard(id, faceType, positionVector4, orientationRPY)
     local cardSpec = StaticEntitySpec.new()
@@ -178,8 +183,8 @@ end
 ---Delete card
 ---@param id any id of card to delete
 function CardEngine.DeleteCard(id)
-    --DualPrint('card deleted: '..tostring(id))
-    --DualPrint('entity deleted: '..tostring(CardEngine.cards[id].id))
+    --DualPrint('card deleting: '..tostring(id))
+    --DualPrint('entity deleting: '..tostring(CardEngine.cards[id].id))
     Game.GetStaticEntitySystem():DespawnEntity(CardEngine.cards[id].entID)
 end
 
@@ -205,6 +210,10 @@ end
 ---@param direction string direction of flip, left or right
 function CardEngine.FlipCard(id, flipAngle, direction)
     local entity = Game.FindEntityByID(CardEngine.cards[id].entID)
+    if entity == nil then
+        DualPrint('card '..tostring(id)..' does not exist')
+        return
+    end
     local entityVector4 = entity:GetWorldPosition()
     local curEuler = entity:GetWorldOrientation():ToEulerAngles()
     flippingCards[id] = {id = id, flipAngle = flipAngle, direction = direction, lifetime = 0, curEuler = curEuler, curHeight = entityVector4.z}
@@ -234,10 +243,14 @@ function CardEngine.TriggerDeckShuffle()
 end
 
 ---DualPrint a list of all cards currently spawned
-function CardEngine.PrintAllCards()
+function CardEngine.PrintAllCards(excludeDeck)
     local cards = "CardEngine cards: "
     for k,v in pairs(CardEngine.cards) do
+        if k:match('^deckCard_') and excludeDeck then
+            goto continue
+        end
         cards = cards..tostring(k)..", "
+        ::continue::
     end
     DualPrint(cards)
 end
