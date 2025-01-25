@@ -33,8 +33,11 @@ local function shuffleDeckInternal()
     local allCards = {  'As','2s','3s','4s','5s','6s','7s','8s','9s','Ts','Js','Qs','Ks',
                         'Ah','2h','3h','4h','5h','6h','7h','8h','9h','Th','Jh','Qh','Kh',
                         'Ac','2c','3c','4c','5c','6c','7c','8c','9c','Tc','Jc','Qc','Kc',
-                        'Ad','2d','3d','4d','5d','6d','7d','8d','9d','Td','Jd','Qd','Kd'}
-    local devRiggedIndex = {} --
+                        'Ad','2d','3d','4d','5d','6d','7d','8d','9d','Td','Jd','Qd','Kd'
+                    }
+    --alignment comment.
+    local devRiggedIndex = {10,10,6,4,8,1,7} --player busts and dealer hits if game broken lmao
+    --local devRiggedIndex = {5,10,4,1} --dealer gets blackjack
     --local devRiggedIndex = {8,34,20,47,3,42,10} --2 8s to player
     --local devRiggedIndex = {1,48,13,46,25,47,45,37} --4 aces all split
     local newDeck = {}
@@ -269,61 +272,93 @@ local function isBoardSoft(board)
     return isSoft
 end
 
+--- animation for dealer to flip two cards
+local function flipDealerTwoCards()
+    Cron.After(0.1, function()
+        CardEngine.MoveCard('dCard01', Vector4.new(dFirstCardXYZ.x+0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
+    end)
+    Cron.After(0.6, function()
+        CardEngine.MoveCard('dCard01',Vector4.new(dFirstCardXYZ.x, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
+    end)
+    Cron.After(0.8, function()
+        CardEngine.MoveCard('dCard02',Vector4.new(dFirstCardXYZ.x-0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', true)
+    end)
+end
+
 ---After player and dealer have finished, calculate scores, determine winner hands and payout.
-local function ProcessRoundResult()
+---@param instaBlackjack boolean if player OR dealer has instant blackjack
+local function ProcessRoundResult(instaBlackjack)
     DualPrint('--End Round!--')
     local dealerScore = calculateBoardScore(SingleRoundLogic.dealerBoardCards)
-    isBoardBJ(SingleRoundLogic.dealerBoardCards)
-
-    for i, hand in pairs(SingleRoundLogic.playerHands) do
-        local continueHandCheck = true
-        if SingleRoundLogic.bustedHands[i] then
-            DualPrint('End Hand #'..tostring(i)..': Player Busted.')
-            continueHandCheck = false
+    --isBoardBJ(SingleRoundLogic.dealerBoardCards)
+    if instaBlackjack then
+        Cron.After(1, flipDealerTwoCards)
+        local dealerBJ = isBoardBJ(SingleRoundLogic.dealerBoardCards)
+        local playerBJ = isBoardBJ(SingleRoundLogic.playerHands[1])
+        if dealerBJ and playerBJ then
+            DualPrint('End Round: Both Blackjack. Push')
+            BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
+        elseif dealerBJ then
+            DualPrint('End Round: Dealer Blackjack.')
+        elseif playerBJ then
+            DualPrint('End Round: Player Blackjack.')
+            BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
         end
-        if isBoardBJ(SingleRoundLogic.dealerBoardCards) and continueHandCheck then
-            if isBoardBJ(hand) then
-                DualPrint('End Hand #'..tostring(i)..': Both Blackjack. Push')
-                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
+    else--not instaBlackjack then
+        for i, hand in pairs(SingleRoundLogic.playerHands) do
+            local continueHandCheck = true
+            if SingleRoundLogic.bustedHands[i] then
+                DualPrint('End Hand #'..tostring(i)..': Player Busted.')
                 continueHandCheck = false
             end
-            DualPrint('End Hand #'..tostring(i)..': Dealer Blackjack.')
-            continueHandCheck = false
-        end
-        if isBoardBJ(hand) and continueHandCheck then
-            DualPrint('End Hand #'..tostring(i)..': Player Blackjack.')
-            continueHandCheck = false
-        end
-
-        local playerScore = calculateBoardScore(hand)
-        if continueHandCheck then
-            if dealerScore > 21 then
-                DualPrint('End Hand #'..tostring(i)..': Dealer Busted!')
-                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
-                if SingleRoundLogic.doubledHands[i] then
-                    BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
-                end
-            elseif playerScore > dealerScore then
-                DualPrint('End Hand #'..tostring(i)..': Player Wins!')
-                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
-                if SingleRoundLogic.doubledHands[i] then
-                    BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
-                end
-            elseif playerScore < dealerScore then
-                DualPrint('End Hand #'..tostring(i)..': Dealer Wins.')
-            else
-                DualPrint('End Hand #'..tostring(i)..': Tie, Push.')
-                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
-                if SingleRoundLogic.doubledHands[i] then
+            if isBoardBJ(SingleRoundLogic.dealerBoardCards) and continueHandCheck then
+                if isBoardBJ(hand) then
+                    DualPrint('End Hand #'..tostring(i)..': Both Blackjack. Push')
                     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
+                    continueHandCheck = false
+                end
+                DualPrint('End Hand #'..tostring(i)..': Dealer Blackjack.')
+                continueHandCheck = false
+            end
+            if isBoardBJ(hand) and continueHandCheck then
+                DualPrint('End Hand #'..tostring(i)..': Player Blackjack.')
+                continueHandCheck = false
+            end
+    
+            local playerScore = calculateBoardScore(hand)
+            if continueHandCheck then
+                if dealerScore > 21 then
+                    DualPrint('End Hand #'..tostring(i)..': Dealer Busted!')
+                    BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+                    if SingleRoundLogic.doubledHands[i] then
+                        BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+                    end
+                elseif playerScore > dealerScore then
+                    DualPrint('End Hand #'..tostring(i)..': Player Wins!')
+                    BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+                    if SingleRoundLogic.doubledHands[i] then
+                        BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+                    end
+                elseif playerScore < dealerScore then
+                    DualPrint('End Hand #'..tostring(i)..': Dealer Wins.')
+                else
+                    DualPrint('End Hand #'..tostring(i)..': Tie, Push.')
+                    BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
+                    if SingleRoundLogic.doubledHands[i] then
+                        BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
+                    end
                 end
             end
+            DualPrint(' - Player score: '..tostring(playerScore)..', Dealer score: '..tostring(dealerScore))
         end
-
-        DualPrint(' - Player score: '..tostring(playerScore)..', Dealer score: '..tostring(dealerScore))
     end
-    Cron.After(4, collectRoundCards)
-    Cron.After(9, BlackjackMainMenu.RoundEnded())
+    if instaBlackjack then
+        Cron.After(7, collectRoundCards)
+        Cron.After(11, BlackjackMainMenu.RoundEnded)
+    else
+        Cron.After(4, collectRoundCards)
+        Cron.After(8, BlackjackMainMenu.RoundEnded)
+    end
 end
 
 --- 1 Step of dealer's action. Hit/Stand
@@ -344,21 +379,8 @@ local function dealerAction()
             dealerAction()
         end)
     else
-        ProcessRoundResult()
+        ProcessRoundResult(false)
     end
-end
-
---- animation for dealer to flip two cards
-local function flipDealerTwoCards()
-    Cron.After(0.1, function()
-        CardEngine.MoveCard('dCard01', Vector4.new(dFirstCardXYZ.x+0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
-    end)
-    Cron.After(0.6, function()
-        CardEngine.MoveCard('dCard01',Vector4.new(dFirstCardXYZ.x, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
-    end)
-    Cron.After(0.8, function()
-        CardEngine.MoveCard('dCard02',Vector4.new(dFirstCardXYZ.x-0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', true)
-    end)
 end
 
 
@@ -403,10 +425,21 @@ local function playerAction(handIndex)
                 DualPrint('sRL | End Hand: Player Busted!')
                 SingleRoundLogic.bustedHands[handIndex] = true
                 if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
-                    flipDealerTwoCards()
-                    Cron.After(1.8, function()
-                        dealerAction()
-                    end)
+                    local allBusted = true
+                    for i = 1, #SingleRoundLogic.playerHands do
+                        if SingleRoundLogic.bustedHands[i] == false then
+                            allBusted = false
+                        end
+                    end
+                    if allBusted then
+                        DualPrint('sRL | All Busted!')
+                        ProcessRoundResult(false)
+                    else
+                        flipDealerTwoCards()
+                        Cron.After(1.8, function()
+                            dealerAction()
+                        end)
+                    end
                 else
                     --next player hand
                     SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
@@ -587,7 +620,7 @@ function SingleRoundLogic.startRound(deckLocation, deckRotationRPY)
 
     Cron.After(4, function()
         if isBoardBJ(SingleRoundLogic.playerHands[1]) or isBoardBJ(SingleRoundLogic.dealerBoardCards) then
-            ProcessRoundResult()
+            ProcessRoundResult(true)
         else
             playerAction(1)
         end

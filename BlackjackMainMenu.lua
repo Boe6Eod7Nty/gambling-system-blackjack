@@ -105,6 +105,7 @@ local function newBetUI(refMidIndex)
     interactionUI.callbacks[6] = function()--Back
         interactionUI.hideHub()
         BlackjackMainMenu.StartMainMenu()
+        DualPrint('Start Main Menu call 01')
     end
 end
 
@@ -164,6 +165,7 @@ local function buyChipsUI(firstIndex)
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex]
             Game.AddToInventory("Items.money", -(buy_values[firstIndex]) )
             BlackjackMainMenu.StartMainMenu()
+            DualPrint('Start Main Menu call 02')
         end
     end
     interactionUI.callbacks[3] = function()--Two
@@ -172,6 +174,7 @@ local function buyChipsUI(firstIndex)
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex + 1]
             Game.AddToInventory("Items.money", -(buy_values[firstIndex + 1]) )
             BlackjackMainMenu.StartMainMenu()
+            DualPrint('Start Main Menu call 03')
         end
     end
     interactionUI.callbacks[4] = function()--Three    
@@ -180,6 +183,7 @@ local function buyChipsUI(firstIndex)
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex + 2]
             Game.AddToInventory("Items.money", -(buy_values[firstIndex + 2]) )
             BlackjackMainMenu.StartMainMenu()
+            DualPrint('Start Main Menu call 04')
         end
     end
     interactionUI.callbacks[5] = function()--Four
@@ -188,6 +192,7 @@ local function buyChipsUI(firstIndex)
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex + 3]
             Game.AddToInventory("Items.money", -(buy_values[firstIndex + 3]) )
             BlackjackMainMenu.StartMainMenu()
+            DualPrint('Start Main Menu call 05')
         end
     end
     interactionUI.callbacks[6] = function()--Five
@@ -196,6 +201,7 @@ local function buyChipsUI(firstIndex)
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex + 4]
             Game.AddToInventory("Items.money", -(buy_values[firstIndex + 4]) )
             BlackjackMainMenu.StartMainMenu()
+            DualPrint('Start Main Menu call 06')
         end
     end
     interactionUI.callbacks[7] = function()--Higher
@@ -207,6 +213,7 @@ local function buyChipsUI(firstIndex)
     interactionUI.callbacks[8] = function()--Back
         interactionUI.hideHub()
         BlackjackMainMenu.StartMainMenu()
+        DualPrint('Start Main Menu call 07')
     end
 end
 
@@ -216,6 +223,7 @@ function BlackjackMainMenu.RoundEnded()
     BlackjackMainMenu.currentBet = nil
 
     BlackjackMainMenu.StartMainMenu()
+    DualPrint('Start Main Menu call 08')
 end
 
 ---Start menu 'loop' UI

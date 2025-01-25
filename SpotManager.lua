@@ -108,6 +108,7 @@ local function satAtSpot(id, animObj)
     local callback1 = function()
         setForcedCamera(true)
         BlackjackMainMenu.StartMainMenu()
+        DualPrint('Start Main Menu call 10')
     end
     Cron.After(2, callback1)
 end
