@@ -1,7 +1,8 @@
 BlackjackMainMenu = {
     version = '1.0.0',
     playerChipsMoney = 0,
-    previousBet = nil
+    previousBet = nil,
+    currentBet = nil
 }
 --===================
 --CODE BY Boe6
@@ -13,12 +14,17 @@ BlackjackMainMenu = {
 
 local Cron = require('External/Cron.lua')
 local interactionUI = require("External/interactionUI.lua")
+--local SingleRoundLogic = require('singleRoundLogic.lua') --Handles 1 round of blackjack
+--DualPrint('SingleRoundLogic version: '..SingleRoundLogic.version)
 
 local chip_values = {1,5,10,25,50,100,250,500,1000,2500,5000,10000,25000,50000,250000,1000000}
 local chip_valuesStr = {"$1", "$5", "$10", "$25", "$50", "$100", "$250", "$500", "$1,000", "$2,500", "$5,000", "$10,000", "$25,000", "$50,000", "$250,000", "$1,000,000"}
 local buy_values = {5,10,25,50,100,250,500,1000,2500,5000,10000,25000,50000,250000,1000000}
 local buy_valuesStr = {"$5", "$10", "$25", "$50", "$100", "$250", "$500", "$1,000", "$2,500", "$5,000", "$10,000", "$25,000", "$50,000", "$250,000", "$1,000,000", "$10,000,000"}
 
+
+---Displays UI for different bet amounts
+---@param refMidIndex number middle index of the 3 bet values to display. see: chip_values
 local function newBetUI(refMidIndex)
     --local playerMoney = Game.GetTransactionSystem():GetItemQuantity(GetPlayer(), MarketSystem.Money())
     local playerMoney = BlackjackMainMenu.playerChipsMoney
@@ -63,19 +69,31 @@ local function newBetUI(refMidIndex)
     interactionUI.callbacks[2] = function()--One
         if playerMoney >= chip_values[refMidIndex - 1] then
             interactionUI.hideHub()
-            --DO STUFF
+            BlackjackMainMenu.currentBet = chip_values[refMidIndex - 1]
+            BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
+            Cron.After(1, function()
+                SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
+            end)
         end
     end
     interactionUI.callbacks[3] = function()--Two
         if playerMoney >= chip_values[refMidIndex] then
             interactionUI.hideHub()
-            --DO STUFF
+            BlackjackMainMenu.currentBet = chip_values[refMidIndex]
+            BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
+            Cron.After(1, function()
+                SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
+            end)
         end
     end
     interactionUI.callbacks[4] = function()--Three
         if playerMoney >= chip_values[refMidIndex + 1] then
             interactionUI.hideHub()
-            --DO STUFF
+            BlackjackMainMenu.currentBet = chip_values[refMidIndex + 1]
+            BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
+            Cron.After(1, function()
+                SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
+            end)
         end
     end
     interactionUI.callbacks[5] = function()--Higher
@@ -90,8 +108,11 @@ local function newBetUI(refMidIndex)
     end
 end
 
+---Display the buy chips UI
+---@param firstIndex number The index of the first chip value option to display. see: buy_values
 local function buyChipsUI(firstIndex)
     local playerMoney = Game.GetTransactionSystem():GetItemQuantity(GetPlayer(), MarketSystem.Money())
+    DualPrint("Buy Chips UI, firstIndex: "..tostring(firstIndex)..", playerMoney: "..tostring(playerMoney))
     local lowChoiceType = gameinteractionsChoiceType.AlreadyRead
     local oneChoiceType = gameinteractionsChoiceType.AlreadyRead
     local twoChoiceType = gameinteractionsChoiceType.AlreadyRead
@@ -102,19 +123,19 @@ local function buyChipsUI(firstIndex)
     if firstIndex > 1  then
         lowChoiceType = gameinteractionsChoiceType.Selected
     end
-    if playerMoney >= chip_values[firstIndex] then
+    if playerMoney >= buy_values[firstIndex] then
         oneChoiceType = gameinteractionsChoiceType.Selected
     end
-    if playerMoney >= chip_values[firstIndex + 1] then
+    if playerMoney >= buy_values[firstIndex + 1] then
         twoChoiceType = gameinteractionsChoiceType.Selected
     end
-    if playerMoney >= chip_values[firstIndex + 2] then
+    if playerMoney >= buy_values[firstIndex + 2] then
         thrChoiceType = gameinteractionsChoiceType.Selected
     end
-    if playerMoney >= chip_values[firstIndex + 3] then
+    if playerMoney >= buy_values[firstIndex + 3] then
         forChoiceType = gameinteractionsChoiceType.Selected
     end
-    if playerMoney >= chip_values[firstIndex + 4] then
+    if playerMoney >= buy_values[firstIndex + 4] then
         fivChoiceType = gameinteractionsChoiceType.Selected
     end
     if firstIndex < 11 then
@@ -138,7 +159,7 @@ local function buyChipsUI(firstIndex)
         end
     end
     interactionUI.callbacks[2] = function()--One
-        if playerMoney >= chip_values[firstIndex] then
+        if playerMoney >= buy_values[firstIndex] then
             interactionUI.hideHub()
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex]
             Game.AddToInventory("Items.money", -(buy_values[firstIndex]) )
@@ -146,7 +167,7 @@ local function buyChipsUI(firstIndex)
         end
     end
     interactionUI.callbacks[3] = function()--Two
-        if playerMoney >= chip_values[firstIndex + 1] then
+        if playerMoney >= buy_values[firstIndex + 1] then
             interactionUI.hideHub()
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex + 1]
             Game.AddToInventory("Items.money", -(buy_values[firstIndex + 1]) )
@@ -154,7 +175,7 @@ local function buyChipsUI(firstIndex)
         end
     end
     interactionUI.callbacks[4] = function()--Three    
-        if playerMoney >= chip_values[firstIndex + 2] then
+        if playerMoney >= buy_values[firstIndex + 2] then
             interactionUI.hideHub()
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex + 2]
             Game.AddToInventory("Items.money", -(buy_values[firstIndex + 2]) )
@@ -162,7 +183,7 @@ local function buyChipsUI(firstIndex)
         end
     end
     interactionUI.callbacks[5] = function()--Four
-        if playerMoney >= chip_values[firstIndex + 3] then
+        if playerMoney >= buy_values[firstIndex + 3] then
             interactionUI.hideHub()
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex + 3]
             Game.AddToInventory("Items.money", -(buy_values[firstIndex + 3]) )
@@ -170,7 +191,7 @@ local function buyChipsUI(firstIndex)
         end
     end
     interactionUI.callbacks[6] = function()--Five
-        if playerMoney >= chip_values[firstIndex + 4] then
+        if playerMoney >= buy_values[firstIndex + 4] then
             interactionUI.hideHub()
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex + 4]
             Game.AddToInventory("Items.money", -(buy_values[firstIndex + 4]) )
@@ -189,14 +210,23 @@ local function buyChipsUI(firstIndex)
     end
 end
 
+---End round, loop to main menu
+function BlackjackMainMenu.RoundEnded()
+    BlackjackMainMenu.previousBet = BlackjackMainMenu.currentBet
+    BlackjackMainMenu.currentBet = nil
+
+    BlackjackMainMenu.StartMainMenu()
+end
+
+---Start menu 'loop' UI
 function BlackjackMainMenu.StartMainMenu()
-    DualPrint('||=3  Blackjack Main Menu Pressed =')
+    --DualPrint('MM | Blackjack Main Menu Pressed =')
     local playerMoney = Game.GetTransactionSystem():GetItemQuantity(GetPlayer(), MarketSystem.Money())
     local repeatChoiceType = gameinteractionsChoiceType.AlreadyRead
     local newChoiceType = gameinteractionsChoiceType.AlreadyRead
     local buyChoiceType = gameinteractionsChoiceType.AlreadyRead
     if BlackjackMainMenu.previousBet and BlackjackMainMenu.previousBet <= playerMoney then
-        --repeatChoiceType = gameinteractionsChoiceType.Selected
+        repeatChoiceType = gameinteractionsChoiceType.Selected
     end
     if BlackjackMainMenu.playerChipsMoney >= 5 then
         newChoiceType = gameinteractionsChoiceType.Selected
@@ -213,8 +243,12 @@ function BlackjackMainMenu.StartMainMenu()
     interactionUI.showHub()
     interactionUI.callbacks[1] = function()--Repeat
         if BlackjackMainMenu.previousBet and BlackjackMainMenu.previousBet <= playerMoney then
-            --interactionUI.hideHub()
-            --DO STUFF
+            interactionUI.hideHub()
+            BlackjackMainMenu.currentBet = BlackjackMainMenu.previousBet
+            BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
+            Cron.After(1, function()
+                SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
+            end)
         end
     end
     interactionUI.callbacks[2] = function()--New Bet

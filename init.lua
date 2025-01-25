@@ -20,9 +20,10 @@ CardEngine = require('CardEngine.lua') --Card Entity Handler
 local Cron = require('External/Cron.lua') --Time handling
 local interactionUI = require("External/interactionUI.lua")
 local SpotManager = require('SpotManager.lua') --workspot management
-local singleRoundLogic = require('SingleRoundLogic.lua') --Handles 1 round of blackjack
+local SingleRoundLogic = require('singleRoundLogic.lua') --Handles 1 round of blackjack
 local GameUI = require("External/GameUI.lua")
 local BlackjackMainMenu = require("BlackjackMainMenu.lua")
+local HolographicValueDisplay = require('HolographicValueDisplay.lua')
 
 local inMenu = true --libaries requirement
 local inGame = false
@@ -84,6 +85,7 @@ registerForEvent('onUpdate', function(dt)
         SpotManager.update(dt)
         CardEngine.update(dt)
         interactionUI.update()
+        HolographicValueDisplay.Update()
     end
 
     --TODO: do i need this? seems like I was just passing a trigger from spot manager to init, but here i dont do anything with it..
@@ -101,6 +103,7 @@ registerHotkey('DevHotkey1', 'Dev Hotkey 1', function()
     DualPrint('||=1  Dev hotkey 1 Pressed =')
 
     SpotManager.ExitSpot('hooh')
+    BlackjackMainMenu.playerChipsMoney = 0
 end)
 registerHotkey('DevHotkey2', 'Dev Hotkey 2', function()
     DualPrint('||=2  Dev hotkey 2 Pressed =')

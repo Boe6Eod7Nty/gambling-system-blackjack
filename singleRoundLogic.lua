@@ -4,6 +4,9 @@ SingleRoundLogic = {
     dealerCardCount = 0,
     dealerBoardCards = {},
     playerHands = {{}},
+    bustedHands = {false,false,false,false},
+    blackjackHandsPaid = {false,false,false,false},
+    doubledHands = {false,false,false,false},
     activePlayerHandIndex = 1
 }
 --===================
@@ -31,11 +34,12 @@ local function shuffleDeckInternal()
                         'Ah','2h','3h','4h','5h','6h','7h','8h','9h','Th','Jh','Qh','Kh',
                         'Ac','2c','3c','4c','5c','6c','7c','8c','9c','Tc','Jc','Qc','Kc',
                         'Ad','2d','3d','4d','5d','6d','7d','8d','9d','Td','Jd','Qd','Kd'}
-    local devRiggedIndex = {1,48,13,46,25,47,45,37}
+    local devRiggedIndex = {} --
+    --local devRiggedIndex = {8,34,20,47,3,42,10} --2 8s to player
+    --local devRiggedIndex = {1,48,13,46,25,47,45,37} --4 aces all split
     local newDeck = {}
     for i = 1, 52 do
-        --the rigging stuff is just for development debugging. This should always be 0.
-        if i <= #devRiggedIndex then
+        if i <= #devRiggedIndex then --the rigging stuff is just for development debugging. This should always be 0.
             local selectedCard = devRiggedIndex[i]
             newDeck[i] = allCards[selectedCard]
             table.remove(allCards, selectedCard)
@@ -111,6 +115,9 @@ end
 ---@param board table 2 card table list of card faces
 ---@return boolean
 local function isBoardBJ(board)
+    if #board ~= 2 then
+        return false
+    end
     local twoCards = {string.sub(board[1],1,1),string.sub(board[2],1,1)}
     local totalValue = 0
 
@@ -173,7 +180,11 @@ local function promptPlayerActionUI(handIndex, hitCallback, standCallback, split
     allChoices[1] = interactionUI.createChoice("Hit", nil, gameinteractionsChoiceType.Selected) --change from Selected to AlreadyRead later
     allChoices[2] = interactionUI.createChoice("Stand", nil, gameinteractionsChoiceType.Selected)
     if isSplitable(SingleRoundLogic.playerHands[SingleRoundLogic.activePlayerHandIndex]) then
-        table.insert(allChoices, interactionUI.createChoice("Split", nil, gameinteractionsChoiceType.Selected))
+        if BlackjackMainMenu.playerChipsMoney >= BlackjackMainMenu.currentBet then
+            table.insert(allChoices, interactionUI.createChoice("Split", nil, gameinteractionsChoiceType.Selected))
+        else
+            table.insert(allChoices, interactionUI.createChoice("Split", nil, gameinteractionsChoiceType.AlreadyRead))
+        end
         table.insert(allChoicesRef, "Split")
     end
     --local choice4 = interactionUI.createChoice("Double", nil, gameinteractionsChoiceType.Selected)
@@ -193,8 +204,8 @@ local function promptPlayerActionUI(handIndex, hitCallback, standCallback, split
         standCallback()
     end
     interactionUI.callbacks[3] = function()
-        interactionUI.hideHub()
-        if allChoicesRef[3] == "Split" then
+        if allChoicesRef[3] == "Split" and BlackjackMainMenu.playerChipsMoney >= BlackjackMainMenu.currentBet then
+            interactionUI.hideHub()
             splitCallback()
         end
     end
@@ -202,6 +213,7 @@ end
 
 ---Returns BJ game value of a set of cards
 ---@param board table table list of card faces
+---@return number number hand value, 21, 18, etc.
 local function calculateBoardScore(board)
     --board = {"7h","Ts"} example
     local runningTotal = 0
@@ -257,6 +269,63 @@ local function isBoardSoft(board)
     return isSoft
 end
 
+---After player and dealer have finished, calculate scores, determine winner hands and payout.
+local function ProcessRoundResult()
+    DualPrint('--End Round!--')
+    local dealerScore = calculateBoardScore(SingleRoundLogic.dealerBoardCards)
+    isBoardBJ(SingleRoundLogic.dealerBoardCards)
+
+    for i, hand in pairs(SingleRoundLogic.playerHands) do
+        local continueHandCheck = true
+        if SingleRoundLogic.bustedHands[i] then
+            DualPrint('End Hand #'..tostring(i)..': Player Busted.')
+            continueHandCheck = false
+        end
+        if isBoardBJ(SingleRoundLogic.dealerBoardCards) and continueHandCheck then
+            if isBoardBJ(hand) then
+                DualPrint('End Hand #'..tostring(i)..': Both Blackjack. Push')
+                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
+                continueHandCheck = false
+            end
+            DualPrint('End Hand #'..tostring(i)..': Dealer Blackjack.')
+            continueHandCheck = false
+        end
+        if isBoardBJ(hand) and continueHandCheck then
+            DualPrint('End Hand #'..tostring(i)..': Player Blackjack.')
+            continueHandCheck = false
+        end
+
+        local playerScore = calculateBoardScore(hand)
+        if continueHandCheck then
+            if dealerScore > 21 then
+                DualPrint('End Hand #'..tostring(i)..': Dealer Busted!')
+                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+                if SingleRoundLogic.doubledHands[i] then
+                    BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+                end
+            elseif playerScore > dealerScore then
+                DualPrint('End Hand #'..tostring(i)..': Player Wins!')
+                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+                if SingleRoundLogic.doubledHands[i] then
+                    BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+                end
+            elseif playerScore < dealerScore then
+                DualPrint('End Hand #'..tostring(i)..': Dealer Wins.')
+            else
+                DualPrint('End Hand #'..tostring(i)..': Tie, Push.')
+                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
+                if SingleRoundLogic.doubledHands[i] then
+                    BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
+                end
+            end
+        end
+
+        DualPrint(' - Player score: '..tostring(playerScore)..', Dealer score: '..tostring(dealerScore))
+    end
+    Cron.After(4, collectRoundCards)
+    Cron.After(9, BlackjackMainMenu.RoundEnded())
+end
+
 --- 1 Step of dealer's action. Hit/Stand
 local function dealerAction()
     local score = calculateBoardScore(SingleRoundLogic.dealerBoardCards)
@@ -275,22 +344,7 @@ local function dealerAction()
             dealerAction()
         end)
     else
-        --stand
-        --begin evaluating end of round
-        local playerScore = calculateBoardScore(SingleRoundLogic.playerHands[1])--TODO: update for multi hands
-        if score > 21 then
-            DualPrint('End Round: Dealer Busted!')
-            Cron.After(5, collectRoundCards)
-        elseif playerScore > score then
-            DualPrint('End Round: Player Wins!')
-            Cron.After(5, collectRoundCards)
-        elseif playerScore < score then
-            DualPrint('End Round: Dealer Wins!')
-            Cron.After(5, collectRoundCards)
-        else
-            DualPrint('End Round: Tie!')
-            Cron.After(5, collectRoundCards)
-        end
+        ProcessRoundResult()
     end
 end
 
@@ -328,10 +382,26 @@ local function playerAction(handIndex)
         Cron.After(3, function()
             local playerScore = calculateBoardScore(SingleRoundLogic.playerHands[handIndex])
             if playerScore == 21 then
-                playerAction(handIndex)
-            end
-            if isBoardBusted(SingleRoundLogic.playerHands[handIndex]) then
-                DualPrint('End Hand: Player Busted!')
+                -- 21 !
+                DualPrint('sRL | 21! handIndex: '..tostring(handIndex))
+                --SingleRoundLogic.blackjackHandsPaid[handIndex] = true
+                --BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2.5
+                DualPrint('sRL | activePlayerHandIndex: '..tostring(SingleRoundLogic.activePlayerHandIndex))
+                if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
+                    DualPrint('sRL | triggered dealer turn')
+                    flipDealerTwoCards()
+                    Cron.After(1.8, function()
+                        dealerAction()
+                    end)
+                else
+                    --next player hand
+                    DualPrint('sRL | triggered next player hand')
+                    SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
+                    playerAction(SingleRoundLogic.activePlayerHandIndex)
+                end
+            elseif isBoardBusted(SingleRoundLogic.playerHands[handIndex]) then
+                DualPrint('sRL | End Hand: Player Busted!')
+                SingleRoundLogic.bustedHands[handIndex] = true
                 if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
                     flipDealerTwoCards()
                     Cron.After(1.8, function()
@@ -361,6 +431,8 @@ local function playerAction(handIndex)
         end
     end
     local function splitCallback()
+        BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
+
         local curHandIndex = SingleRoundLogic.activePlayerHandIndex
         if curHandIndex == #SingleRoundLogic.playerHands then
 
@@ -490,6 +562,7 @@ local function playerAction(handIndex)
             end)
         end
     end
+    DualPrint('sRL | PromptUI; HandIndex: '..tostring(handIndex))
     promptPlayerActionUI(handIndex,hitCallback, standCallback, splitCallback)
 end
 
@@ -501,33 +574,24 @@ function SingleRoundLogic.startRound(deckLocation, deckRotationRPY)
     SingleRoundLogic.dealerBoardCards = {}
     SingleRoundLogic.playerHands = {{}}
     SingleRoundLogic.activePlayerHandIndex = 1
-    shuffleDeckInternal()
+    SingleRoundLogic.bustedHands = {false,false,false,false}
+    SingleRoundLogic.blackjackHandsPaid = {false,false,false,false}
+    SingleRoundLogic.doubledHands = {false,false,false,false}
 
+    shuffleDeckInternal()
     CardEngine.TriggerDeckShuffle()
 
-    Cron.After(2, function ()
+    Cron.After(2.1, function ()
         dealStartOfRound()
     end)
 
     Cron.After(4, function()
-        if isBoardBJ(SingleRoundLogic.playerHands[1]) and isBoardBJ(SingleRoundLogic.dealerBoardCards) then
-            DualPrint('End Round: Both Blackjack! tie')
-            flipDealerTwoCards()
-            Cron.After(5, collectRoundCards)
-        elseif isBoardBJ(SingleRoundLogic.playerHands[1]) then
-            DualPrint('End Round: Player Blackjack!')
-            flipDealerTwoCards()
-            Cron.After(5, collectRoundCards)
-        elseif isBoardBJ(SingleRoundLogic.dealerBoardCards) then
-            DualPrint('End Round: Dealer Blackjack!')
-            flipDealerTwoCards()
-            Cron.After(5, collectRoundCards)
+        if isBoardBJ(SingleRoundLogic.playerHands[1]) or isBoardBJ(SingleRoundLogic.dealerBoardCards) then
+            ProcessRoundResult()
         else
             playerAction(1)
         end
     end)
-
-    --Cron.After(2, collectRoundCards)
 end
 
 return SingleRoundLogic

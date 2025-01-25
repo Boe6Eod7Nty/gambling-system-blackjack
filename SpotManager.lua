@@ -95,7 +95,15 @@ end
 ---@param id any identification id
 ---@param animObj table spot's animation information
 local function satAtSpot(id, animObj)
+    --[[ --failed attempt at fixing how the camera has different angles sometimes.
+    local player = Game.GetPlayer()
+    local angle = player:GetWorldOrientation():ToEulerAngles()
+    local playerPos = player:GetWorldPosition()
+    local newAngle = EulerAngles.new(angle.roll, 0.0, angle.yaw)
+    Game.GetTeleportationFacility():Teleport(player, playerPos, newAngle)
+    ]]--
     animateEnteringSpot(animObj)
+    HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
     SpotManager.spots[id].active = true
     local callback1 = function()
         setForcedCamera(true)
@@ -137,7 +145,7 @@ function SpotManager.update(dt) --runs every frame
         local camera = localPlayer:GetFPPCameraComponent()
         local o = camera:GetLocalOrientation():ToEulerAngles()
         local targetP = forcedCamOri.p
-        if not (o.pitch < targetP+0.001 and o.pitch > targetP-0.001) then
+        if not (o.pitch < targetP+0.0001 and o.pitch > targetP-0.0001) then
             setForcedCamera(true)
         end
     else
@@ -151,6 +159,7 @@ end
 --- @param id any identification id
 function SpotManager.ExitSpot(id) --Exit spot
     setForcedCamera(false) --disable forced camera perspective
+    HolographicValueDisplay.stopDisplay()
     local spot = SpotManager.spots[id]
     SpotManager.ChangeAnimation(spot.animObj.exitAnim, spot.animObj.exitTime + 3, spot.animObj.defaultAnim)
     Cron.After(spot.animObj.exitTime, function() -- Wait for animation to finish

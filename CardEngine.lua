@@ -89,41 +89,48 @@ local function movingCardsProcess(dt)
             local cardObj = CardEngine.cards[card.id]
             local entID = cardObj.entID
             local entity = Game.FindEntityByID(entID)
+            local doContinue = true
             if entity == nil then
-                movingCards[i] = nil
-                break
-            end
-
-            --instatiate output euler
-            local euler = EulerAngles.new(card.TargetOriRPY.r, card.TargetOriRPY.p, card.TargetOriRPY.y)
-
-            local currentOrientationRPY = entity:GetWorldOrientation():ToEulerAngles()
-            local curOri = {r=currentOrientationRPY.roll,p=currentOrientationRPY.pitch,y=currentOrientationRPY.yaw}
-            local tarOri = {r=card.TargetOriRPY.r,p=card.TargetOriRPY.p,y=card.TargetOriRPY.y}
-            euler = EulerAngles.new(curOri.r,curOri.p,curOri.y)
-
-
-
-            local entityVector4 = entity:GetWorldPosition()
-            local TargetVector4 = card.targetPos
-            local vectorXYZ = {x=TargetVector4.x-entityVector4.x,y=TargetVector4.y-entityVector4.y,z=TargetVector4.z-entityVector4.z}
-            local magnitude = math.sqrt(vectorXYZ.x^2 + vectorXYZ.y^2 + vectorXYZ.z^2)
-            if magnitude <= moveDistance then
-                Game.GetTeleportationFacility():Teleport(entity, TargetVector4, euler)
-                if card.flipEnd then
-                    Cron.After(0.5, CardEngine.FlipCard(card.id, 'horizontal', 'left'))
+                --DualPrint('CE | Card missing! id: '..tostring(card.id)..' overAge: '..tostring(card.overAge))
+                if card.overAge >= 3 then
+                    movingCards[i] = nil
                 end
-                movingCards[i] = nil
-                break
+                card.overAge = card.overAge + 1
+                doContinue = false
             end
-            local directionXYZ = {x=vectorXYZ.x/magnitude,y=vectorXYZ.y/magnitude,z=vectorXYZ.z/magnitude}
-            local newXYZ = {
-                x=entityVector4.x+directionXYZ.x*moveDistance,
-                y=entityVector4.y+directionXYZ.y*moveDistance,
-                z=entityVector4.z+directionXYZ.z*moveDistance}
-            local outPositionVector4 = Vector4.new(newXYZ.x,newXYZ.y,newXYZ.z,1)
 
-            Game.GetTeleportationFacility():Teleport(entity, outPositionVector4, euler)
+            if doContinue then
+                --instatiate output euler
+                local euler = EulerAngles.new(card.TargetOriRPY.r, card.TargetOriRPY.p, card.TargetOriRPY.y)
+
+                local currentOrientationRPY = entity:GetWorldOrientation():ToEulerAngles()
+                local curOri = {r=currentOrientationRPY.roll,p=currentOrientationRPY.pitch,y=currentOrientationRPY.yaw}
+                local tarOri = {r=card.TargetOriRPY.r,p=card.TargetOriRPY.p,y=card.TargetOriRPY.y}
+                euler = EulerAngles.new(curOri.r,curOri.p,curOri.y)
+
+
+
+                local entityVector4 = entity:GetWorldPosition()
+                local TargetVector4 = card.targetPos
+                local vectorXYZ = {x=TargetVector4.x-entityVector4.x,y=TargetVector4.y-entityVector4.y,z=TargetVector4.z-entityVector4.z}
+                local magnitude = math.sqrt(vectorXYZ.x^2 + vectorXYZ.y^2 + vectorXYZ.z^2)
+                if magnitude <= moveDistance then
+                    Game.GetTeleportationFacility():Teleport(entity, TargetVector4, euler)
+                    if card.flipEnd then
+                        Cron.After(0.5, CardEngine.FlipCard(card.id, 'horizontal', 'left'))
+                    end
+                    movingCards[i] = nil
+                    break
+                end
+                local directionXYZ = {x=vectorXYZ.x/magnitude,y=vectorXYZ.y/magnitude,z=vectorXYZ.z/magnitude}
+                local newXYZ = {
+                    x=entityVector4.x+directionXYZ.x*moveDistance,
+                    y=entityVector4.y+directionXYZ.y*moveDistance,
+                    z=entityVector4.z+directionXYZ.z*moveDistance}
+                local outPositionVector4 = Vector4.new(newXYZ.x,newXYZ.y,newXYZ.z,1)
+
+                Game.GetTeleportationFacility():Teleport(entity, outPositionVector4, euler)
+            end
         end
     end
 end
@@ -136,9 +143,11 @@ local function shuffleDeckAnim()
     if deckShuffleAge > 20 then
         deckShuffleAge = 0
         deckShuffling = false
+        return
     end
 
-    local cardOrder = {14,5,36,22,28,13,39,9,3,12,35,2,34,19,23,30,20,37,17,25}
+    --local cardOrder = {14,5,36,22,28,13,39,9,3,12,35,2,34,19,23,30,20,37,17,7} 4 aces all split hand
+    local cardOrder = {14,5,36,22,28,13,39,9,3,12,35,2,34,19,23,30,20,37,17,7}
     local direction = 'left'
     if math.random(1,2) == 1 then --randomly set rotation direction, clockwise or counterclockwise.
         direction = 'right'
@@ -167,6 +176,7 @@ end
 ---@param orientationRPY any orientation as {r=,p=,y=}
 ---@return any id card id output
 function CardEngine.CreateCard(id, faceType, positionVector4, orientationRPY)
+    --DualPrint('CE | Creating card id: '..tostring(id))
     local cardSpec = StaticEntitySpec.new()
     cardSpec.templatePath = cardPath
     cardSpec.appearanceName = faceType
@@ -195,12 +205,13 @@ end
 ---@param movementStyle string animation style
 ---@param flipEnd boolean flip card at end
 function CardEngine.MoveCard(id, positionVector4, orientationRPY, movementStyle, flipEnd)
+    --DualPrint('CE | Move sent for id: '..tostring(id))
     if movementStyle == 'snap' then
         local entity = Game.FindEntityByID(CardEngine.cards[id].entID)
         local euler = EulerAngles.new(orientationRPY.r, orientationRPY.p, orientationRPY.y)
         Game.GetTeleportationFacility():Teleport(entity, positionVector4, euler)
     elseif movementStyle == 'smooth' then
-        movingCards[id] = {id = id, targetPos = positionVector4, TargetOriRPY = orientationRPY, movementStyle = movementStyle, flipEnd = flipEnd}
+        movingCards[id] = {id = id, targetPos = positionVector4, TargetOriRPY = orientationRPY, movementStyle = movementStyle, flipEnd = flipEnd, overAge = 0}
     end
 end
 
@@ -209,6 +220,7 @@ end
 ---@param flipAngle string type of rotation. horizontal, facewise, etc.
 ---@param direction string direction of flip, left or right
 function CardEngine.FlipCard(id, flipAngle, direction)
+    --DualPrint('CE | Flip sent for id: '..tostring(id))
     local entity = Game.FindEntityByID(CardEngine.cards[id].entID)
     if entity == nil then
         DualPrint('card '..tostring(id)..' does not exist')
