@@ -73,8 +73,8 @@ local function setForcedCamera(enable)
         local quatOri = EulerAngles.new(forcedCamOri.r, forcedCamOri.p, forcedCamOri.y):ToQuat()
         camera:SetLocalTransform(Vector4.new(0, 0.4, 0.7, 1), quatOri)
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+        StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
         --StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.JohnnySicknessMedium")
-        --StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
         --camera:SetLocalPosition(Vector4.new(0, 0.4, 0.6, 1))
         --camera:SetLocalOrientation(quatOri)
         --camera:Activate(5) --test if this line is needed
@@ -108,7 +108,6 @@ local function satAtSpot(id, animObj)
     local callback1 = function()
         setForcedCamera(true)
         BlackjackMainMenu.StartMainMenu()
-        DualPrint('Start Main Menu call 10')
     end
     Cron.After(2, callback1)
 end

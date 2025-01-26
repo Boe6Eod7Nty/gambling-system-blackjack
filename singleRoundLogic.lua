@@ -36,7 +36,8 @@ local function shuffleDeckInternal()
                         'Ad','2d','3d','4d','5d','6d','7d','8d','9d','Td','Jd','Qd','Kd'
                     }
     --alignment comment.
-    local devRiggedIndex = {10,10,6,4,8,1,7} --player busts and dealer hits if game broken lmao
+    local devRiggedIndex = {}
+    --local devRiggedIndex = {10,10,6,4,8,1,7} --player busts and dealer hits if game broken lmao
     --local devRiggedIndex = {5,10,4,1} --dealer gets blackjack
     --local devRiggedIndex = {8,34,20,47,3,42,10} --2 8s to player
     --local devRiggedIndex = {1,48,13,46,25,47,45,37} --4 aces all split
@@ -272,19 +273,6 @@ local function isBoardSoft(board)
     return isSoft
 end
 
---- animation for dealer to flip two cards
-local function flipDealerTwoCards()
-    Cron.After(0.1, function()
-        CardEngine.MoveCard('dCard01', Vector4.new(dFirstCardXYZ.x+0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
-    end)
-    Cron.After(0.6, function()
-        CardEngine.MoveCard('dCard01',Vector4.new(dFirstCardXYZ.x, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
-    end)
-    Cron.After(0.8, function()
-        CardEngine.MoveCard('dCard02',Vector4.new(dFirstCardXYZ.x-0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', true)
-    end)
-end
-
 ---After player and dealer have finished, calculate scores, determine winner hands and payout.
 ---@param instaBlackjack boolean if player OR dealer has instant blackjack
 local function ProcessRoundResult(instaBlackjack)
@@ -292,7 +280,7 @@ local function ProcessRoundResult(instaBlackjack)
     local dealerScore = calculateBoardScore(SingleRoundLogic.dealerBoardCards)
     --isBoardBJ(SingleRoundLogic.dealerBoardCards)
     if instaBlackjack then
-        Cron.After(1, flipDealerTwoCards)
+        Cron.After(1, FlipDealerTwoCards(false))
         local dealerBJ = isBoardBJ(SingleRoundLogic.dealerBoardCards)
         local playerBJ = isBoardBJ(SingleRoundLogic.playerHands[1])
         if dealerBJ and playerBJ then
@@ -383,220 +371,204 @@ local function dealerAction()
     end
 end
 
+--- animation for dealer to flip two cards
+function FlipDealerTwoCards(triggerDealerAction)
+    Cron.After(0.1, function()
+        CardEngine.MoveCard('dCard01', Vector4.new(dFirstCardXYZ.x+0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
+    end)
+    Cron.After(0.6, function()
+        CardEngine.MoveCard('dCard01',Vector4.new(dFirstCardXYZ.x, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
+    end)
+    Cron.After(0.8, function()
+        CardEngine.MoveCard('dCard02',Vector4.new(dFirstCardXYZ.x-0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', true)
+    end)
+    if triggerDealerAction then
+        Cron.After(1.8, function()
+            dealerAction()
+        end)
+    end
+end
 
---- 1 Step of player's action. Hit/Stand/Etc
-local function playerAction(handIndex)
-    local function hitCallback()
-        local cardsNum = #(SingleRoundLogic.playerHands[handIndex])
-        local pCardXapp = SingleRoundLogic.deckShuffle[1]
-        local pCardXname = 'playerCard_h'..string.format("%02d", handIndex)..'_c'..string.format("%02d", cardsNum+1)
-        table.remove(SingleRoundLogic.deckShuffle,1)
-        local pCardXcardID = CardEngine.CreateCard(pCardXname,pCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
-        table.insert(SingleRoundLogic.playerHands[handIndex], pCardXapp)
-        local newLocation = Vector4.new(
-            pFirstCardXYZ.x-(cardsNum*0.04)+(0.18*(handIndex-1)),
-            pFirstCardXYZ.y-(cardsNum*0.06),
-            pFirstCardXYZ.z+(cardsNum*0.0005),
-            1)
-        Cron.After(0.1, CardEngine.MoveCard(pCardXname, newLocation, standardOri, 'smooth', true))
-        --Cron.After(2.0, CardEngine.FlipCard(pCardXname, 'horizontal', 'left'))
+local function cardTableLocation(handIndex, cardIndex, minus1Boolean)
+    local newHandIndex = handIndex
+    if minus1Boolean then
+        newHandIndex = handIndex - 1
+    end
+    local outVector4 = Vector4.new(
+        pFirstCardXYZ.x-(cardIndex*0.04)+(0.18*(newHandIndex)),
+        pFirstCardXYZ.y-(cardIndex*0.06),
+        pFirstCardXYZ.z+(cardIndex*0.0005),
+        1
+    )
+    return outVector4
+end
 
-        Cron.After(3, function()
-            local playerScore = calculateBoardScore(SingleRoundLogic.playerHands[handIndex])
-            if playerScore == 21 then
-                -- 21 !
-                DualPrint('sRL | 21! handIndex: '..tostring(handIndex))
-                --SingleRoundLogic.blackjackHandsPaid[handIndex] = true
-                --BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2.5
-                DualPrint('sRL | activePlayerHandIndex: '..tostring(SingleRoundLogic.activePlayerHandIndex))
-                if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
-                    DualPrint('sRL | triggered dealer turn')
-                    flipDealerTwoCards()
-                    Cron.After(1.8, function()
-                        dealerAction()
-                    end)
-                else
-                    --next player hand
-                    DualPrint('sRL | triggered next player hand')
-                    SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
-                    playerAction(SingleRoundLogic.activePlayerHandIndex)
+local function playerActionHit(handIndex)
+    local cardsNum = #(SingleRoundLogic.playerHands[handIndex])
+    local pCardXapp = SingleRoundLogic.deckShuffle[1]
+    local pCardXname = 'playerCard_h'..string.format("%02d", handIndex)..'_c'..string.format("%02d", cardsNum+1)
+    table.remove(SingleRoundLogic.deckShuffle,1)
+    local pCardXcardID = CardEngine.CreateCard(pCardXname,pCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
+    table.insert(SingleRoundLogic.playerHands[handIndex], pCardXapp)
+    local newLocation = cardTableLocation(handIndex, cardsNum, true)
+    Cron.After(0.1, CardEngine.MoveCard(pCardXname, newLocation, standardOri, 'smooth', true))
+    --Cron.After(2.0, CardEngine.FlipCard(pCardXname, 'horizontal', 'left'))
+
+    Cron.After(3, function()
+        local playerScore = calculateBoardScore(SingleRoundLogic.playerHands[handIndex])
+        if playerScore == 21 then
+            -- 21 !
+            DualPrint('sRL | 21! handIndex: '..tostring(handIndex))
+            --SingleRoundLogic.blackjackHandsPaid[handIndex] = true
+            --BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2.5
+            DualPrint('sRL | activePlayerHandIndex: '..tostring(SingleRoundLogic.activePlayerHandIndex))
+            if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
+                DualPrint('sRL | triggered dealer turn')
+                FlipDealerTwoCards(true)
+            else
+                --next player hand
+                DualPrint('sRL | triggered next player hand')
+                SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
+                PlayerAction(SingleRoundLogic.activePlayerHandIndex)
+            end
+        elseif isBoardBusted(SingleRoundLogic.playerHands[handIndex]) then
+            DualPrint('sRL | End Hand: Player Busted!')
+            SingleRoundLogic.bustedHands[handIndex] = true
+            if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
+                local allBusted = true
+                for i = 1, #SingleRoundLogic.playerHands do
+                    if SingleRoundLogic.bustedHands[i] == false then
+                        allBusted = false
+                    end
                 end
-            elseif isBoardBusted(SingleRoundLogic.playerHands[handIndex]) then
-                DualPrint('sRL | End Hand: Player Busted!')
-                SingleRoundLogic.bustedHands[handIndex] = true
-                if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
-                    local allBusted = true
-                    for i = 1, #SingleRoundLogic.playerHands do
-                        if SingleRoundLogic.bustedHands[i] == false then
-                            allBusted = false
-                        end
-                    end
-                    if allBusted then
-                        DualPrint('sRL | All Busted!')
-                        ProcessRoundResult(false)
-                    else
-                        flipDealerTwoCards()
-                        Cron.After(1.8, function()
-                            dealerAction()
-                        end)
-                    end
+                if allBusted then
+                    DualPrint('sRL | All Busted!')
+                    ProcessRoundResult(false)
                 else
-                    --next player hand
-                    SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
-                    playerAction(SingleRoundLogic.activePlayerHandIndex)
+                    FlipDealerTwoCards(true)
                 end
             else
-                playerAction(handIndex)
+                --next player hand
+                SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
+                PlayerAction(SingleRoundLogic.activePlayerHandIndex)
             end
-        end)
+        else
+            PlayerAction(handIndex)
+        end
+    end)
+end
 
+local function newSplitCard(xCardHand,newCardIndex,newCardMinus1Bool)
+    local pCardXapp = SingleRoundLogic.deckShuffle[1]
+    local pCardXname = 'playerCard_h'..string.format("%02d", xCardHand)..'_c02'
+    table.remove(SingleRoundLogic.deckShuffle,1)
+    local pCardXcardID = CardEngine.CreateCard(pCardXname,pCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
+    table.insert(SingleRoundLogic.playerHands[xCardHand], pCardXapp)
+    local newLocation = cardTableLocation(newCardIndex, 1, newCardMinus1Bool)
+    Cron.After(0.1, function()
+        CardEngine.MoveCard(pCardXname, newLocation, standardOri, 'smooth', true)
+    end)
+end
+
+local function playerActionSplit(handIndex)
+    BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
+
+    local curHandIndex = SingleRoundLogic.activePlayerHandIndex
+    if curHandIndex == #SingleRoundLogic.playerHands then
+
+        --IF SPACE AVAILABLE LEFT
+
+        SingleRoundLogic.playerHands[curHandIndex+1] = {SingleRoundLogic.playerHands[curHandIndex][1]}
+        local card1app = SingleRoundLogic.playerHands[curHandIndex][1]
+        local card2app = SingleRoundLogic.playerHands[curHandIndex][2]
+        local card1id = 'playerCard_h'..string.format("%02d", curHandIndex)..'_c'..string.format("%02d", 1)
+        local card2id = 'playerCard_h'..string.format("%02d", curHandIndex)..'_c'..string.format("%02d", 2)
+        local card1pos = Vector4.new(pFirstCardXYZ.x+(0.18*curHandIndex),pFirstCardXYZ.y, pFirstCardXYZ.z, 1)
+        local card2pos = Vector4.new(pFirstCardXYZ.x+(0.18*(curHandIndex-1)), pFirstCardXYZ.y, pFirstCardXYZ.z, 1)
+        CardEngine.MoveCard(card1id,card1pos,standardOri,'smooth',false)
+        CardEngine.MoveCard(card2id,card2pos,standardOri,'smooth',false)
+        Cron.After(0.5, function()
+            local newID = 'playerCard_h'..string.format("%02d", curHandIndex+1)..'_c'..string.format("%02d", 1)
+            CardEngine.CreateCard(newID,card1app,card1pos,standardOri)
+            CardEngine.DeleteCard(card1id)
+            Cron.After(0.5, function()
+                CardEngine.DeleteCard(card2id)
+                CardEngine.CreateCard(card1id,card2app,card2pos,standardOri)
+            end)
+        end)
+        Cron.After(1, function() --deal 2 cards, 1 to each hand
+            table.remove(SingleRoundLogic.playerHands[curHandIndex],1)
+            newSplitCard(handIndex, handIndex, true)
+        end)
+        Cron.After(1.2, function()
+            newSplitCard(handIndex+1, handIndex, false)
+        end)
+        Cron.After(2, function()
+            PlayerAction(handIndex)
+        end)
+    else
+
+        --IF LEFT SPACE NOT AVAILABLE, CARD JUMPS TO LAST SPACE
+
+        local maxHandIndex = #SingleRoundLogic.playerHands
+        local cardID = 'playerCard_h'..string.format("%02d", handIndex)..'_c02'
+        local cardApp = SingleRoundLogic.playerHands[handIndex][2]
+        local cardPos = cardTableLocation(maxHandIndex, 0, false)
+        SingleRoundLogic.playerHands[maxHandIndex+1] = {SingleRoundLogic.playerHands[curHandIndex][2]}
+        CardEngine.MoveCard(cardID,cardPos,standardOri,'smooth',false)
+        table.remove(SingleRoundLogic.playerHands[curHandIndex],2)
+        Cron.After(0.8, function()
+            local newCardID = 'playerCard_h'..string.format("%02d", maxHandIndex+1)..'_c'..string.format("%02d", 1)
+            CardEngine.CreateCard(newCardID,cardApp,cardPos,standardOri)
+            CardEngine.DeleteCard(cardID)
+        end)
+        Cron.After(1, function()
+            newSplitCard(handIndex, handIndex, true)
+        end)
+        Cron.After(2, function()
+            newSplitCard(maxHandIndex+1, maxHandIndex, false)
+        end)
+        Cron.After(2.5, function()
+            PlayerAction(handIndex)
+        end)
+    end
+end
+
+--- 1 Step of player's action. Hit/Stand/Etc
+function PlayerAction(handIndex)
+    local shouldPrompt = true
+    if calculateBoardScore(SingleRoundLogic.playerHands[handIndex]) == 21 then
+        SingleRoundLogic.blackjackHandsPaid[handIndex] = true
+        BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2.5
+        if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
+            shouldPrompt = false
+            FlipDealerTwoCards(true)
+        else
+            --next player hand
+            shouldPrompt = false
+            SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
+            PlayerAction(SingleRoundLogic.activePlayerHandIndex)
+        end
+    end
+    local function hitCallback()
+        playerActionHit(handIndex)
     end
     local function standCallback()
         if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
-            flipDealerTwoCards()
-            Cron.After(1.8, function()
-                dealerAction()
-            end)
+            FlipDealerTwoCards(true)
         else
             --next player hand
             SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
-            playerAction(SingleRoundLogic.activePlayerHandIndex)
+            PlayerAction(SingleRoundLogic.activePlayerHandIndex)
         end
     end
     local function splitCallback()
-        BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
-
-        local curHandIndex = SingleRoundLogic.activePlayerHandIndex
-        if curHandIndex == #SingleRoundLogic.playerHands then
-
-            --IF SPACE AVAILABLE LEFT
-
-            SingleRoundLogic.playerHands[curHandIndex+1] = {SingleRoundLogic.playerHands[curHandIndex][1]}
-            local card1app = SingleRoundLogic.playerHands[curHandIndex][1]
-            local card2app = SingleRoundLogic.playerHands[curHandIndex][2]
-            local card1id = 'playerCard_h'..string.format("%02d", curHandIndex)..'_c'..string.format("%02d", 1)
-            local card2id = 'playerCard_h'..string.format("%02d", curHandIndex)..'_c'..string.format("%02d", 2)
-            local card1pos = Vector4.new(pFirstCardXYZ.x+(0.18*curHandIndex),pFirstCardXYZ.y, pFirstCardXYZ.z, 1)
-            local card2pos = Vector4.new(pFirstCardXYZ.x+(0.18*(curHandIndex-1)), pFirstCardXYZ.y, pFirstCardXYZ.z, 1)
-            CardEngine.MoveCard(card1id,card1pos,standardOri,'smooth',false)
-            CardEngine.MoveCard(card2id,card2pos,standardOri,'smooth',false)
-            Cron.After(0.5, function()
-                CardEngine.CreateCard(
-                    'playerCard_h'..string.format("%02d", curHandIndex+1)..'_c'..string.format("%02d", 1),
-                    card1app,
-                    card1pos,
-                    standardOri
-                )
-                CardEngine.DeleteCard(card1id)
-                Cron.After(0.5, function()
-                    CardEngine.DeleteCard(card2id)
-                    CardEngine.CreateCard(
-                        card1id,
-                        card2app,
-                        card2pos,
-                        standardOri
-                    )
-                end)
-            end)
-            Cron.After(1, function() --deal 2 cards, 1 to each hand
-                table.remove(SingleRoundLogic.playerHands[curHandIndex],1)
-                local cardsNum = 1
-                local pCardXapp = SingleRoundLogic.deckShuffle[1]
-                local pCardXname = 'playerCard_h'..string.format("%02d", handIndex)..'_c02'
-                table.remove(SingleRoundLogic.deckShuffle,1)
-                local pCardXcardID = CardEngine.CreateCard(pCardXname,pCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
-                table.insert(SingleRoundLogic.playerHands[handIndex], pCardXapp)
-                local newLocation = Vector4.new(
-                    pFirstCardXYZ.x-(cardsNum*0.04)+(0.18*(handIndex-1)),
-                    pFirstCardXYZ.y-(cardsNum*0.06),
-                    pFirstCardXYZ.z+(cardsNum*0.0005),
-                    1)
-                Cron.After(0.1, function()
-                    CardEngine.MoveCard(pCardXname, newLocation, standardOri, 'smooth', true)
-                end)
-            end)
-            Cron.After(1.2, function()
-                local cardsNum = 1
-                local pCardXapp = SingleRoundLogic.deckShuffle[1]
-                local pCardXname = 'playerCard_h'..string.format("%02d", handIndex+1)..'_c02'
-                table.remove(SingleRoundLogic.deckShuffle,1)
-                local pCardXcardID = CardEngine.CreateCard(pCardXname,pCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
-                table.insert(SingleRoundLogic.playerHands[handIndex+1], pCardXapp)
-                local newLocation = Vector4.new(
-                    pFirstCardXYZ.x-(cardsNum*0.04)+(0.18*handIndex),
-                    pFirstCardXYZ.y-(cardsNum*0.06),
-                    pFirstCardXYZ.z+(cardsNum*0.0005),
-                    1)
-                Cron.After(0.1, function()
-                    CardEngine.MoveCard(pCardXname, newLocation, standardOri, 'smooth', true)
-                end)
-            end)
-            Cron.After(2, function()
-                playerAction(handIndex)
-            end)
-        else
-
-            --IF LEFT SPACE NOT AVAILABLE, CARD JUMPS TO LAST SPACE
-
-            local maxHandIndex = #SingleRoundLogic.playerHands
-            local cardID = 'playerCard_h'..string.format("%02d", handIndex)..'_c02'
-            local cardApp = SingleRoundLogic.playerHands[handIndex][2]
-            local cardPos = Vector4.new(
-                pFirstCardXYZ.x+(0.18*(maxHandIndex)),
-                pFirstCardXYZ.y,
-                pFirstCardXYZ.z,
-                1)
-            SingleRoundLogic.playerHands[maxHandIndex+1] = {SingleRoundLogic.playerHands[curHandIndex][2]}
-            CardEngine.MoveCard(cardID,cardPos,standardOri,'smooth',false)
-            table.remove(SingleRoundLogic.playerHands[curHandIndex],2)
-            Cron.After(0.8, function()
-                CardEngine.CreateCard(
-                    'playerCard_h'..string.format("%02d", maxHandIndex+1)..'_c'..string.format("%02d", 1),
-                    cardApp,
-                    cardPos,
-                    standardOri
-                )
-                CardEngine.DeleteCard(cardID)
-            end)
-            Cron.After(1, function()
-                local cardsNum = 1
-                local pCardXapp = SingleRoundLogic.deckShuffle[1]
-                local pCardXname = 'playerCard_h'..string.format("%02d", handIndex)..'_c02'
-                table.remove(SingleRoundLogic.deckShuffle,1)
-                local pCardXcardID = CardEngine.CreateCard(pCardXname,pCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
-                table.insert(SingleRoundLogic.playerHands[handIndex], pCardXapp)
-                local newLocation = Vector4.new(
-                    pFirstCardXYZ.x-(cardsNum*0.04)+(0.18*(handIndex-1)),
-                    pFirstCardXYZ.y-(cardsNum*0.06),
-                    pFirstCardXYZ.z+(cardsNum*0.0005),
-                    1)
-                Cron.After(0.1, function()
-                    CardEngine.MoveCard(pCardXname, newLocation, standardOri, 'smooth', true)
-                end)
-            end)
-            Cron.After(2, function()
-                local cardsNum = 1
-                local pCardXapp = SingleRoundLogic.deckShuffle[1]
-                local pCardXname = 'playerCard_h'..string.format("%02d", maxHandIndex+1)..'_c02'
-                table.remove(SingleRoundLogic.deckShuffle,1)
-                local pCardXcardID = CardEngine.CreateCard(pCardXname,pCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
-                table.insert(SingleRoundLogic.playerHands[maxHandIndex+1], pCardXapp)
-                local newLocation = Vector4.new(
-                    pFirstCardXYZ.x-(cardsNum*0.04)+(0.18*(maxHandIndex)),
-                    pFirstCardXYZ.y-(cardsNum*0.06),
-                    pFirstCardXYZ.z+(cardsNum*0.0005),
-                    1)
-                Cron.After(0.1, function()
-                    CardEngine.MoveCard(pCardXname, newLocation, standardOri, 'smooth', true)
-                end)
-            end)
-            Cron.After(2.5, function()
-                playerAction(handIndex)
-            end)
-        end
+        playerActionSplit(handIndex)
     end
-    DualPrint('sRL | PromptUI; HandIndex: '..tostring(handIndex))
-    promptPlayerActionUI(handIndex,hitCallback, standCallback, splitCallback)
+    if shouldPrompt then
+        DualPrint('sRL | PromptUI; HandIndex: '..tostring(handIndex))
+        promptPlayerActionUI(handIndex,hitCallback, standCallback, splitCallback)
+    end
 end
 
 ---Signal the start of a round
@@ -622,7 +594,7 @@ function SingleRoundLogic.startRound(deckLocation, deckRotationRPY)
         if isBoardBJ(SingleRoundLogic.playerHands[1]) or isBoardBJ(SingleRoundLogic.dealerBoardCards) then
             ProcessRoundResult(true)
         else
-            playerAction(1)
+            PlayerAction(1)
         end
     end)
 end

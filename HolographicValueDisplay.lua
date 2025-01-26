@@ -12,8 +12,8 @@ HolographicValueDisplay = {
 
 local Cron = require('External/Cron.lua')
 
-local chipsStackHoloProjector = "boe6\\GamblingSystemBlackjack\\q303_chips_stacks_edit.ent"
-local holographicDigit = "boe6\\GamblingSystemBlackjack\\boe6_number_digit.ent"
+local chipsStackHoloProjector = "boe6\\gamblingsystemblackjack\\q303_chips_stacks_edit.ent"
+local holographicDigit = "boe6\\gamblingsystemblackjack\\boe6_number_digit.ent"
 
 local holoActive = false
 local currentValue = 0
@@ -93,6 +93,20 @@ function HolographicValueDisplay.Update()
     end
 
     local targetValue = BlackjackMainMenu.playerChipsMoney
+
+    local animationJump = 60 --adjusts the speed of the animation
+    local difference = targetValue - currentValue
+    local divided = math.floor(difference / animationJump)
+    if math.abs(difference) < animationJump then
+        if difference > 0 then
+            targetValue = currentValue + 1
+        elseif difference < 0 then
+            targetValue = currentValue - 1
+        end
+    else
+        targetValue = currentValue + divided
+    end
+
     local startingDigits = countDigits(currentValue)
     local targetDigits = countDigits(targetValue)
     currentValue = targetValue

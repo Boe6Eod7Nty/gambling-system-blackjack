@@ -1,4 +1,4 @@
--- v1.0.0
+-- v0.1.0
 --===================
 --CODE BY Boe6
 --DO NOT DISTRIBUTE
@@ -72,7 +72,7 @@ registerForEvent( "onInit", function()
     local animObj = {
         position = Vector4.new(-1041.2463, 1341.5469, 5.2774734, 1),
         orientation = {x=0,y=0,z=0},
-        templatePath = "boe6\\GamblingSystemBlackjack\\workspot_anim.ent",
+        templatePath = "boe6\\gamblingsystemblackjack\\workspot_anim.ent",
         defaultAnim = "sit_chair_table_lean0__2h_on_table__01",
         exitAnim = "sit_chair_table_lean0__2h_on_table__01__to__stand__2h_on_sides__01__turn0l__01",
         exitTime = 2.5
