@@ -47,6 +47,16 @@ function world.update()
             update = false
         end
 
+        --if block by boe
+        if interaction.shown ~= update then --if UI on & not changing, OR if UI off & changing
+            local pitch = Game.GetCameraSystem():GetActiveCameraData().rotation:ToEulerAngles().pitch --grab player pitch
+            local min, max = -75, -10
+            if not (pitch > min and pitch < max) then --checks if player's viewing pitch is within range
+                interaction.shown = update --I had an if/shown then update=true block here b4. it was big.
+            end
+        end
+
+
         if update ~= interaction.shown then -- Call callback
             if update == true then
                 table.insert(showKeys, key)

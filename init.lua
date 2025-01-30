@@ -78,6 +78,24 @@ registerForEvent( "onInit", function()
         exitTime = 2.5
     }
     SpotManager.AddSpot('hooh', worldPinUI, animObj)
+
+    -- Save and Load detection, coutesy of psiberx; available in #cet-snippets in discord
+    local isLoaded = Game.GetPlayer() and Game.GetPlayer():IsAttached() and not Game.GetSystemRequestsHandler():IsPreGame()
+    Observe('QuestTrackerGameController', 'OnInitialize', function()
+        if not isLoaded then
+            --save loaded and launched
+            DualPrint('Game Session Started')
+            isLoaded = true
+        end
+    end)
+    Observe('QuestTrackerGameController', 'OnUninitialize', function()
+        if Game.GetPlayer() == nil then
+            --loading new save initiated
+            print('Game Session Ended')
+            isLoaded = false
+            --TODO: send every variable reset
+        end
+    end)
 end)
 registerForEvent('onUpdate', function(dt)
     if  not inMenu and inGame then
@@ -132,6 +150,9 @@ end)
 registerHotkey('DevHotkey5', 'Dev Hotkey 5', function()
     DualPrint('||=5  Dev hotkey 5 Pressed =')
 
+    local camData = Game.GetCameraSystem():GetActiveCameraData()
+    local camDataEulerd = camData.rotation:ToEulerAngles()
+    DualPrint('camera data rotation; pitch: '..camDataEulerd.pitch..' yaw: '..camDataEulerd.yaw..' roll: '..camDataEulerd.roll)
 end)
 registerHotkey('DevHotkey6', 'Dev Hotkey 6', function()
     DualPrint('||=6  Dev hotkey 6 Pressed =')
