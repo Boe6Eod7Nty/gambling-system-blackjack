@@ -94,7 +94,7 @@ function HolographicValueDisplay.Update()
 
     local targetValue = BlackjackMainMenu.playerChipsMoney
 
-    local animationJump = 60 --adjusts the speed of the animation
+    local animationJump = 30 --adjusts the speed of the animation
     local difference = targetValue - currentValue
     local divided = math.floor(difference / animationJump)
     if math.abs(difference) < animationJump then
