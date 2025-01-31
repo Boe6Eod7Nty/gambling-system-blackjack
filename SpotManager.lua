@@ -104,7 +104,6 @@ local function satAtSpot(id, animObj)
     ]]--
     animateEnteringSpot(animObj)
     HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
-    SpotManager.spots[id].active = true
     local callback1 = function()
         setForcedCamera(true)
     end
@@ -179,8 +178,6 @@ function SpotManager.ExitSpot(id) --Exit spot
         workspotSystem:SendFastExitSignal(player)
 
         CardEngine.RemoveVisualDeck()
-
-        spot.active = false
     end)
 end
 
@@ -189,7 +186,7 @@ end
 ---@param worldPinUI table worldPinUI information
 ---@param animObj table spot's animation information
 function SpotManager.AddSpot(id, worldPinUI, animObj) --Create spot
-    SpotManager.spots[id] = {worldPinUI = worldPinUI, animObj = animObj, active = false, startTriggered = false}
+    SpotManager.spots[id] = {worldPinUI = worldPinUI, animObj = animObj}
     world.addInteraction(id, worldPinUI.position, 1.0, 80, "ChoiceIcons.SitIcon", 6.5, 0.5, nil, function(state)
                     --  (id, position, interactionRange, angle, icon, iconRange, iconRangeMin, iconColor, callback)
         if state then -- Show

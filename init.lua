@@ -105,17 +105,6 @@ registerForEvent('onUpdate', function(dt)
         interactionUI.update()
         HolographicValueDisplay.Update()
     end
-
-    --TODO: do i need this? seems like I was just passing a trigger from spot manager to init, but here i dont do anything with it..
-    for i, spot in pairs(SpotManager.spots) do
-        if spot.active == true and spot.startTriggered == false then
-            DualPrint('spot start triggered')
-            spot.startTriggered = true
-        elseif spot.active == false and spot.startTriggered == true then
-            DualPrint('spot end triggered')
-            spot.startTriggered = false
-        end
-    end
 end)
 registerHotkey('DevHotkey1', 'Dev Hotkey 1', function()
     DualPrint('||=1  Dev hotkey 1 Pressed =')
