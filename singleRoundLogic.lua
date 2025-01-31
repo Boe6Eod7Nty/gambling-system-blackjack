@@ -281,17 +281,20 @@ local function ProcessRoundResult(instaBlackjack)
     --isBoardBJ(SingleRoundLogic.dealerBoardCards)
     if instaBlackjack then
         Cron.After(1, FlipDealerTwoCards(false))
-        local dealerBJ = isBoardBJ(SingleRoundLogic.dealerBoardCards)
-        local playerBJ = isBoardBJ(SingleRoundLogic.playerHands[1])
-        if dealerBJ and playerBJ then
-            DualPrint('End Round: Both Blackjack. Push')
-            BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
-        elseif dealerBJ then
-            DualPrint('End Round: Dealer Blackjack.')
-        elseif playerBJ then
-            DualPrint('End Round: Player Blackjack.')
-            BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+        local callback1 = function()
+            local dealerBJ = isBoardBJ(SingleRoundLogic.dealerBoardCards)
+            local playerBJ = isBoardBJ(SingleRoundLogic.playerHands[1])
+            if dealerBJ and playerBJ then
+                DualPrint('End Round: Both Blackjack. Push')
+                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
+            elseif dealerBJ then
+                DualPrint('End Round: Dealer Blackjack.')
+            elseif playerBJ then
+                DualPrint('End Round: Player Blackjack.')
+                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+            end
         end
+        Cron.After(4, callback1)
     else--not instaBlackjack then
         for i, hand in pairs(SingleRoundLogic.playerHands) do
             local continueHandCheck = true
@@ -373,17 +376,17 @@ end
 
 --- animation for dealer to flip two cards
 function FlipDealerTwoCards(triggerDealerAction)
-    Cron.After(0.1, function()
+    Cron.After(0.5, function()
         CardEngine.MoveCard('dCard01', Vector4.new(dFirstCardXYZ.x+0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
     end)
-    Cron.After(0.6, function()
+    Cron.After(1.1, function()
         CardEngine.MoveCard('dCard01',Vector4.new(dFirstCardXYZ.x, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
     end)
-    Cron.After(0.8, function()
+    Cron.After(1.3, function()
         CardEngine.MoveCard('dCard02',Vector4.new(dFirstCardXYZ.x-0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', true)
     end)
     if triggerDealerAction then
-        Cron.After(1.8, function()
+        Cron.After(3.0, function()
             dealerAction()
         end)
     end
