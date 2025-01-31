@@ -36,7 +36,8 @@ local function shuffleDeckInternal()
                         'Ad','2d','3d','4d','5d','6d','7d','8d','9d','Td','Jd','Qd','Kd'
                     }
     --alignment comment.
-    local devRiggedIndex = {}
+    --local devRiggedIndex = {}
+    local devRiggedIndex = {10,6,1} --player gets blackjack
     --local devRiggedIndex = {10,10,6,4,8,1,7} --player busts and dealer hits if game broken lmao
     --local devRiggedIndex = {5,10,4,1} --dealer gets blackjack
     --local devRiggedIndex = {8,34,20,47,3,42,10} --2 8s to player
@@ -291,7 +292,7 @@ local function ProcessRoundResult(instaBlackjack)
                 DualPrint('End Round: Dealer Blackjack.')
             elseif playerBJ then
                 DualPrint('End Round: Player Blackjack.')
-                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2.5
             end
         end
         Cron.After(4, callback1)
@@ -540,19 +541,6 @@ end
 --- 1 Step of player's action. Hit/Stand/Etc
 function PlayerAction(handIndex)
     local shouldPrompt = true
-    if calculateBoardScore(SingleRoundLogic.playerHands[handIndex]) == 21 then
-        SingleRoundLogic.blackjackHandsPaid[handIndex] = true
-        BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2.5
-        if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
-            shouldPrompt = false
-            FlipDealerTwoCards(true)
-        else
-            --next player hand
-            shouldPrompt = false
-            SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
-            PlayerAction(SingleRoundLogic.activePlayerHandIndex)
-        end
-    end
     local function hitCallback()
         playerActionHit(handIndex)
     end
