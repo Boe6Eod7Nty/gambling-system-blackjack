@@ -107,9 +107,12 @@ local function satAtSpot(id, animObj)
     SpotManager.spots[id].active = true
     local callback1 = function()
         setForcedCamera(true)
+    end
+    local callback2 = function()
         BlackjackMainMenu.StartMainMenu()
     end
     Cron.After(2, callback1)
+    Cron.After(3.5, callback2)
 end
 
 --Register Events (passed from parent)
