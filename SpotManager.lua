@@ -21,6 +21,7 @@ local inMenu = true --libaries requirement
 local inGame = false
 local forcedCamOri = {r=0,p=-60,y=0}
 local localPlayer
+local displayLocation = Vector4.new(-1040.733, 1340.121, 6.085, 1)
 
 --Functions
 --=========
@@ -102,7 +103,7 @@ local function satAtSpot(id, animObj)
     Game.GetTeleportationFacility():Teleport(player, playerPos, newAngle)
     ]]--
     animateEnteringSpot(animObj)
-    HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
+    HolographicValueDisplay.startDisplay(displayLocation, 20)
     StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
     local callback1 = function()
         setForcedCamera(true)

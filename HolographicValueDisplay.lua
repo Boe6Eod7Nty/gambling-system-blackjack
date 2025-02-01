@@ -21,7 +21,7 @@ local digitCount = 1
 local digitSpacing = 0.03
 local digitBottomMargin = 0.1
 local holoEntityID = nil
-local holoCenter = nil
+local holoCenter = Vector4.new(-1040.733, 1340.121, 6.085, 1) --default value to avoid nil errors
 local holoFacingAngle = nil
 
 ---Counts the number of digits in a number

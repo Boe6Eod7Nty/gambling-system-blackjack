@@ -137,10 +137,10 @@ registerHotkey('DevHotkey3', 'Dev Hotkey 3', function()
     DualPrint('||=3  Dev hotkey 3 Pressed =')
 
     --CardEngine.DeleteCard('TEMP')
-    for i=1, singleRoundLogic.playerCardCount do
+    for i=1, SingleRoundLogic.playerCardCount do
         CardEngine.DeleteCard('pCard'..string.format("%02d", i))
     end
-    for i=1, singleRoundLogic.dealerCardCount do
+    for i=1, SingleRoundLogic.dealerCardCount do
         CardEngine.DeleteCard('dCard'..string.format("%02d", i))
     end
 end)

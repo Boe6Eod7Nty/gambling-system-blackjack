@@ -652,7 +652,7 @@ end
 
 ---Signal the start of a round
 ---@param deckLocation Vector4 location of physical card deck
----@param deckRotationRPY Vector3 rotation of physical card deck
+---@param deckRotationRPY table rotation of physical card deck in RPY form
 function SingleRoundLogic.startRound(deckLocation, deckRotationRPY)
     SingleRoundLogic.dealerCardCount = 0
     SingleRoundLogic.dealerBoardCards = {}
