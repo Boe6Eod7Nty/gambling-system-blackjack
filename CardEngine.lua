@@ -223,7 +223,7 @@ function CardEngine.FlipCard(id, flipAngle, direction)
     --DualPrint('CE | Flip sent for id: '..tostring(id))
     local entity = Game.FindEntityByID(CardEngine.cards[id].entID)
     if entity == nil then
-        DualPrint('card '..tostring(id)..' does not exist')
+        DualPrint('card '..tostring(id)..' does not exist. error #0238')
         return
     end
     local entityVector4 = entity:GetWorldPosition()
@@ -262,7 +262,7 @@ function CardEngine.PrintAllCards(excludeDeck)
             goto continue
         end
         cards = cards..tostring(k)..", "
-        ::continue::
+        ::continue:: --TODO: this might break the game...
     end
     DualPrint(cards)
 end

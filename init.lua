@@ -16,12 +16,13 @@
 
 --Modules
 --=======
+GameLocale = require("External/GameLocale.lua") --Psiberx's language script from 'cet-kit'github
 CardEngine = require('CardEngine.lua') --Card Entity Handler
 local Cron = require('External/Cron.lua') --Time handling
 local interactionUI = require("External/interactionUI.lua")
+local GameUI = require("External/GameUI.lua")
 local SpotManager = require('SpotManager.lua') --workspot management
 local SingleRoundLogic = require('singleRoundLogic.lua') --Handles 1 round of blackjack
-local GameUI = require("External/GameUI.lua")
 local BlackjackMainMenu = require("BlackjackMainMenu.lua")
 local HolographicValueDisplay = require('HolographicValueDisplay.lua')
 
@@ -49,6 +50,7 @@ registerForEvent( "onInit", function()
     SpotManager.init()
     CardEngine.init()
     interactionUI.init()
+	GameLocale.Initialize()
 
     -- Setup observer and GameUI to detect inGame / inMenu, credit: keanuwheeze | init.lua from the sitAnywhere mod
     Observe('RadialWheelController', 'OnIsInMenuChanged', function(_, isInMenu)

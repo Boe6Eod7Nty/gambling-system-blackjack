@@ -193,7 +193,12 @@ function SpotManager.AddSpot(id, worldPinUI, animObj) --Create spot
             local UIcallback = function()
                 satAtSpot(id, animObj)
             end
-            basicInteractionUIPrompt("Blackjack", "Join Table", "ChoiceCaptionParts.SitIcon", gameinteractionsChoiceType.QuestImportant, UIcallback) --Display interactionUI menu
+            basicInteractionUIPrompt(
+                GameLocale.Text("Blackjack"),
+                GameLocale.Text("Join Table"),
+                "ChoiceCaptionParts.SitIcon",
+                gameinteractionsChoiceType.QuestImportant,
+                UIcallback) --Display interactionUI menu
         else -- Hide
             interactionUI.hideHub()
         end

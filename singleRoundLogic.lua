@@ -182,13 +182,13 @@ end
 local function promptPlayerActionUI(handIndex, hitCallback, standCallback, splitCallback)
     local allChoices = {}
     local allChoicesRef = {"Hit", "Stand"}
-    allChoices[1] = interactionUI.createChoice("Hit", nil, gameinteractionsChoiceType.Selected) --change from Selected to AlreadyRead later
-    allChoices[2] = interactionUI.createChoice("Stand", nil, gameinteractionsChoiceType.Selected)
+    allChoices[1] = interactionUI.createChoice(GameLocale.Text("Hit"), nil, gameinteractionsChoiceType.Selected) --change from Selected to AlreadyRead later
+    allChoices[2] = interactionUI.createChoice(GameLocale.Text("Stand"), nil, gameinteractionsChoiceType.Selected)
     if isSplitable(SingleRoundLogic.playerHands[SingleRoundLogic.activePlayerHandIndex]) then
         if BlackjackMainMenu.playerChipsMoney >= BlackjackMainMenu.currentBet then
-            table.insert(allChoices, interactionUI.createChoice("Split", nil, gameinteractionsChoiceType.Selected))
+            table.insert(allChoices, interactionUI.createChoice(GameLocale.Text("Split"), nil, gameinteractionsChoiceType.Selected))
         else
-            table.insert(allChoices, interactionUI.createChoice("Split", nil, gameinteractionsChoiceType.AlreadyRead))
+            table.insert(allChoices, interactionUI.createChoice(GameLocale.Text("Split"), nil, gameinteractionsChoiceType.AlreadyRead))
         end
         table.insert(allChoicesRef, "Split")
     end
@@ -422,21 +422,21 @@ local function playerActionHit(handIndex)
         local playerScore = calculateBoardScore(SingleRoundLogic.playerHands[handIndex])
         if playerScore == 21 then
             -- 21 !
-            DualPrint('sRL | 21! handIndex: '..tostring(handIndex))
+            --DualPrint('sRL | 21! handIndex: '..tostring(handIndex))
             --SingleRoundLogic.blackjackHandsPaid[handIndex] = true
             --BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2.5
-            DualPrint('sRL | activePlayerHandIndex: '..tostring(SingleRoundLogic.activePlayerHandIndex))
+            --DualPrint('sRL | activePlayerHandIndex: '..tostring(SingleRoundLogic.activePlayerHandIndex))
             if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
-                DualPrint('sRL | triggered dealer turn')
+                --DualPrint('sRL | triggered dealer turn')
                 FlipDealerTwoCards(true)
             else
                 --next player hand
-                DualPrint('sRL | triggered next player hand')
+                --DualPrint('sRL | triggered next player hand')
                 SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
                 PlayerAction(SingleRoundLogic.activePlayerHandIndex)
             end
         elseif isBoardBusted(SingleRoundLogic.playerHands[handIndex]) then
-            DualPrint('sRL | End Hand: Player Busted!')
+            --DualPrint('sRL | End Hand: Player Busted!')
             SingleRoundLogic.bustedHands[handIndex] = true
             if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
                 local allBusted = true
@@ -446,7 +446,7 @@ local function playerActionHit(handIndex)
                     end
                 end
                 if allBusted then
-                    DualPrint('sRL | All Busted!')
+                    --DualPrint('sRL | All Busted!')
                     ProcessRoundResult(false)
                 else
                     FlipDealerTwoCards(true)
@@ -557,7 +557,7 @@ function PlayerAction(handIndex)
         playerActionSplit(handIndex)
     end
     if shouldPrompt then
-        DualPrint('sRL | PromptUI; HandIndex: '..tostring(handIndex))
+        --DualPrint('sRL | PromptUI; HandIndex: '..tostring(handIndex))
         promptPlayerActionUI(handIndex,hitCallback, standCallback, splitCallback)
     end
 end

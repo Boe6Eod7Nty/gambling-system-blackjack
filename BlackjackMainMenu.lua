@@ -52,13 +52,13 @@ local function newBetUI(refMidIndex)
     if refMidIndex < 15 then
         hihChoiceType = gameinteractionsChoiceType.Selected
     end
-    local choice1 = interactionUI.createChoice("Lower", nil, lowChoiceType)
+    local choice1 = interactionUI.createChoice(GameLocale.Text("Lower"), nil, lowChoiceType)
     local choice2 = interactionUI.createChoice(oneText, nil, oneChoiceType)
     local choice3 = interactionUI.createChoice(twoText, nil, twoChoiceType)
     local choice4 = interactionUI.createChoice(thrText, nil, thrChoiceType)
-    local choice5 = interactionUI.createChoice("Higher", nil, hihChoiceType)
-    local choice6 = interactionUI.createChoice("Back", nil, gameinteractionsChoiceType.Selected)
-    local hub = interactionUI.createHub("Blackjack", {choice1, choice2, choice3, choice4, choice5, choice6})
+    local choice5 = interactionUI.createChoice(GameLocale.Text("Higher"), nil, hihChoiceType)
+    local choice6 = interactionUI.createChoice(GameLocale.Text("Back"), nil, gameinteractionsChoiceType.Selected)
+    local hub = interactionUI.createHub(GameLocale.Text("Blackjack"), {choice1, choice2, choice3, choice4, choice5, choice6})
     interactionUI.setupHub(hub)
     interactionUI.showHub()
     interactionUI.callbacks[1] = function()--Lower
@@ -113,7 +113,7 @@ end
 ---@param firstIndex number The index of the first chip value option to display. see: buy_values
 local function buyChipsUI(firstIndex)
     local playerMoney = Game.GetTransactionSystem():GetItemQuantity(GetPlayer(), MarketSystem.Money())
-    DualPrint("Buy Chips UI, firstIndex: "..tostring(firstIndex)..", playerMoney: "..tostring(playerMoney))
+    --DualPrint("Buy Chips UI, firstIndex: "..tostring(firstIndex)..", playerMoney: "..tostring(playerMoney))
     local lowChoiceType = gameinteractionsChoiceType.AlreadyRead
     local oneChoiceType = gameinteractionsChoiceType.AlreadyRead
     local twoChoiceType = gameinteractionsChoiceType.AlreadyRead
@@ -142,15 +142,15 @@ local function buyChipsUI(firstIndex)
     if firstIndex < 11 then
         hihChoiceType = gameinteractionsChoiceType.Selected
     end
-    local choice1 = interactionUI.createChoice("Lower", nil, lowChoiceType)
+    local choice1 = interactionUI.createChoice(GameLocale.Text("Lower"), nil, lowChoiceType)
     local choice2 = interactionUI.createChoice(buy_valuesStr[firstIndex], nil, oneChoiceType)
     local choice3 = interactionUI.createChoice(buy_valuesStr[firstIndex + 1], nil, twoChoiceType)
     local choice4 = interactionUI.createChoice(buy_valuesStr[firstIndex + 2], nil, thrChoiceType)
     local choice5 = interactionUI.createChoice(buy_valuesStr[firstIndex + 3], nil, forChoiceType)
     local choice6 = interactionUI.createChoice(buy_valuesStr[firstIndex + 4], nil, fivChoiceType)
-    local choice7 = interactionUI.createChoice("Higher", nil, hihChoiceType)
-    local choice8 = interactionUI.createChoice("Back", nil, gameinteractionsChoiceType.Selected)
-    local hub = interactionUI.createHub("Blackjack", {choice1, choice2, choice3, choice4, choice5, choice6, choice7, choice8})
+    local choice7 = interactionUI.createChoice(GameLocale.Text("Higher"), nil, hihChoiceType)
+    local choice8 = interactionUI.createChoice(GameLocale.Text("Back"), nil, gameinteractionsChoiceType.Selected)
+    local hub = interactionUI.createHub(GameLocale.Text("Blackjack"), {choice1, choice2, choice3, choice4, choice5, choice6, choice7, choice8})
     interactionUI.setupHub(hub)
     interactionUI.showHub()
     interactionUI.callbacks[1] = function()--Lower
@@ -254,11 +254,11 @@ function BlackjackMainMenu.StartMainMenu()
     if playerMoney >= 5 then
         buyChoiceType = gameinteractionsChoiceType.Selected
     end
-    local choice1 = interactionUI.createChoice("Repeat Bet", nil, repeatChoiceType)
-    local choice2 = interactionUI.createChoice("New Bet", nil, newChoiceType)
-    local choice3 = interactionUI.createChoice("Buy Chips", nil, buyChoiceType)
-    local choice4 = interactionUI.createChoice("Exit", nil, gameinteractionsChoiceType.Selected)
-    local hub = interactionUI.createHub("Blackjack", {choice1, choice2, choice3, choice4})
+    local choice1 = interactionUI.createChoice(GameLocale.Text("Repeat Bet"), nil, repeatChoiceType)
+    local choice2 = interactionUI.createChoice(GameLocale.Text("New Bet"), nil, newChoiceType)
+    local choice3 = interactionUI.createChoice(GameLocale.Text("Buy Chips"), nil, buyChoiceType)
+    local choice4 = interactionUI.createChoice(GameLocale.Text("Exit"), nil, gameinteractionsChoiceType.Selected)
+    local hub = interactionUI.createHub(GameLocale.Text("Blackjack"), {choice1, choice2, choice3, choice4})
     interactionUI.setupHub(hub)
     interactionUI.showHub()
     interactionUI.callbacks[1] = function()--Repeat
