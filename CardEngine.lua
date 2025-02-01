@@ -55,10 +55,13 @@ local function flippingCardsProcess()
             local rotatedVector = forwardVector.RotateAxis(forwardVector, rightVector, angleRadians)  --[ These 2 functions
             outQuat = entQuat.BuildFromDirectionVector(rotatedVector, upVector)                       --[ Are black magic
         elseif v.flipAngle == 'facewise' then
-            --TODO: Add vertical flip. quaternions are DUMB
+            if v.halfFlip then
+                flipAngle = flipAngle / 2 --half rotation, 90 degrees only.
+                angleRadians = (math.pi / 180) * flipAngle
+            end
             local rotatedVector = forwardVector.RotateAxis(forwardVector, upVector, angleRadians)
             outQuat = entQuat.BuildFromDirectionVector(rotatedVector, upVector)
-        end
+        end --TODO: Add vertical flip. quaternions are DUMB
 
         --add height during first half of flip, subtract during second. no action when in the middle. (the 0.5 does this)
         if v.flipAngle == 'horizontal' then
@@ -117,7 +120,7 @@ local function movingCardsProcess(dt)
                 if magnitude <= moveDistance then
                     Game.GetTeleportationFacility():Teleport(entity, TargetVector4, euler)
                     if card.flipEnd then
-                        Cron.After(0.5, CardEngine.FlipCard(card.id, 'horizontal', 'left'))
+                        Cron.After(0.5, CardEngine.FlipCard(card.id, 'horizontal', 'left', false))
                     end
                     movingCards[i] = nil
                     break
@@ -152,7 +155,7 @@ local function shuffleDeckAnim()
     if math.random(1,2) == 1 then --randomly set rotation direction, clockwise or counterclockwise.
         direction = 'right'
     end
-    CardEngine.FlipCard('deckCard_'..tostring(cardOrder[deckShuffleAge]), 'facewise', direction)
+    CardEngine.FlipCard('deckCard_'..tostring(cardOrder[deckShuffleAge]), 'facewise', direction, false)
 end
 
 --Methods
@@ -160,7 +163,7 @@ end
 ---Runs on init
 function CardEngine.init() --runs on game launch
     Cron.Every(0.05, flippingCardsProcess)
-    Cron.Every(0.1, shuffleDeckAnim)
+    Cron.Every(0.05, shuffleDeckAnim)
 end
 
 --- Runs every frame
@@ -219,7 +222,7 @@ end
 ---@param id any id of card to flip
 ---@param flipAngle string type of rotation. horizontal, facewise, etc.
 ---@param direction string direction of flip, left or right
-function CardEngine.FlipCard(id, flipAngle, direction)
+function CardEngine.FlipCard(id, flipAngle, direction, halfFlip)
     --DualPrint('CE | Flip sent for id: '..tostring(id))
     local entity = Game.FindEntityByID(CardEngine.cards[id].entID)
     if entity == nil then
@@ -228,7 +231,7 @@ function CardEngine.FlipCard(id, flipAngle, direction)
     end
     local entityVector4 = entity:GetWorldPosition()
     local curEuler = entity:GetWorldOrientation():ToEulerAngles()
-    flippingCards[id] = {id = id, flipAngle = flipAngle, direction = direction, lifetime = 0, curEuler = curEuler, curHeight = entityVector4.z}
+    flippingCards[id] = {id = id, flipAngle = flipAngle, direction = direction, lifetime = 0, curEuler = curEuler, curHeight = entityVector4.z, halfFlip = halfFlip}
 end
 
 ---Spawns card entities to look like a deck

@@ -36,8 +36,8 @@ local function shuffleDeckInternal()
                         'Ad','2d','3d','4d','5d','6d','7d','8d','9d','Td','Jd','Qd','Kd'
                     }
     --alignment comment.
-    --local devRiggedIndex = {}
-    local devRiggedIndex = {10,6,1} --player gets blackjack
+    local devRiggedIndex = {}
+    --local devRiggedIndex = {10,6,1} --player gets blackjack
     --local devRiggedIndex = {10,10,6,4,8,1,7} --player busts and dealer hits if game broken lmao
     --local devRiggedIndex = {5,10,4,1} --dealer gets blackjack
     --local devRiggedIndex = {8,34,20,47,3,42,10} --2 8s to player
@@ -94,26 +94,44 @@ end
 
 --- Animate all cards back to the deck & delete
 local function collectRoundCards()
-    for j = 1, #(SingleRoundLogic.playerHands) do
-        for i = 1, #(SingleRoundLogic.playerHands[j]) do
-            local curCard = 'playerCard_h'..string.format("%02d", j)..'_c'..string.format("%02d", i)
-            CardEngine.MoveCard(curCard, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), standardOri, 'smooth', false)
+    local anyDoubled = false
+    for i, j in pairs(SingleRoundLogic.doubledHands) do
+        if j == true then
+            anyDoubled = true
         end
     end
-    for i = 1, SingleRoundLogic.dealerCardCount do
-        local curCard = 'dCard'..string.format("%02d", i)
-        CardEngine.MoveCard(curCard, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
-    end
-    Cron.After(3, function()
+    local function callback()
         for j = 1, #(SingleRoundLogic.playerHands) do
             for i = 1, #(SingleRoundLogic.playerHands[j]) do
-                CardEngine.DeleteCard('playerCard_h'..string.format("%02d", j)..'_c'..string.format("%02d", i))
+                local curCard = 'playerCard_h'..string.format("%02d", j)..'_c'..string.format("%02d", i)
+                CardEngine.MoveCard(curCard, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), standardOri, 'smooth', false)
             end
         end
         for i = 1, SingleRoundLogic.dealerCardCount do
-            CardEngine.DeleteCard('dCard'..string.format("%02d", i))
+            local curCard = 'dCard'..string.format("%02d", i)
+            CardEngine.MoveCard(curCard, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
         end
-    end)
+        Cron.After(3, function()
+            for j = 1, #(SingleRoundLogic.playerHands) do
+                for i = 1, #(SingleRoundLogic.playerHands[j]) do
+                    CardEngine.DeleteCard('playerCard_h'..string.format("%02d", j)..'_c'..string.format("%02d", i))
+                end
+            end
+            for i = 1, SingleRoundLogic.dealerCardCount do
+                CardEngine.DeleteCard('dCard'..string.format("%02d", i))
+            end
+        end)
+    end
+    if anyDoubled == true then
+        for i, j in pairs(SingleRoundLogic.doubledHands) do
+            if j == true then
+                CardEngine.FlipCard('playerCard_h'..string.format("%02d", i)..'_c03', 'facewise', 'left', true)
+            end
+        end
+        Cron.After(2, callback)
+    else
+        callback()
+    end
 end
 
 ---Check if the 2 card board is blackjack
@@ -176,10 +194,18 @@ local function isSplitable(board)
     return false
 end
 
+local function isDoubleable(handIndex)
+    if #SingleRoundLogic.playerHands[handIndex] == 2 then
+        return true
+    end
+end
+
 ---Prompt player UI for turn action
 ---@param hitCallback function callback for when player hits
 ---@param standCallback function callback for when player stands
-local function promptPlayerActionUI(handIndex, hitCallback, standCallback, splitCallback)
+---@param splitCallback function callback for when player splits
+---@param doubleCallback function callback for when player doubles
+local function promptPlayerActionUI(handIndex, hitCallback, standCallback, splitCallback, doubleCallback)
     local allChoices = {}
     local allChoicesRef = {"Hit", "Stand"}
     allChoices[1] = interactionUI.createChoice(GameLocale.Text("Hit"), nil, gameinteractionsChoiceType.Selected) --change from Selected to AlreadyRead later
@@ -191,6 +217,14 @@ local function promptPlayerActionUI(handIndex, hitCallback, standCallback, split
             table.insert(allChoices, interactionUI.createChoice(GameLocale.Text("Split"), nil, gameinteractionsChoiceType.AlreadyRead))
         end
         table.insert(allChoicesRef, "Split")
+    end
+    if isDoubleable(SingleRoundLogic.activePlayerHandIndex) then
+        if BlackjackMainMenu.playerChipsMoney >= BlackjackMainMenu.currentBet then
+            table.insert(allChoices, interactionUI.createChoice(GameLocale.Text("Double"), nil, gameinteractionsChoiceType.Selected))
+        else
+            table.insert(allChoices, interactionUI.createChoice(GameLocale.Text("Double"), nil, gameinteractionsChoiceType.AlreadyRead))
+        end
+        table.insert(allChoicesRef, "Double")
     end
     --local choice4 = interactionUI.createChoice("Double", nil, gameinteractionsChoiceType.Selected)
     --local choice5 = interactionUI.createChoice("Surrender", nil, gameinteractionsChoiceType.Selected)
@@ -212,6 +246,16 @@ local function promptPlayerActionUI(handIndex, hitCallback, standCallback, split
         if allChoicesRef[3] == "Split" and BlackjackMainMenu.playerChipsMoney >= BlackjackMainMenu.currentBet then
             interactionUI.hideHub()
             splitCallback()
+        end
+        if allChoicesRef[3] == "Double" and BlackjackMainMenu.playerChipsMoney >= BlackjackMainMenu.currentBet then
+            interactionUI.hideHub()
+            doubleCallback()
+        end
+    end
+    interactionUI.callbacks[4] = function()
+        if allChoicesRef[4] == "Double" and BlackjackMainMenu.playerChipsMoney >= BlackjackMainMenu.currentBet then
+            interactionUI.hideHub()
+            doubleCallback()
         end
     end
 end
@@ -393,6 +437,11 @@ function FlipDealerTwoCards(triggerDealerAction)
     end
 end
 
+--- Calculates real Vector4 coords for card, given handIndex and card num in that hand.
+---@param handIndex any
+---@param cardIndex any
+---@param minus1Boolean any
+---@return Vector4 outVector4 XYZW i think
 local function cardTableLocation(handIndex, cardIndex, minus1Boolean)
     local newHandIndex = handIndex
     if minus1Boolean then
@@ -538,6 +587,42 @@ local function playerActionSplit(handIndex)
     end
 end
 
+local function playerActionDouble(handIndex)
+    SingleRoundLogic.doubledHands[handIndex] = true
+    BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
+
+    local cardID = 'playerCard_h'..string.format("%02d", handIndex)..'_c03'
+    local cardApp = SingleRoundLogic.deckShuffle[1]
+    CardEngine.CreateCard(cardID,cardApp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
+    table.remove(SingleRoundLogic.deckShuffle,1)
+    table.insert(SingleRoundLogic.playerHands[handIndex], cardApp)
+    local calcLocation = cardTableLocation(handIndex, 2, true)
+    local newLocation = Vector4.new(
+        calcLocation.x+0.04,
+        calcLocation.y,
+        calcLocation.z,
+        1)
+    local function callback1()
+        --delay move card
+        CardEngine.MoveCard(cardID,newLocation,standardOri,'smooth',true)
+    end
+    Cron.After(2.0, callback1)
+    local function callback2()
+        CardEngine.FlipCard(cardID, 'facewise', 'left', true)
+    end
+    Cron.After(4.0, callback2)
+
+    Cron.After(6.0, function ()
+        if handIndex == #SingleRoundLogic.playerHands then
+                FlipDealerTwoCards(true)
+        else
+            --next player hand
+                SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
+                PlayerAction(SingleRoundLogic.activePlayerHandIndex)
+        end
+    end)
+end
+
 --- 1 Step of player's action. Hit/Stand/Etc
 function PlayerAction(handIndex)
     local shouldPrompt = true
@@ -556,9 +641,12 @@ function PlayerAction(handIndex)
     local function splitCallback()
         playerActionSplit(handIndex)
     end
+    local function doubleCallback()
+        playerActionDouble(handIndex)
+    end
     if shouldPrompt then
         --DualPrint('sRL | PromptUI; HandIndex: '..tostring(handIndex))
-        promptPlayerActionUI(handIndex,hitCallback, standCallback, splitCallback)
+        promptPlayerActionUI(handIndex,hitCallback, standCallback, splitCallback, doubleCallback)
     end
 end
 
