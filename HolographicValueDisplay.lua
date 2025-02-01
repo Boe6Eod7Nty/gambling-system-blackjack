@@ -21,7 +21,7 @@ local digitCount = 1
 local digitSpacing = 0.03
 local digitBottomMargin = 0.1
 local holoEntityID = nil
-local holoCenter = Vector4.new(-1040.733, 1340.121, 6.085, 1) --default value to avoid nil errors
+local holoCenter = nil
 local holoFacingAngle = nil
 
 ---Counts the number of digits in a number
@@ -74,6 +74,9 @@ local function digitWorldPositionV4(numberLength, digitTensPlace)
     local digitOffset = (digitTensPlace - 1) - halfLength
     local xOffset = digitOffset * digitSpacing * math.cos(angle)
     local yOffset = digitOffset * digitSpacing * math.sin(angle)
+    if holoCenter == nil then
+        holoCenter = Vector4.new(-1040.733, 1340.121, 6.085, 1)
+    end
     local digitPosition = Vector4.new(
         holoCenter.x + xOffset,
         holoCenter.y + yOffset,
