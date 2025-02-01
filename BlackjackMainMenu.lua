@@ -1,6 +1,7 @@
 BlackjackMainMenu = {
     version = '1.0.0',
     playerChipsMoney = 0,
+    playerChipsHalfDollar = false,
     previousBet = nil,
     currentBet = nil
 }
@@ -210,6 +211,25 @@ local function buyChipsUI(firstIndex)
     end
 end
 
+function BlackjackMainMenu.Update()
+    if BlackjackMainMenu.playerChipsMoney % 1 ~= 0 then
+        local floor = math.floor(BlackjackMainMenu.playerChipsMoney)
+        local over = BlackjackMainMenu.playerChipsMoney - floor
+        if over == 0.5 then
+            if BlackjackMainMenu.playerChipsHalfDollar == true then
+                BlackjackMainMenu.playerChipsMoney = floor + 1
+                BlackjackMainMenu.playerChipsHalfDollar = false
+            else
+                BlackjackMainMenu.playerChipsMoney = floor
+                BlackjackMainMenu.playerChipsHalfDollar = true
+            end
+        else
+            DualPrint('Unknown Math error. #4059. PlayerChipsMoney: ' .. tostring(BlackjackMainMenu.playerChipsMoney))
+            BlackjackMainMenu.playerChipsMoney = floor
+        end
+    end
+end
+
 ---End round, loop to main menu
 function BlackjackMainMenu.RoundEnded()
     BlackjackMainMenu.previousBet = BlackjackMainMenu.currentBet
@@ -266,9 +286,6 @@ function BlackjackMainMenu.StartMainMenu()
                 elseif valueIndex % 2 == 0 then
                     valueIndex = valueIndex + 1
                 end
-                DualPrint('MM | previousBet = '..tostring(BlackjackMainMenu.previousBet))
-                DualPrint('MM | valueIndex = '..tostring(valueIndex))
-                DualPrint('MM | chip_values[valueIndex] = '..tostring(chip_values[valueIndex]))
                 newBetUI(valueIndex)
             else
                 newBetUI(3)

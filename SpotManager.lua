@@ -1,6 +1,7 @@
 SpotManager = {
     version = '1.0.0',
-    spots = {}
+    spots = {},
+    forcedCam = false
 }
 --===================
 --CODE BY Boe6
@@ -18,7 +19,6 @@ local interactionUI = require("External/interactionUI.lua")
 
 local inMenu = true --libaries requirement
 local inGame = false
-local forcedCam = false
 local forcedCamOri = {r=0,p=-60,y=0}
 local localPlayer
 
@@ -67,12 +67,11 @@ end
 ---Move player camera to forced position, typically above table
 ---@param enable boolean to enable, or disable the forced camera perspective
 local function setForcedCamera(enable)
-    forcedCam = enable
+    SpotManager.forcedCam = enable
     if enable then
         local camera = GetPlayer():GetFPPCameraComponent()
         local quatOri = EulerAngles.new(forcedCamOri.r, forcedCamOri.p, forcedCamOri.y):ToQuat()
         camera:SetLocalTransform(Vector4.new(0, 0.4, 0.7, 1), quatOri)
-        StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
         --StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.JohnnySicknessMedium")
         --camera:SetLocalPosition(Vector4.new(0, 0.4, 0.6, 1))
@@ -104,6 +103,7 @@ local function satAtSpot(id, animObj)
     ]]--
     animateEnteringSpot(animObj)
     HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
+    StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
     local callback1 = function()
         setForcedCamera(true)
     end
@@ -143,7 +143,7 @@ function SpotManager.update(dt) --runs every frame
         Cron.Update(dt) -- This is required for Cron to function
         world.update()
     end
-    if forcedCam then --fixes the camera being reset by workspot animation
+    if SpotManager.forcedCam then --fixes the camera being reset by workspot animation
         local camera = localPlayer:GetFPPCameraComponent()
         local o = camera:GetLocalOrientation():ToEulerAngles()
         local targetP = forcedCamOri.p

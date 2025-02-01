@@ -84,16 +84,26 @@ registerForEvent( "onInit", function()
     Observe('QuestTrackerGameController', 'OnInitialize', function()
         if not isLoaded then
             --save loaded and launched
-            DualPrint('Game Session Started')
+            --DualPrint('Game Session Started')
             isLoaded = true
+
+            --reset all variables to default to avoid save/load shinanigens
+            SingleRoundLogic.dealerCardCount = 0
+            SingleRoundLogic.dealerBoardCards = {}
+            SingleRoundLogic.playerHands = {{}}
+            SingleRoundLogic.activePlayerHandIndex = 1
+            SingleRoundLogic.bustedHands = {false,false,false,false}
+            SingleRoundLogic.blackjackHandsPaid = {false,false,false,false}
+            SingleRoundLogic.doubledHands = {false,false,false,false}
+            SpotManager.forcedCam = false
+            StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
         end
     end)
     Observe('QuestTrackerGameController', 'OnUninitialize', function()
         if Game.GetPlayer() == nil then
             --loading new save initiated
-            print('Game Session Ended')
+            --print('Game Session Ended')
             isLoaded = false
-            --TODO: send every variable reset
         end
     end)
 end)
@@ -104,6 +114,7 @@ registerForEvent('onUpdate', function(dt)
         CardEngine.update(dt)
         interactionUI.update()
         HolographicValueDisplay.Update()
+        BlackjackMainMenu.Update()
     end
 end)
 registerHotkey('DevHotkey1', 'Dev Hotkey 1', function()
