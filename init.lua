@@ -29,6 +29,7 @@ local SimpleCasinoChip = require('SimpleCasinoChip.lua')
 
 local inMenu = true --libaries requirement
 local inGame = false
+local dealerEntID = nil
 
 GamblingSystemBlackjack = {
     loaded = false,
@@ -43,6 +44,41 @@ function DualPrint(string) --prints to both CET console and local .log file
     if not string then return end
     print('[Gambling System] ' .. string) -- CET console
     spdlog.error('[Gambling System] ' .. string) -- .log
+end
+
+--[[
+local function attachedDealerToWorkspot()
+    local dynamicEntitySystem = Game.GetDynamicEntitySystem()
+    local foldHandsEntPath = "boe6\\gamblingsystemblackjack\\npc_handsfolded_workspot.ent"
+    local spec2 = DynamicEntitySpec.new()
+    spec2.templatePath = foldHandsEntPath
+    spec2.position = Vector4.new(-1041.247,1339.675,5.283,1)
+    spec2.orientation = EulerAngles.new(0.0, 0.0, 180.0):ToQuat()
+    spec2.tags = {"Blackjack","dealerAnimation"}
+    local animEntID = dynamicEntitySystem:CreateEntity(spec2)
+    local function callback1()
+        local npcEntity = Game.FindEntityByID(dealerEntID)
+        local animEntity = Game.FindEntityByID(animEntID)
+        local workspotSystem = Game.GetWorkspotSystem()
+        workspotSystem:PlayInDevice(animEntity, npcEntity) --Play workspot
+    end
+    Cron.After(0.5, callback1)
+end
+]]--
+
+local function spawnNPCdealer()
+    local dynamicEntitySystem = Game.GetDynamicEntitySystem()
+    local spec = DynamicEntitySpec.new()
+    spec.recordID = "Character.sts_wat_kab_07_croupiers"
+    --spec.templatePath = "base\\open_world\\street_stories\\watson\\kabuki\\sts_wat_kab_07\\characters\\sts_wat_kab_07_croupiers.ent"
+    spec.appearanceName = "Random"
+    --spec.appearanceName = "service__sexworker_wa_croupier_wa_01"
+    spec.position = Vector4.new(-1041.247,1339.675,5.283,1)
+    spec.orientation = EulerAngles.new(0.0, 0.0, 0.0):ToQuat()
+    spec.persistState = true;
+    spec.persistSpawn = true;
+    spec.tags = {"Blackjack","dealer"};
+    dealerEntID = dynamicEntitySystem:CreateEntity(spec)
 end
 
 -- Register Events
@@ -75,7 +111,7 @@ registerForEvent( "onInit", function()
     local animObj = {
         position = Vector4.new(-1041.2463, 1341.5469, 5.2774734, 1),
         orientation = {x=0,y=0,z=0},
-        templatePath = "boe6\\gamblingsystemblackjack\\workspot_anim.ent",
+        templatePath = "boe6\\gamblingsystemblackjack\\sit_workspot.ent",
         defaultAnim = "sit_chair_table_lean0__2h_on_table__01",
         exitAnim = "sit_chair_table_lean0__2h_on_table__01__to__stand__2h_on_sides__01__turn0l__01",
         exitTime = 2.5
@@ -100,6 +136,7 @@ registerForEvent( "onInit", function()
             SingleRoundLogic.doubledHands = {false,false,false,false}
             SpotManager.forcedCam = false
             StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+            spawnNPCdealer()
         end
     end)
     Observe('QuestTrackerGameController', 'OnUninitialize', function()
@@ -107,6 +144,8 @@ registerForEvent( "onInit", function()
             --loading new save initiated
             --print('Game Session Ended')
             isLoaded = false
+
+            Game.GetDynamicEntitySystem():DeleteEntity(dealerEntID)
         end
     end)
 end)
@@ -153,11 +192,12 @@ end)
 registerHotkey('DevHotkey5', 'Dev Hotkey 5', function()
     DualPrint('||=5  Dev hotkey 5 Pressed =')
 
-    --I can put comments here hha xd im doing this for a commit to save.
+    spawnNPCdealer()
 end)
 registerHotkey('DevHotkey6', 'Dev Hotkey 6', function()
     DualPrint('||=6  Dev hotkey 6 Pressed =')
 
+    Game.GetDynamicEntitySystem():DeleteEntity(dealerEntID)
 end)
 registerHotkey('DevHotkey7', 'Dev Hotkey 7', function()
     DualPrint('||=7  Dev hotkey 7 Pressed =')

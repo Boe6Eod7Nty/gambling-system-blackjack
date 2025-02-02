@@ -52,7 +52,7 @@ local function createDigitEntity(id, digitValue, positionVector4, orientationRPY
     spec.templatePath = holographicDigit
     spec.appearanceName = digitValue
     spec.position = positionVector4
-    spec.orientation = EulerAngles.ToQuat(EulerAngles.new(orientationRPY.r,orientationRPY.p,orientationRPY.y))
+    spec.orientation = EulerAngles.new(orientationRPY.r,orientationRPY.p,orientationRPY.y):ToQuat()
     spec.tags = {"HolographicDisplay",tostring(id)}
 
     local entityID = Game.GetStaticEntitySystem():SpawnEntity(spec)
