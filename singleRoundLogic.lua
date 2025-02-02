@@ -9,7 +9,8 @@ SingleRoundLogic = {
     doubledHands = {false,false,false,false},
     activePlayerHandIndex = 1,
     dealerCardsValue = 0,
-    playerCardsValue = {0,0,0,0}
+    playerCardsValue = {0,0,0,0},
+    dealerHandRevealed = false
 }
 --===================
 --CODE BY Boe6
@@ -96,6 +97,7 @@ end
 
 --- Animate all cards back to the deck & delete, deletes al chips.
 local function collectRoundCards()
+    HandCountDisplay.DisplayEnabled(false)
     SimpleCasinoChip.despawnAllChips()
     local anyDoubled = false
     for i, j in pairs(SingleRoundLogic.doubledHands) do
@@ -473,6 +475,7 @@ end
 
 --- animation for dealer to flip two cards
 function FlipDealerTwoCards(triggerDealerAction)
+    SingleRoundLogic.dealerHandRevealed = true
     Cron.After(0.5, function()
         CardEngine.MoveCard('dCard01', Vector4.new(dFirstCardXYZ.x+0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
     end)
@@ -736,6 +739,7 @@ function SingleRoundLogic.startRound(deckLocation, deckRotationRPY)
     SingleRoundLogic.bustedHands = {false,false,false,false}
     SingleRoundLogic.blackjackHandsPaid = {false,false,false,false}
     SingleRoundLogic.doubledHands = {false,false,false,false}
+    SingleRoundLogic.dealerHandRevealed = false
 
     shuffleDeckInternal()
     CardEngine.TriggerDeckShuffle()
@@ -746,6 +750,7 @@ function SingleRoundLogic.startRound(deckLocation, deckRotationRPY)
     end)
 
     Cron.After(4, function()
+        HandCountDisplay.DisplayEnabled(true)
         if isBoardBJ(SingleRoundLogic.playerHands[1]) or isBoardBJ(SingleRoundLogic.dealerBoardCards) then
             ProcessRoundResult(true)
         else

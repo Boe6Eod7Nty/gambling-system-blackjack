@@ -1,7 +1,8 @@
 HandCountDisplay = {
     version = '1.0.0',
     displayEnabled = false,
-    displays = {}
+    displays = {},
+    playerActiveHands = 0
 }
 --===================
 --CODE BY Boe6
@@ -30,62 +31,162 @@ local function calculateDisplayOrigin(isDealer, handIndex)
     return justBelowFirstHand
 end
 
+---Spawns digit entity in world. Sets HandCountDisplay.displays[id].entID
+---@param digit1or2 integer 1 or 2, first or 2nd digit.
+---@param displayID string id of containing display, ie "playerHand3"
+---@param appName string appearance name for entity
+---@param worldPosition Vector4 world position
+---@param orientation Quaternion world orientation
+local function spawnDigit(digit1or2, displayID, appName, worldPosition, orientation)
+    local spec = StaticEntitySpec.new()
+    spec.templatePath = digitEntPath
+    spec.appearanceName = appName
+    spec.position = worldPosition
+    spec.orientation = orientation
+    spec.tags = {"HandCountDisplay",tostring(id)}
+
+    local entityID = Game.GetStaticEntitySystem():SpawnEntity(spec)
+    if digit1or2 == 1 then
+        HandCountDisplay.displays[displayID].ent1ID = entityID
+    else
+        HandCountDisplay.displays[displayID].ent2ID = entityID
+    end
+end
+
 --- Spawns 2 digits for a hand count display
 ---@param isDealer boolean true/false, is the dealer's hand?
 ---@param handIndex number? hand number to display count for
 local function displayStartup(isDealer, handIndex)
+    local digit1pos
+    local digit2pos
+    local digit1app = "0"
+    local digit2app = "0"
+    local value
+    local orientation = EulerAngles.new(0,60,0):ToQuat()
+
     if isDealer then
-        local card1pos = calculateDisplayOrigin(true)
-        local card2pos = Vector4.new(card1pos.x-0.04, card1pos.y, card1pos.z, 1)
-        local card1app = "0"
-        local card2app = "0"
+        digit1pos = calculateDisplayOrigin(true)
+        digit2pos = Vector4.new(digit1pos.x-0.04, digit1pos.y, digit1pos.z, 1)
         HandCountDisplay.displays['dealerHand'].enabled = true
-        local value = HandCountDisplay.displays['dealerHand'].value
         value = SingleRoundLogic.dealerCardsValue
-        if value ~= 0 then
-            local tens = math.floor(value / 10)
-            local ones = value % 10
-            card1app = tostring(tens)
-            card2app = tostring(ones)
-            HandCountDisplay.displays['dealerHand'].appValue = value
-        end
-        HandCountDisplay.SpawnDigit("dealerDigit_h1_c1", card1app, card1pos, orientation)
-        HandCountDisplay.SpawnDigit("dealerDigit_h1_c2", card2app, card2pos, orientation)
+    elseif handIndex then
+        digit1pos = calculateDisplayOrigin(false, handIndex)
+        digit2pos = Vector4.new(digit1pos.x-0.04, digit1pos.y, digit1pos.z, 1)
+        HandCountDisplay.displays['playerHand'..tostring(handIndex)].enabled = true
+        value = SingleRoundLogic.playerCardsValue[handIndex]
     end
-    if handIndex then
-        --pass
+
+    if value ~= 0 then
+        local tens = math.floor(value / 10)
+        local ones = value % 10
+        digit1app = tostring(tens)
+        digit2app = tostring(ones)
     end
+
+    if isDealer then
+        spawnDigit(1, "dealerHand", digit1app, digit1pos, orientation)
+        spawnDigit(2, "dealerHand", digit2app, digit2pos, orientation)
+        HandCountDisplay.displays['dealerHand'].appValue = value
+    elseif handIndex then
+        spawnDigit(1, "playerHand"..tostring(handIndex), digit1app, digit1pos, orientation)
+        spawnDigit(2, "playerHand"..tostring(handIndex), digit2app, digit2pos, orientation)
+        HandCountDisplay.displays['playerHand'..tostring(handIndex)].appValue = value
+    end
+end
+
+local function displayShutdown(isDealer, handIndex)
+    local display
+    if isDealer then
+        display = HandCountDisplay.displays['dealerHand']
+    elseif handIndex then
+        display = HandCountDisplay.displays['playerHand'..tostring(handIndex)]
+    else
+        DualPrint('HCD | Incorrect displayShutdown() call. Error #4027')
+        return
+    end
+    --local entity1 = Game.GetStaticEntitySystem():GetEntityByID(display.ent1ID)
+    --local entity2 = Game.GetStaticEntitySystem():GetEntityByID(display.ent2ID)
+    Game.GetStaticEntitySystem():DespawnEntity(display.ent1ID)
+    Game.GetStaticEntitySystem():DespawnEntity(display.ent2ID)
+    display.enabled = false
 end
 
 ---Update display values to match current card's hand's values
 local function updateEachDisplay()
-    HandCountDisplay.displays['dealerHand'].value = SingleRoundLogic.dealerCardsValue
-    for i, hand in pairs(SingleRoundLogic.playerHands) do
-        HandCountDisplay.displays['playerHand'..tostring(i)].value = SingleRoundLogic.playerCardsValue[i]
-    end
-    for i, display in pairs(HandCountDisplay.displays) do
-        if display.appValue ~= display.value then
-            local tens = math.floor(display.value / 10)
-            local ones = display.value % 10
-            display.appValue = display.value
-            print(string.format("Value: %02d, Tens: %d, Ones: %d", display.value, tens, ones) .. tostring())
+    if HandCountDisplay.displays['dealerHand'].enabled then
+        HandCountDisplay.displays['dealerHand'].value = SingleRoundLogic.dealerCardsValue
+        for i, hand in pairs(SingleRoundLogic.playerHands) do
+            HandCountDisplay.displays['playerHand'..tostring(i)].value = SingleRoundLogic.playerCardsValue[i]
         end
+        local dealerDisplay = HandCountDisplay.displays['dealerHand']
+        if dealerDisplay.value ~= dealerDisplay.appValue then
+            local tens = math.floor(dealerDisplay.value / 10)
+            local ones = dealerDisplay.value % 10
+            dealerDisplay.appValue = dealerDisplay.value
+            --TODO: schedule appearance change
+        end
+    end
+    for i, hand in pairs(SingleRoundLogic.playerHands) do
+        if HandCountDisplay.displays['playerHand'..tostring(i)].enabled then
+            local playerDisplay = HandCountDisplay.displays['playerHand'..tostring(i)]
+            if playerDisplay.value ~= playerDisplay.appValue then
+                local tens = math.floor(playerDisplay.value / 10)
+                local ones = playerDisplay.value % 10
+                playerDisplay.appValue = playerDisplay.value
+                --TODO: schedule appearance change
+            end
+        end
+    end
+
+    --detect new split hands as they happen
+    if HandCountDisplay.playerActiveHands ~= #SingleRoundLogic.playerHands then
+        if HandCountDisplay.playerActiveHands < #SingleRoundLogic.playerHands then
+            for i = HandCountDisplay.playerActiveHands+1, #SingleRoundLogic.playerHands do
+                displayStartup(false, i+HandCountDisplay.playerActiveHands)
+            end
+        end
+        HandCountDisplay.playerActiveHands = #SingleRoundLogic.playerHands
+        for i, hand in pairs(SingleRoundLogic.playerHands) do
+            displayStartup(false, i)
+        end
+    end
+
+    --detect new dealer hand reveal
+    if SingleRoundLogic.dealerHandRevealed and not HandCountDisplay.displays['dealerHand'].enabled then
+        displayStartup(true)
     end
 end
 
-function HeadCountDisplay.init()
-    HandCountDisplay.displays['playerHand1'] = {value=0, appValue=0, enabled=false}
-    HandCountDisplay.displays['playerHand2'] = {value=0, appValue=0, enabled=false}
-    HandCountDisplay.displays['playerHand3'] = {value=0, appValue=0, enabled=false}
-    HandCountDisplay.displays['playerHand4'] = {value=0, appValue=0, enabled=false}
-    HandCountDisplay.displays['dealerHand'] = {value=0, appValue=0, enabled=false}
+function HandCountDisplay.init()
+    HandCountDisplay.displays['playerHand1'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil}
+    HandCountDisplay.displays['playerHand2'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil}
+    HandCountDisplay.displays['playerHand3'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil}
+    HandCountDisplay.displays['playerHand4'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil}
+    HandCountDisplay.displays['dealerHand'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil}
 end
-function HeadCountDisplay.update()
+function HandCountDisplay.update()
     if HandCountDisplay.displayEnabled then
         updateEachDisplay()
     end
 end
 
+--- Enables or disables the entire display
+---@param bool boolean true/false, turns display numbers on or off.
+function HandCountDisplay.DisplayEnabled(bool)
+    if bool then
+        for i, hand in pairs(SingleRoundLogic.playerHands) do
+            displayStartup(false, i)
+        end
+        HandCountDisplay.displayEnabled = true
+        HandCountDisplay.playerActiveHands = #SingleRoundLogic.playerHands
+    else
+        displayShutdown(true)
+        for i, hand in pairs(SingleRoundLogic.playerHands) do
+            displayShutdown(false, i)
+        end
+        HandCountDisplay.displayEnabled = false
+    end
+end
 
 
 return HandCountDisplay

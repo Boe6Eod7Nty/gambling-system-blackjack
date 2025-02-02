@@ -93,7 +93,7 @@ registerForEvent( "onInit", function()
     CardEngine.init()
     interactionUI.init()
 	GameLocale.Initialize()
-    HeadCountDisplay.init()
+    HandCountDisplay.init()
 
     -- Setup observer and GameUI to detect inGame / inMenu, credit: keanuwheeze | init.lua from the sitAnywhere mod
     Observe('RadialWheelController', 'OnIsInMenuChanged', function(_, isInMenu)
@@ -140,6 +140,7 @@ registerForEvent( "onInit", function()
             SingleRoundLogic.bustedHands = {false,false,false,false}
             SingleRoundLogic.blackjackHandsPaid = {false,false,false,false}
             SingleRoundLogic.doubledHands = {false,false,false,false}
+            SingleRoundLogic.dealerHandRevealed = false
             SpotManager.forcedCam = false
             StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
             spawnNPCdealer()
@@ -164,7 +165,7 @@ registerForEvent('onUpdate', function(dt)
         interactionUI.update()
         HolographicValueDisplay.Update()
         BlackjackMainMenu.Update()
-        HeadCountDisplay.update()
+        HandCountDisplay.update()
         SingleRoundLogic.update()
     end
 end)
