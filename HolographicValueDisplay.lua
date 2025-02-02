@@ -10,8 +10,6 @@ HolographicValueDisplay = {
 --Feel free to ask via nexus/discord, I just dont want my stuff stolen :)
 --===================
 
-local Cron = require('External/Cron.lua')
-
 local chipsStackHoloProjector = "boe6\\gamblingsystemblackjack\\q303_chips_stacks_edit.ent"
 local holographicDigit = "boe6\\gamblingsystemblackjack\\boe6_number_digit.ent"
 

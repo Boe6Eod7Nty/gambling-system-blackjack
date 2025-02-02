@@ -335,18 +335,12 @@ end
 --- @param UpLeftMovement number same as above, diagonal up left, used for payout. starts at 1
 --- @return Vector4 newXYZ world position
 local function chipLocationCalc(handIndex, leftMovement, UpLeftMovement)
-    DualPrint('pFirstCardXYZ: '..tostring(pFirstCardXYZ))
-    DualPrint('pFirstCardXYZ.x: '..tostring(pFirstCardXYZ.x))
-    DualPrint('pFirstCardXYZ.y: '..tostring(pFirstCardXYZ.y))
-    DualPrint('pFirstCardXYZ.z: '..tostring(pFirstCardXYZ.z))
-    DualPrint('handIndex: '..tostring(handIndex)..', leftMovement: '..tostring(leftMovement)..', UpLeftMovement: '..tostring(UpLeftMovement))
     local startXYZ = {pFirstCardXYZ.x-0.058,pFirstCardXYZ.y+0.142,pFirstCardXYZ.z}
     local newXYZ = {
         startXYZ[1] + (0.02 * (UpLeftMovement-1)) + (0.04 * (leftMovement-1)) + (0.18 * (handIndex-1)),
         startXYZ[2] - (0.035 * (UpLeftMovement-1)),
         startXYZ[3]
     }
-    DualPrint('newXYZ: '..tostring(newXYZ))
     return Vector4.new(newXYZ[1], newXYZ[2], newXYZ[3], 1)
 end
 

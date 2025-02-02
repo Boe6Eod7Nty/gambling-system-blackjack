@@ -12,6 +12,8 @@ HandCountDisplay = {
 --Feel free to ask via nexus/discord, I just dont want my stuff stolen :)
 --===================
 
+local Cron = require('External/Cron.lua')
+
 local digitEntPath = "boe6\\gamblingsystemblackjack\\boe6_number_digit_vanilla.ent"
 
 ---Calculates the 3D origin of a hand count display
@@ -113,42 +115,56 @@ end
 
 ---Update display values to match current card's hand's values
 local function updateEachDisplay()
-    if HandCountDisplay.displays['dealerHand'].enabled then
-        HandCountDisplay.displays['dealerHand'].value = SingleRoundLogic.dealerCardsValue
-        for i, hand in pairs(SingleRoundLogic.playerHands) do
-            HandCountDisplay.displays['playerHand'..tostring(i)].value = SingleRoundLogic.playerCardsValue[i]
-        end
-        local dealerDisplay = HandCountDisplay.displays['dealerHand']
+    local dealerDisplay = HandCountDisplay.displays['dealerHand']
+    if dealerDisplay.enabled then
+        dealerDisplay.value = SingleRoundLogic.dealerCardsValue
         if dealerDisplay.value ~= dealerDisplay.appValue then
             local tens = math.floor(dealerDisplay.value / 10)
             local ones = dealerDisplay.value % 10
             dealerDisplay.appValue = dealerDisplay.value
-            --TODO: schedule appearance change
+            local digit1Entity = Game.FindEntityByID(dealerDisplay.ent1ID)
+            local digit2Entity = Game.FindEntityByID(dealerDisplay.ent2ID)
+            if digit1Entity and digit2Entity then
+                local function callback()
+                    digit1Entity:ScheduleAppearanceChange(tostring(tens))
+                    digit2Entity:ScheduleAppearanceChange(tostring(ones))
+                end
+                Cron.After(2.0, callback)
+            end
         end
     end
     for i, hand in pairs(SingleRoundLogic.playerHands) do
-        if HandCountDisplay.displays['playerHand'..tostring(i)].enabled then
-            local playerDisplay = HandCountDisplay.displays['playerHand'..tostring(i)]
+        local playerDisplay = HandCountDisplay.displays['playerHand'..tostring(i)]
+        if playerDisplay.enabled then
+            playerDisplay.value = SingleRoundLogic.playerCardsValue[i]
             if playerDisplay.value ~= playerDisplay.appValue then
                 local tens = math.floor(playerDisplay.value / 10)
                 local ones = playerDisplay.value % 10
                 playerDisplay.appValue = playerDisplay.value
-                --TODO: schedule appearance change
+                local digit1Entity = Game.FindEntityByID(playerDisplay.ent1ID)
+                local digit2Entity = Game.FindEntityByID(playerDisplay.ent2ID)
+                if digit1Entity and digit2Entity then
+                    local function callback()
+                        digit1Entity:ScheduleAppearanceChange(tostring(tens))
+                        digit2Entity:ScheduleAppearanceChange(tostring(ones))
+                    end
+                    Cron.After(2.0, callback)
+                end
             end
         end
     end
 
     --detect new split hands as they happen
     if HandCountDisplay.playerActiveHands ~= #SingleRoundLogic.playerHands then
+        DualPrint('HCD | HandCountDisplay.playerActiveHands: '..tostring(HandCountDisplay.playerActiveHands))
+        DualPrint('HCD | #SingleRoundLogic.playerHands: '..tostring(#SingleRoundLogic.playerHands))
         if HandCountDisplay.playerActiveHands < #SingleRoundLogic.playerHands then
             for i = HandCountDisplay.playerActiveHands+1, #SingleRoundLogic.playerHands do
-                displayStartup(false, i+HandCountDisplay.playerActiveHands)
+                DualPrint('HCD |  i: '..tostring(i))
+                displayStartup(false, i)
             end
         end
         HandCountDisplay.playerActiveHands = #SingleRoundLogic.playerHands
-        for i, hand in pairs(SingleRoundLogic.playerHands) do
-            displayStartup(false, i)
-        end
     end
 
     --detect new dealer hand reveal
