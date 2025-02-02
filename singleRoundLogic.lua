@@ -92,8 +92,9 @@ local function dealStartOfRound()
     end)
 end
 
---- Animate all cards back to the deck & delete
+--- Animate all cards back to the deck & delete, deletes al chips.
 local function collectRoundCards()
+    SimpleCasinoChip.despawnAllChips()
     local anyDoubled = false
     for i, j in pairs(SingleRoundLogic.doubledHands) do
         if j == true then
@@ -318,6 +319,27 @@ local function isBoardSoft(board)
     return isSoft
 end
 
+--- Calculates the chip world position of a bet, given the blackjack hand context.
+--- @param handIndex number player hand index
+--- @param leftMovement number player bet chip number for that hand. starts at 1
+--- @param UpLeftMovement number same as above, diagonal up left, used for payout. starts at 1
+--- @return Vector4 newXYZ world position
+local function chipLocationCalc(handIndex, leftMovement, UpLeftMovement)
+    DualPrint('pFirstCardXYZ: '..tostring(pFirstCardXYZ))
+    DualPrint('pFirstCardXYZ.x: '..tostring(pFirstCardXYZ.x))
+    DualPrint('pFirstCardXYZ.y: '..tostring(pFirstCardXYZ.y))
+    DualPrint('pFirstCardXYZ.z: '..tostring(pFirstCardXYZ.z))
+    DualPrint('handIndex: '..tostring(handIndex)..', leftMovement: '..tostring(leftMovement)..', UpLeftMovement: '..tostring(UpLeftMovement))
+    local startXYZ = {pFirstCardXYZ.x-0.058,pFirstCardXYZ.y+0.142,pFirstCardXYZ.z}
+    local newXYZ = {
+        startXYZ[1] + (0.02 * (UpLeftMovement-1)) + (0.04 * (leftMovement-1)) + (0.18 * (handIndex-1)),
+        startXYZ[2] - (0.035 * (UpLeftMovement-1)),
+        startXYZ[3]
+    }
+    DualPrint('newXYZ: '..tostring(newXYZ))
+    return Vector4.new(newXYZ[1], newXYZ[2], newXYZ[3], 1)
+end
+
 ---After player and dealer have finished, calculate scores, determine winner hands and payout.
 ---@param instaBlackjack boolean if player OR dealer has instant blackjack
 local function ProcessRoundResult(instaBlackjack)
@@ -334,9 +356,11 @@ local function ProcessRoundResult(instaBlackjack)
                 BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
             elseif dealerBJ then
                 DualPrint('End Round: Dealer Blackjack.')
+                SimpleCasinoChip.despawnChip('chip_hand1_left1_up1')
             elseif playerBJ then
                 DualPrint('End Round: Player Blackjack.')
                 BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2.5
+                SimpleCasinoChip.spawnChip('chip_hand1_left1_up2', BlackjackMainMenu.currentBet, chipLocationCalc(1,1,2), true)
             end
         end
         Cron.After(4, callback1)
@@ -345,6 +369,10 @@ local function ProcessRoundResult(instaBlackjack)
             local continueHandCheck = true
             if SingleRoundLogic.bustedHands[i] then
                 DualPrint('End Hand #'..tostring(i)..': Player Busted.')
+                SimpleCasinoChip.despawnChip('chip_hand'..tostring(i)..'_left1_up1')
+                if SingleRoundLogic.doubledHands[i] then
+                    SimpleCasinoChip.despawnChip('chip_hand'..tostring(i)..'_left2_up1')
+                end
                 continueHandCheck = false
             end
             if isBoardBJ(SingleRoundLogic.dealerBoardCards) and continueHandCheck then
@@ -354,10 +382,18 @@ local function ProcessRoundResult(instaBlackjack)
                     continueHandCheck = false
                 end
                 DualPrint('End Hand #'..tostring(i)..': Dealer Blackjack.')
+                SimpleCasinoChip.despawnChip('chip_hand'..tostring(i)..'_left1_up1')
+                if SingleRoundLogic.doubledHands[i] then
+                    SimpleCasinoChip.despawnChip('chip_hand'..tostring(i)..'_left2_up1')
+                end
                 continueHandCheck = false
             end
             if isBoardBJ(hand) and continueHandCheck then
                 DualPrint('End Hand #'..tostring(i)..': Player Blackjack.')
+                SimpleCasinoChip.spawnChip('chip_hand'..tostring(i)..'_left1_up2', BlackjackMainMenu.currentBet, chipLocationCalc(i,1,2), true)
+                if SingleRoundLogic.doubledHands[i] then
+                    SimpleCasinoChip.spawnChip('chip_hand'..tostring(i)..'_left2_up2', BlackjackMainMenu.currentBet, chipLocationCalc(i,2,2), true)
+                end
                 continueHandCheck = false
             end
     
@@ -366,17 +402,25 @@ local function ProcessRoundResult(instaBlackjack)
                 if dealerScore > 21 then
                     DualPrint('End Hand #'..tostring(i)..': Dealer Busted!')
                     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+                    SimpleCasinoChip.spawnChip('chip_hand'..tostring(i)..'_left1_up2', BlackjackMainMenu.currentBet, chipLocationCalc(i,1,2), true)
                     if SingleRoundLogic.doubledHands[i] then
                         BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+                        SimpleCasinoChip.spawnChip('chip_hand'..tostring(i)..'_left2_up2', BlackjackMainMenu.currentBet, chipLocationCalc(i,2,2), true)
                     end
                 elseif playerScore > dealerScore then
                     DualPrint('End Hand #'..tostring(i)..': Player Wins!')
                     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+                    SimpleCasinoChip.spawnChip('chip_hand'..tostring(i)..'_left1_up2', BlackjackMainMenu.currentBet, chipLocationCalc(i,1,2), true)
                     if SingleRoundLogic.doubledHands[i] then
                         BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2
+                        SimpleCasinoChip.spawnChip('chip_hand'..tostring(i)..'_left2_up2', BlackjackMainMenu.currentBet, chipLocationCalc(i,2,2), true)
                     end
                 elseif playerScore < dealerScore then
                     DualPrint('End Hand #'..tostring(i)..': Dealer Wins.')
+                    SimpleCasinoChip.despawnChip('chip_hand'..tostring(i)..'_left1_up1')
+                    if SingleRoundLogic.doubledHands[i] then
+                        SimpleCasinoChip.despawnChip('chip_hand'..tostring(i)..'_left2_up1')
+                    end
                 else
                     DualPrint('End Hand #'..tostring(i)..': Tie, Push.')
                     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
@@ -487,6 +531,10 @@ local function playerActionHit(handIndex)
         elseif isBoardBusted(SingleRoundLogic.playerHands[handIndex]) then
             --DualPrint('sRL | End Hand: Player Busted!')
             SingleRoundLogic.bustedHands[handIndex] = true
+            SimpleCasinoChip.despawnChip('chip_hand'..tostring(handIndex)..'_left1_up1')
+            if SingleRoundLogic.doubledHands[handIndex] then
+                SimpleCasinoChip.despawnChip('chip_hand'..tostring(handIndex)..'_left1_up2')
+            end
             if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
                 local allBusted = true
                 for i = 1, #SingleRoundLogic.playerHands do
@@ -585,6 +633,8 @@ local function playerActionSplit(handIndex)
             PlayerAction(handIndex)
         end)
     end
+    local maxHand = #SingleRoundLogic.playerHands
+    SimpleCasinoChip.spawnChip('chip_hand'..tostring(maxHand)..'_left1_up1', BlackjackMainMenu.currentBet, chipLocationCalc(maxHand,1,1), true)
 end
 
 local function playerActionDouble(handIndex)
@@ -596,6 +646,7 @@ local function playerActionDouble(handIndex)
     CardEngine.CreateCard(cardID,cardApp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
     table.remove(SingleRoundLogic.deckShuffle,1)
     table.insert(SingleRoundLogic.playerHands[handIndex], cardApp)
+    SimpleCasinoChip.spawnChip('chip_hand'..tostring(handIndex)..'_left2_up1', BlackjackMainMenu.currentBet, chipLocationCalc(handIndex,2,1), true)
     local calcLocation = cardTableLocation(handIndex, 2, true)
     local newLocation = Vector4.new(
         calcLocation.x+0.04,
@@ -667,6 +718,7 @@ function SingleRoundLogic.startRound(deckLocation, deckRotationRPY)
 
     Cron.After(2.1, function ()
         dealStartOfRound()
+        SimpleCasinoChip.spawnChip('chip_hand1_left1_up1', BlackjackMainMenu.currentBet, chipLocationCalc(1,1,1), true)
     end)
 
     Cron.After(4, function()

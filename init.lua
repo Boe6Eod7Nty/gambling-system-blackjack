@@ -25,6 +25,7 @@ local SpotManager = require('SpotManager.lua') --workspot management
 local SingleRoundLogic = require('singleRoundLogic.lua') --Handles 1 round of blackjack
 local BlackjackMainMenu = require("BlackjackMainMenu.lua")
 local HolographicValueDisplay = require('HolographicValueDisplay.lua')
+local SimpleCasinoChip = require('SimpleCasinoChip.lua')
 
 local inMenu = true --libaries requirement
 local inGame = false
