@@ -11,7 +11,7 @@ return {
     ["Hit"] = "Hit",
     ["Stand"] = "Stand",
     ["Split"] = "Split",
-    --["Double"] = "Double",
+    ["Double"] = "Double",
     ["Hand #"] = "Hand #",
     ["Join Table"] = "Join Table",
 }
