@@ -1,5 +1,6 @@
 --=========================
 -- interactionUI.lua by keanuwheeze
+-- THIS CODE BELONGS TO KEANUWHEEZE, ASK HIM BEFORE USING IT.
 -- a few line edits by Boe6, marked 
 --=========================
 local ui =  {

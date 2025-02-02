@@ -1,5 +1,6 @@
 --=========================
 -- workspotUtils.lua by keanuwheeze
+-- THIS CODE BELONGS TO KEANUWHEEZE, ASK HIM BEFORE USING IT.
 --=========================
 local Cron = require('External/Cron.lua')
 

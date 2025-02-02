@@ -1,6 +1,6 @@
 -- v0.1.0
 --===================
---CODE BY Boe6
+--Copyright (c) 2025 Boe6
 --DO NOT DISTRIBUTE
 --DO NOT COPY/REUSE WITHOUT EXPRESS PERMISSION
 --DO NOT REUPLOAD TO OTHER SITES
@@ -20,7 +20,7 @@ GameLocale = require("External/GameLocale.lua") --Psiberx's language script from
 CardEngine = require('CardEngine.lua') --Card Entity Handler
 local Cron = require('External/Cron.lua') --Time handling
 local interactionUI = require("External/interactionUI.lua")
-local GameUI = require("External/GameUI.lua")
+local GameUI = require("External/GameUI.lua") --Reactive Game UI State Observer
 local SpotManager = require('SpotManager.lua') --workspot management
 local SingleRoundLogic = require('singleRoundLogic.lua') --Handles 1 round of blackjack
 local BlackjackMainMenu = require("BlackjackMainMenu.lua")
