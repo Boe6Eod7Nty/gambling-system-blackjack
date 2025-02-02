@@ -40,6 +40,10 @@ local function countDigits(number)
     return count
 end
 
+---Returns the nth digit of a number
+---@param numberX number number to count digits of
+---@param indexY integer index of digit to return
+---@return integer digit digit at specified index
 local function nthNumber(numberX, indexY)
     for i = 1, indexY - 1 do
         numberX = math.floor(numberX / 10)  -- Integer division to remove rightmost digit
@@ -47,6 +51,11 @@ local function nthNumber(numberX, indexY)
     return numberX % 10  -- Modulo to get the rightmost digit
 end
 
+---Create digit's entity and store entID in digits[]
+---@param id any unique id for entity
+---@param digitValue string interger as string for digit appearance
+---@param positionVector4 Vector4 world position
+---@param orientationRPY any orientationRPY table
 local function createDigitEntity(id, digitValue, positionVector4, orientationRPY)
     local spec = StaticEntitySpec.new()
     spec.templatePath = holographicDigit
@@ -59,7 +68,7 @@ local function createDigitEntity(id, digitValue, positionVector4, orientationRPY
     HolographicValueDisplay.digits[id] = { id = id, entID = entityID }
 end
 
-
+--- Given digit's id, despawn and remove from digits[]
 local function destroyDigitEntity(id)
     Game.GetStaticEntitySystem():DespawnEntity(HolographicValueDisplay.digits[id].entID)
     HolographicValueDisplay.digits[id] = nil
@@ -159,13 +168,10 @@ function HolographicValueDisplay.Update()
     end
 end
 
+---Spawns the initial display of the player's chips. (zero)
+---@param locationVector4 Vector4 world position of display stand
+---@param facingDirectionAngle number 360 degree angle(yaw) of display stand's facing direction.
 function HolographicValueDisplay.startDisplay(locationVector4, facingDirectionAngle)
-    --spawn holodisplay chip stand
-
-    --spawn 0 digit
-
-    --add id to list, associated with watchedVariable
-
     holoActive = true
     currentValue = 0
     digitCount = 1
@@ -178,14 +184,15 @@ function HolographicValueDisplay.startDisplay(locationVector4, facingDirectionAn
     spec.position = locationVector4
     spec.orientation = EulerAngles.ToQuat(EulerAngles.new(0,0,holoFacingAngle+180))
     spec.tags = {"HolographicDisplay","ProjectorStand"}
+    holoEntityID = Game.GetStaticEntitySystem():SpawnEntity(spec) --spawn holodisplay chip stand
 
-    holoEntityID = Game.GetStaticEntitySystem():SpawnEntity(spec)
     local digit1Position = digitWorldPositionV4(1, 1)
-    createDigitEntity(1, '0', digit1Position, {r=0, p=0, y=holoFacingAngle+180})
+    createDigitEntity(1, '0', digit1Position, {r=0, p=0, y=holoFacingAngle+180}) --spawn 0 digit
 
     --DualPrint('HVD | '..tostring(digitWorldPositionV4(locationVector4, facingDirectionAngle, 4, 1)))
 end
 
+---Stop showing the holographic display
 function HolographicValueDisplay.stopDisplay()
 
     holoActive = false

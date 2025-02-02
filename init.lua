@@ -49,7 +49,10 @@ function DualPrint(string) --prints to both CET console and local .log file
     spdlog.error('[Gambling System] ' .. string) -- .log
 end
 
---[[
+--[[    removed due to bugged. future fix.
+            NPC ends up breifly T-posing before animation starts.
+            My guess is the transitions aren't setup correctly
+                likely the wrong .anims file linked to the .workspot file, i hope.
 local function attachedDealerToWorkspot()
     local dynamicEntitySystem = Game.GetDynamicEntitySystem()
     local foldHandsEntPath = "boe6\\gamblingsystemblackjack\\npc_handsfolded_workspot.ent"
@@ -69,13 +72,12 @@ local function attachedDealerToWorkspot()
 end
 ]]--
 
+--- Spawns NPC dealer behind the blackjack table.
 local function spawnNPCdealer()
     local dynamicEntitySystem = Game.GetDynamicEntitySystem()
     local spec = DynamicEntitySpec.new()
     spec.recordID = "Character.sts_wat_kab_07_croupiers"
-    --spec.templatePath = "base\\open_world\\street_stories\\watson\\kabuki\\sts_wat_kab_07\\characters\\sts_wat_kab_07_croupiers.ent"
     spec.appearanceName = "Random"
-    --spec.appearanceName = "service__sexworker_wa_croupier_wa_01"
     spec.position = Vector4.new(-1041.247,1339.675,5.283,1)
     spec.orientation = EulerAngles.new(0.0, 0.0, 0.0):ToQuat()
     spec.persistState = true;
@@ -252,9 +254,6 @@ registerHotkey('DevHotkey9', 'Dev Hotkey 9', function()
 end)
 
 --[[ animations tested
-player stands and leaves:
-    SpotManager.ChangeAnimation("sit_chair_table_lean0__2h_on_table__01__to__stand__2h_on_sides__01__turn0l__01", 2.766, "sit_chair_table_lean0__2h_on_table__01")
-    SpotManager.ChangeAnimation("sit_chair_table_lean0__2h_on_table__01__to__stand__2h_on_sides__01__turn0r__01", 3.766, "sit_chair_table_lean0__2h_on_table__01")
 very nice 2 palms down:
     SpotManager.ChangeAnimation("sit_chair_table_lean0__2h_on_table__2h_flick__01", 1.7, "sit_chair_table_lean0__2h_on_table__01")
     SpotManager.ChangeAnimation("sit_chair_table_lean0__2h_on_table__describe_front__01", 1.7, "sit_chair_table_lean0__2h_on_table__01")

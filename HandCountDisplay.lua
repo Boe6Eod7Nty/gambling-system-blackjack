@@ -15,8 +15,8 @@ local digitEntPath = "boe6\\gamblingsystemblackjack\\boe6_number_digit_vanilla.e
 
 ---Calculates the 3D origin of a hand count display
 ---@param isDealer boolean true/false
----@param handIndex number?
----@return Vector4
+---@param handIndex number? hand number to display count for
+---@return Vector4 origin world location for first digit of display
 local function calculateDisplayOrigin(isDealer, handIndex)
     local justBelowFirstHand = Vector4.new(-1041.175, 1340.821, 6.085, 1)
     if isDealer then
@@ -27,8 +27,12 @@ local function calculateDisplayOrigin(isDealer, handIndex)
         local newVector = Vector4.new(justBelowFirstHand.x+(0.18*(handIndex-1)), justBelowFirstHand.y, justBelowFirstHand.z, 1)
         return newVector
     end
+    return justBelowFirstHand
 end
 
+--- Spawns 2 digits for a hand count display
+---@param isDealer boolean true/false, is the dealer's hand?
+---@param handIndex number? hand number to display count for
 local function displayStartup(isDealer, handIndex)
     if isDealer then
         local card1pos = calculateDisplayOrigin(true)
@@ -48,8 +52,12 @@ local function displayStartup(isDealer, handIndex)
         HandCountDisplay.SpawnDigit("dealerDigit_h1_c1", card1app, card1pos, orientation)
         HandCountDisplay.SpawnDigit("dealerDigit_h1_c2", card2app, card2pos, orientation)
     end
+    if handIndex then
+        --pass
+    end
 end
 
+---Update display values to match current card's hand's values
 local function updateEachDisplay()
     HandCountDisplay.displays['dealerHand'].value = SingleRoundLogic.dealerCardsValue
     for i, hand in pairs(SingleRoundLogic.playerHands) do
@@ -64,7 +72,6 @@ local function updateEachDisplay()
         end
     end
 end
-
 
 function HeadCountDisplay.init()
     HandCountDisplay.displays['playerHand1'] = {value=0, appValue=0, enabled=false}

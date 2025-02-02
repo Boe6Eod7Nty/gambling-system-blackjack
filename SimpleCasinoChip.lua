@@ -66,6 +66,7 @@ function SimpleCasinoChip.despawnChip(chipID)
     Game.GetStaticEntitySystem():DespawnEntity(SimpleCasinoChip.chips[chipID].entID)
 end
 
+---Despawns all chips
 function SimpleCasinoChip.despawnAllChips()
     for k,v in pairs(SimpleCasinoChip.chips) do
         Game.GetStaticEntitySystem():DespawnEntity(v.entID)

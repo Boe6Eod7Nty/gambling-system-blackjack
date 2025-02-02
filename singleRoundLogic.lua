@@ -186,6 +186,9 @@ local function isBoardBusted(board)
     end
 end
 
+---Checks if the board's 2 cards are splitable
+---@param board table list of card faces
+---@return boolean boolean true/false
 local function isSplitable(board)
     if #board == 2 then
         local rank1 = string.sub(board[1],1,1)
@@ -197,6 +200,9 @@ local function isSplitable(board)
     return false
 end
 
+---Checks if the hand is doubleable
+---@param handIndex integer index of player hand to check
+---@return boolean boolean true/false
 local function isDoubleable(handIndex)
     if #SingleRoundLogic.playerHands[handIndex] == 2 then
         return true
@@ -502,6 +508,8 @@ local function cardTableLocation(handIndex, cardIndex, minus1Boolean)
     return outVector4
 end
 
+--- 1 Step of player's action after player hit.
+---@param handIndex integer current player hand Index
 local function playerActionHit(handIndex)
     local cardsNum = #(SingleRoundLogic.playerHands[handIndex])
     local pCardXapp = SingleRoundLogic.deckShuffle[1]
@@ -561,6 +569,8 @@ local function playerActionHit(handIndex)
     end)
 end
 
+---spawn and animate new card from a split action.
+---These variables are nonsense. Sorry future Boe6, I already don't remember what they do. 
 local function newSplitCard(xCardHand,newCardIndex,newCardMinus1Bool)
     local pCardXapp = SingleRoundLogic.deckShuffle[1]
     local pCardXname = 'playerCard_h'..string.format("%02d", xCardHand)..'_c02'
@@ -573,6 +583,8 @@ local function newSplitCard(xCardHand,newCardIndex,newCardMinus1Bool)
     end)
 end
 
+--- stuff when player selects split
+---@param handIndex integer current player hand
 local function playerActionSplit(handIndex)
     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
 
@@ -639,6 +651,9 @@ local function playerActionSplit(handIndex)
     SimpleCasinoChip.spawnChip('chip_hand'..tostring(maxHand)..'_left1_up1', BlackjackMainMenu.currentBet, chipLocationCalc(maxHand,1,1), true)
 end
 
+
+--- stuff when player selects double
+---@param handIndex integer current player hand
 local function playerActionDouble(handIndex)
     SingleRoundLogic.doubledHands[handIndex] = true
     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
