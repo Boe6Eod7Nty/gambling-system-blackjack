@@ -12,6 +12,6 @@ return {
     ["Stand"] = "Stand",
     ["Split"] = "Split",
     ["Double"] = "Double",
-    ["Hand #"] = "Hand #",
+    ["Hand #"] = "Hand #", --note; this value is immediately followed by a number, so it displays "Hand #2"
     ["Join Table"] = "Join Table",
 }

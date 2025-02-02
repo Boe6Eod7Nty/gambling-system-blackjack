@@ -11,7 +11,7 @@
 --Cyber Engine Tweaks
 --Codeware
 --ArchiveXL
---TweakXL   ?
+--TweakXL
 --===================
 
 --Modules
@@ -132,7 +132,7 @@ registerForEvent( "onInit", function()
             --DualPrint('Game Session Started')
             isLoaded = true
 
-            --reset all variables to default to avoid save/load shinanigens
+            --reset all variables to default to avoid save/load bugs
             SingleRoundLogic.dealerCardCount = 0
             SingleRoundLogic.dealerBoardCards = {}
             SingleRoundLogic.playerHands = {{}}
@@ -143,6 +143,7 @@ registerForEvent( "onInit", function()
             SpotManager.forcedCam = false
             StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
             spawnNPCdealer()
+            interactionUI.hideHub()
         end
     end)
     Observe('QuestTrackerGameController', 'OnUninitialize', function()
