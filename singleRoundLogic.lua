@@ -7,7 +7,9 @@ SingleRoundLogic = {
     bustedHands = {false,false,false,false},
     blackjackHandsPaid = {false,false,false,false},
     doubledHands = {false,false,false,false},
-    activePlayerHandIndex = 1
+    activePlayerHandIndex = 1,
+    dealerCardsValue = 0,
+    playerCardsValue = {0,0,0,0}
 }
 --===================
 --CODE BY Boe6
@@ -672,6 +674,13 @@ local function playerActionDouble(handIndex)
                 PlayerAction(SingleRoundLogic.activePlayerHandIndex)
         end
     end)
+end
+
+function SingleRoundLogic.update()
+    SingleRoundLogic.dealerCardsValue = calculateBoardScore(SingleRoundLogic.dealerBoardCards)
+    for i = 1, #SingleRoundLogic.playerHands do
+        SingleRoundLogic.playerCardsValue[i] = calculateBoardScore(SingleRoundLogic.playerHands[i])
+    end
 end
 
 --- 1 Step of player's action. Hit/Stand/Etc

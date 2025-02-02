@@ -26,10 +26,13 @@ local SingleRoundLogic = require('singleRoundLogic.lua') --Handles 1 round of bl
 local BlackjackMainMenu = require("BlackjackMainMenu.lua")
 local HolographicValueDisplay = require('HolographicValueDisplay.lua')
 local SimpleCasinoChip = require('SimpleCasinoChip.lua')
+local HandCountDisplay = require('HandCountDisplay.lua')
 
 local inMenu = true --libaries requirement
 local inGame = false
 local dealerEntID = nil
+Global_temp_Counter_ent = nil
+local temp_counter_app = 0
 
 GamblingSystemBlackjack = {
     loaded = false,
@@ -88,6 +91,7 @@ registerForEvent( "onInit", function()
     CardEngine.init()
     interactionUI.init()
 	GameLocale.Initialize()
+    HeadCountDisplay.init()
 
     -- Setup observer and GameUI to detect inGame / inMenu, credit: keanuwheeze | init.lua from the sitAnywhere mod
     Observe('RadialWheelController', 'OnIsInMenuChanged', function(_, isInMenu)
@@ -157,6 +161,8 @@ registerForEvent('onUpdate', function(dt)
         interactionUI.update()
         HolographicValueDisplay.Update()
         BlackjackMainMenu.Update()
+        HeadCountDisplay.update()
+        SingleRoundLogic.update()
     end
 end)
 registerHotkey('DevHotkey1', 'Dev Hotkey 1', function()
@@ -167,37 +173,67 @@ registerHotkey('DevHotkey1', 'Dev Hotkey 1', function()
 end)
 registerHotkey('DevHotkey2', 'Dev Hotkey 2', function()
     DualPrint('||=2  Dev hotkey 2 Pressed =')
+    -- in case I need them script graveyard
 
+    --[[
     local cardID = CardEngine.CreateCard('TEMP', '7h', Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
     Cron.After(1, function()
         DualPrint('cardID: '..cardID)
-    end)
-end)
-registerHotkey('DevHotkey3', 'Dev Hotkey 3', function()
-    DualPrint('||=3  Dev hotkey 3 Pressed =')
+    end)]]--
 
     --CardEngine.DeleteCard('TEMP')
+    --[[
     for i=1, SingleRoundLogic.playerCardCount do
         CardEngine.DeleteCard('pCard'..string.format("%02d", i))
     end
     for i=1, SingleRoundLogic.dealerCardCount do
         CardEngine.DeleteCard('dCard'..string.format("%02d", i))
-    end
+    end]]--
+
+    --CardEngine.PrintAllCards(true)
+
+    --spawnNPCdealer()
+    --Game.GetDynamicEntitySystem():DeleteEntity(dealerEntID)
+end)
+registerHotkey('DevHotkey3', 'Dev Hotkey 3', function()
+    DualPrint('||=3  Dev hotkey 3 Pressed =')
+
+    local spec = StaticEntitySpec.new()
+    spec.templatePath = "boe6\\gamblingsystemblackjack\\boe6_number_digit_vanilla.ent"
+    spec.appearanceName = "0"
+    spec.position = Vector4.new(-1041.175, 1340.821, 6.085, 1)
+    spec.orientation = EulerAngles.new(0,60,0):ToQuat()
+    spec.tags = {"ValueCounter"}
+
+    Global_temp_Counter_ent = Game.GetStaticEntitySystem():SpawnEntity(spec)
 end)
 registerHotkey('DevHotkey4', 'Dev Hotkey 4', function()
     DualPrint('||=4  Dev hotkey 4 Pressed =')
-    
-    CardEngine.PrintAllCards(true)
+
+    temp_counter_app = temp_counter_app + 1
+    if temp_counter_app > 9 then
+        temp_counter_app = 0
+    end
+    local entity = Game.FindEntityByID(Global_temp_Counter_ent)
+    entity:ScheduleAppearanceChange(tostring(temp_counter_app))
+    DualPrint('app changed to: '..tostring(temp_counter_app))
 end)
 registerHotkey('DevHotkey5', 'Dev Hotkey 5', function()
     DualPrint('||=5  Dev hotkey 5 Pressed =')
 
-    spawnNPCdealer()
+    local spec = StaticEntitySpec.new()
+    spec.templatePath = "boe6\\gamblingsystemblackjack\\boe6_number_digit_vanilla.ent"
+    spec.appearanceName = "8"
+    spec.position = Vector4.new(-1041.215, 1340.821, 6.085, 1)
+    spec.orientation = EulerAngles.new(0,60,0):ToQuat()
+    spec.tags = {"ValueCounter"}
+
+    local secondNumberSpotted = Game.GetStaticEntitySystem():SpawnEntity(spec)
+
 end)
 registerHotkey('DevHotkey6', 'Dev Hotkey 6', function()
     DualPrint('||=6  Dev hotkey 6 Pressed =')
 
-    Game.GetDynamicEntitySystem():DeleteEntity(dealerEntID)
 end)
 registerHotkey('DevHotkey7', 'Dev Hotkey 7', function()
     DualPrint('||=7  Dev hotkey 7 Pressed =')
