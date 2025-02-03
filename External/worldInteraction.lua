@@ -39,8 +39,15 @@ function world.update()
     for key, interaction in pairs(world.interactions) do
         local update = interaction.shown
         if Vector4.Distance(posPlayer, interaction.pos) < interaction.interactionRange then -- Custom callback when in range and look at
-            if 180 - Vector4.GetAngleBetween(playerForward, Vector4.new(posPlayer.x - interaction.pos.x, posPlayer.y - interaction.pos.y, posPlayer.z - interaction.pos.z, 0)) < interaction.angle then
-                update = true
+        local vector4difference = Vector4.new(posPlayer.x - interaction.pos.x, posPlayer.y - interaction.pos.y, posPlayer.z - interaction.pos.z, 0) --boe6 line to var swap
+            if 180 - Vector4.GetAngleBetween(playerForward, vector4difference) < interaction.angle then
+                local pitch = Game.GetCameraSystem():GetActiveCameraData().rotation:ToEulerAngles().pitch --grab player pitch  --lines by Boe6 start
+                local min, max = -75, -10
+                if (min < pitch and pitch < max) then --checks if player's viewing pitch is within range
+                    update = true
+                else
+                    update = false
+                end --    -              -                 -                      -           -                  -             --lines by Boe6 end
             else
                 update = false
             end
@@ -49,6 +56,7 @@ function world.update()
         end
 
         --if block by boe
+        --[[
         if interaction.shown ~= update then --if UI on & not changing, OR if UI off & changing
             local pitch = Game.GetCameraSystem():GetActiveCameraData().rotation:ToEulerAngles().pitch --grab player pitch
             local min, max = -75, -10
@@ -56,6 +64,7 @@ function world.update()
                 interaction.shown = update --I had an if/shown then update=true block here b4. it was big.
             end
         end
+        ]]--
 
 
         if update ~= interaction.shown then -- Call callback
