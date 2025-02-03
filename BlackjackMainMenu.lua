@@ -72,6 +72,7 @@ local function newBetUI(refMidIndex)
             interactionUI.hideHub()
             BlackjackMainMenu.currentBet = chip_values[refMidIndex - 1]
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
+            Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
             Cron.After(1, function()
                 SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
             end)
@@ -82,6 +83,7 @@ local function newBetUI(refMidIndex)
             interactionUI.hideHub()
             BlackjackMainMenu.currentBet = chip_values[refMidIndex]
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
+            Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
             Cron.After(1, function()
                 SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
             end)
@@ -92,6 +94,7 @@ local function newBetUI(refMidIndex)
             interactionUI.hideHub()
             BlackjackMainMenu.currentBet = chip_values[refMidIndex + 1]
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
+            Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
             Cron.After(1, function()
                 SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
             end)
@@ -266,6 +269,7 @@ function BlackjackMainMenu.StartMainMenu()
             interactionUI.hideHub()
             BlackjackMainMenu.currentBet = BlackjackMainMenu.previousBet
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
+            Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
             Cron.After(1, function()
                 SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
             end)

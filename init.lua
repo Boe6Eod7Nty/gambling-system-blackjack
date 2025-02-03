@@ -238,6 +238,8 @@ end)
 registerHotkey('DevHotkey6', 'Dev Hotkey 6', function()
     DualPrint('||=6  Dev hotkey 6 Pressed =')
 
+    DualPrint('HandCountDisplay.displays[\'dealerHand\'].value: '..tostring(HandCountDisplay.displays['dealerHand'].value))
+    DualPrint('SingleRoundLogic.dealerCardsValue: '..tostring(SingleRoundLogic.dealerCardsValue))
 end)
 registerHotkey('DevHotkey7', 'Dev Hotkey 7', function()
     DualPrint('||=7  Dev hotkey 7 Pressed =')

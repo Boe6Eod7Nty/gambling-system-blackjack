@@ -148,6 +148,11 @@ local function shuffleDeckAnim()
         deckShuffling = false
         return
     end
+    if deckShuffleAge % 4 == 0 then
+        local bottomCardentID = CardEngine.cards['deckCard_'..tostring(0)].entID
+        local bottomCard = Game.FindEntityByID(bottomCardentID)
+        bottomCard:PlaySoundEvent("q115_sc_02d_card_grab")
+    end
 
     --local cardOrder = {14,5,36,22,28,13,39,9,3,12,35,2,34,19,23,30,20,37,17,7} 4 aces all split hand
     local cardOrder = {14,5,36,22,28,13,39,9,3,12,35,2,34,19,23,30,20,37,17,7}
@@ -209,12 +214,15 @@ end
 ---@param flipEnd boolean flip card at end
 function CardEngine.MoveCard(id, positionVector4, orientationRPY, movementStyle, flipEnd)
     --DualPrint('CE | Move sent for id: '..tostring(id))
+    local entity = Game.FindEntityByID(CardEngine.cards[id].entID)
     if movementStyle == 'snap' then
-        local entity = Game.FindEntityByID(CardEngine.cards[id].entID)
         local euler = EulerAngles.new(orientationRPY.r, orientationRPY.p, orientationRPY.y)
         Game.GetTeleportationFacility():Teleport(entity, positionVector4, euler)
     elseif movementStyle == 'smooth' then
         movingCards[id] = {id = id, targetPos = positionVector4, TargetOriRPY = orientationRPY, movementStyle = movementStyle, flipEnd = flipEnd, overAge = 0}
+    end
+    if entity ~= nil then
+        entity:PlaySoundEvent("q115_sc_02d_card_pick_up")
     end
 end
 
@@ -229,6 +237,7 @@ function CardEngine.FlipCard(id, flipAngle, direction, halfFlip)
         DualPrint('card '..tostring(id)..' does not exist. error #0238')
         return
     end
+    entity:PlaySoundEvent("q115_sc_02d_card_put_down")
     local entityVector4 = entity:GetWorldPosition()
     local curEuler = entity:GetWorldOrientation():ToEulerAngles()
     flippingCards[id] = {id = id, flipAngle = flipAngle, direction = direction, lifetime = 0, curEuler = curEuler, curHeight = entityVector4.z, halfFlip = halfFlip}
