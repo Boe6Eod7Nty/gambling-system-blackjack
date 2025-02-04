@@ -73,7 +73,7 @@ local function displayStartup(isDealer, handIndex)
         value = SingleRoundLogic.dealerCardsValue
     elseif handIndex then
         digit1pos = calculateDisplayOrigin(false, handIndex)
-        digit2pos = Vector4.new(digit1pos.x-0.04, digit1pos.y, digit1pos.z, 1)
+        digit2pos = Vector4.new(digit1pos.x-0.04, digit1pos.y, digit1pos.z+0.005, 1)
         HandCountDisplay.displays['playerHand'..tostring(handIndex)].enabled = true
         value = SingleRoundLogic.playerCardsValue[handIndex]
     end
