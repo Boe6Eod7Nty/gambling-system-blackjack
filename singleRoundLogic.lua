@@ -44,6 +44,7 @@ local function shuffleDeckInternal()
                     }
     --alignment comment.
     local devRiggedIndex = {}
+    --local devRiggedIndex = {9,5,4,7,7,7} --player doubles on 11 and busts, dealer also busts.
     --local devRiggedIndex = {10,6,1} --player gets blackjack
     --local devRiggedIndex = {10,10,6,4,8,1,7} --player busts and dealer hits if game broken lmao
     --local devRiggedIndex = {5,10,4,1} --dealer gets blackjack
@@ -759,12 +760,26 @@ local function playerActionDouble(handIndex)
     Cron.After(4.0, callback2)
 
     Cron.After(6.0, function ()
-        if handIndex == #SingleRoundLogic.playerHands then
-                FlipDealerTwoCards(true)
-        else
-            --next player hand
+        local newHandValue = calculateBoardScore(SingleRoundLogic.playerHands[handIndex])
+        if newHandValue >= 21 then
+            SingleRoundLogic.bustedHands[handIndex] = true
+            SimpleCasinoChip.despawnChip('chip_hand'..tostring(handIndex)..'_left2_up1')
+            SimpleCasinoChip.despawnChip('chip_hand'..tostring(handIndex)..'_left1_up1')
+            if handIndex == #SingleRoundLogic.playerHands then
+                ProcessRoundResult(false)
+            else
+                --next player hand
                 SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
                 PlayerAction(SingleRoundLogic.activePlayerHandIndex)
+            end
+        else
+            if handIndex == #SingleRoundLogic.playerHands then
+                    FlipDealerTwoCards(true)
+            else
+                --next player hand
+                    SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
+                    PlayerAction(SingleRoundLogic.activePlayerHandIndex)
+            end
         end
     end)
 end
