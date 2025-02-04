@@ -761,7 +761,7 @@ local function playerActionDouble(handIndex)
 
     Cron.After(6.0, function ()
         local newHandValue = calculateBoardScore(SingleRoundLogic.playerHands[handIndex])
-        if newHandValue >= 21 then
+        if newHandValue > 21 then
             SingleRoundLogic.bustedHands[handIndex] = true
             SimpleCasinoChip.despawnChip('chip_hand'..tostring(handIndex)..'_left2_up1')
             SimpleCasinoChip.despawnChip('chip_hand'..tostring(handIndex)..'_left1_up1')
