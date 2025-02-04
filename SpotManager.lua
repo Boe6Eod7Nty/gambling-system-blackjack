@@ -108,6 +108,10 @@ local function satAtSpot(id, animObj)
         setForcedCamera(true)
     end
     local callback2 = function()
+        BlackjackMainMenu.playerChipsMoney = 0        --Reset vars security
+        BlackjackMainMenu.playerChipsHalfDollar = false
+        BlackjackMainMenu.previousBet = nil
+        BlackjackMainMenu.currentBet = nil
         BlackjackMainMenu.StartMainMenu()
     end
     Cron.After(2, callback1)
