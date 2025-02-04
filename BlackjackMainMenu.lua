@@ -248,7 +248,7 @@ function BlackjackMainMenu.StartMainMenu()
     local repeatChoiceType = gameinteractionsChoiceType.AlreadyRead
     local newChoiceType = gameinteractionsChoiceType.AlreadyRead
     local buyChoiceType = gameinteractionsChoiceType.AlreadyRead
-    if BlackjackMainMenu.previousBet and BlackjackMainMenu.previousBet <= playerMoney then
+    if BlackjackMainMenu.previousBet and BlackjackMainMenu.previousBet <= BlackjackMainMenu.playerChipsMoney then
         repeatChoiceType = gameinteractionsChoiceType.Selected
     end
     if BlackjackMainMenu.playerChipsMoney >= 5 then
@@ -265,7 +265,7 @@ function BlackjackMainMenu.StartMainMenu()
     interactionUI.setupHub(hub)
     interactionUI.showHub()
     interactionUI.callbacks[1] = function()--Repeat
-        if BlackjackMainMenu.previousBet and BlackjackMainMenu.previousBet <= playerMoney then
+        if BlackjackMainMenu.previousBet and BlackjackMainMenu.previousBet <= BlackjackMainMenu.playerChipsMoney then
             interactionUI.hideHub()
             BlackjackMainMenu.currentBet = BlackjackMainMenu.previousBet
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
