@@ -156,11 +156,8 @@ local function updateEachDisplay()
 
     --detect new split hands as they happen
     if HandCountDisplay.playerActiveHands ~= #SingleRoundLogic.playerHands then
-        DualPrint('HCD | HandCountDisplay.playerActiveHands: '..tostring(HandCountDisplay.playerActiveHands))
-        DualPrint('HCD | #SingleRoundLogic.playerHands: '..tostring(#SingleRoundLogic.playerHands))
         if HandCountDisplay.playerActiveHands < #SingleRoundLogic.playerHands then
             for i = HandCountDisplay.playerActiveHands+1, #SingleRoundLogic.playerHands do
-                DualPrint('HCD |  i: '..tostring(i))
                 displayStartup(false, i)
             end
         end

@@ -632,7 +632,6 @@ local function playerActionSplit(handIndex)
         Cron.After(2, function()
             --CHECK IF PLAYER BLACKJACK
             if isBoardBJ(SingleRoundLogic.playerHands[handIndex]) then
-                DualPrint('playing player BJ point 1')
                 SingleRoundLogic.blackjackHandsPaid[handIndex] = true
                 BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + ( BlackjackMainMenu.currentBet * 2.5)
                 Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
@@ -666,7 +665,6 @@ local function playerActionSplit(handIndex)
         Cron.After(2.5, function()
             --CHECK IF PLAYER BLACKJACK
             if isBoardBJ(SingleRoundLogic.playerHands[handIndex]) then
-                DualPrint('playing player BJ point 2')
                 SingleRoundLogic.blackjackHandsPaid[handIndex] = true
                 BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + ( BlackjackMainMenu.currentBet * 2.5)
                 Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
@@ -733,7 +731,6 @@ function PlayerAction(handIndex)
     --safety check if player has 21 value. Often happens after split cards.
     if calculateBoardScore(SingleRoundLogic.playerHands[handIndex]) == 21 then
         if isBoardBJ(SingleRoundLogic.playerHands[handIndex]) and SingleRoundLogic.blackjackHandsPaid[handIndex] == false then
-            DualPrint('playing player BJ point 3')
             SingleRoundLogic.blackjackHandsPaid[handIndex] = true
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + ( BlackjackMainMenu.currentBet * 2.5 )
             Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
@@ -767,7 +764,6 @@ function PlayerAction(handIndex)
         playerActionDouble(handIndex)
     end
     if shouldPrompt then
-        --DualPrint('sRL | PromptUI; HandIndex: '..tostring(handIndex))
         promptPlayerActionUI(handIndex,hitCallback, standCallback, splitCallback, doubleCallback)
     end
 end

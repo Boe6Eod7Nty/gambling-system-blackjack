@@ -184,7 +184,6 @@ end
 ---@param orientationRPY any orientation as {r=,p=,y=}
 ---@return any id card id output
 function CardEngine.CreateCard(id, faceType, positionVector4, orientationRPY)
-    --DualPrint('CE | Creating card id: '..tostring(id))
     local cardSpec = StaticEntitySpec.new()
     cardSpec.templatePath = cardPath
     cardSpec.appearanceName = faceType

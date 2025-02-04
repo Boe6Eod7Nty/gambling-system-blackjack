@@ -81,8 +81,6 @@ local function spawnNPCdealer()
     spec.appearanceName = "Random"
     spec.position = Vector4.new(-1041.247,1339.675,5.283,1)
     spec.orientation = EulerAngles.new(0.0, 0.0, 0.0):ToQuat()
-    --spec.persistState = true;
-    --spec.persistSpawn = true;
     spec.tags = {"Blackjack","dealer"};
     dealerEntID = dynamicEntitySystem:CreateEntity(spec)
 end
@@ -145,6 +143,7 @@ registerForEvent( "onInit", function()
             SpotManager.forcedCam = false
             StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
             if not dealerSpawned then
+                DualPrint('init | spawned dealer NPC')
                 spawnNPCdealer()
                 dealerSpawned = true
             end
@@ -244,8 +243,6 @@ end)
 registerHotkey('DevHotkey6', 'Dev Hotkey 6', function()
     DualPrint('||=6  Dev hotkey 6 Pressed =')
 
-    DualPrint('HandCountDisplay.displays[\'dealerHand\'].value: '..tostring(HandCountDisplay.displays['dealerHand'].value))
-    DualPrint('SingleRoundLogic.dealerCardsValue: '..tostring(SingleRoundLogic.dealerCardsValue))
 end)
 registerHotkey('DevHotkey7', 'Dev Hotkey 7', function()
     DualPrint('||=7  Dev hotkey 7 Pressed =')
