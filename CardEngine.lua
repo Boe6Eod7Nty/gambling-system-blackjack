@@ -278,5 +278,18 @@ function CardEngine.PrintAllCards(excludeDeck)
     DualPrint(cards)
 end
 
+--- Sets card highlight color
+---@param cardID string card to highlight
+---@param colorIndex number color index 
+--- 0 = none, 1 = green, 2 = red, 3 = blue, 4 = orange, 5 = yellow, 6 = light blue
+function CardEngine.setHighlightColor(cardID, colorIndex)
+    local entityID = CardEngine.cards[cardID].entID
+    local entity = Game.FindEntityByID(entityID)
+    local newRenderHighlight = entRenderHighlightEvent.new()
+    newRenderHighlight.opacity = 1.0
+    newRenderHighlight.seeThroughWalls = true
+    newRenderHighlight.outlineIndex = colorIndex
+    entity:QueueEventForEntityID(entityID, newRenderHighlight)
+end
 
 return CardEngine

@@ -10,7 +10,11 @@ SingleRoundLogic = {
     activePlayerHandIndex = 1,
     dealerCardsValue = 0,
     playerCardsValue = {0,0,0,0},
-    dealerHandRevealed = false
+    dealerHandRevealed = false,
+    currentlySplit = false,
+    highlightOn = false,
+    highlightIndex = 0,
+    highlightCardsCount = 0
 }
 --===================
 --CODE BY Boe6
@@ -43,6 +47,7 @@ local function shuffleDeckInternal()
     --local devRiggedIndex = {10,6,1} --player gets blackjack
     --local devRiggedIndex = {10,10,6,4,8,1,7} --player busts and dealer hits if game broken lmao
     --local devRiggedIndex = {5,10,4,1} --dealer gets blackjack
+    --local devRiggedIndex = {8,34,20} --2 8s to player
     --local devRiggedIndex = {8,34,20,47,3,42,10} --2 8s to player
     --local devRiggedIndex = {1,48,13,46,25,47,45,37} --4 aces all split
     local newDeck = {}
@@ -58,6 +63,49 @@ local function shuffleDeckInternal()
         end
     end
     SingleRoundLogic.deckShuffle = newDeck
+end
+
+local function currentlySplitUpdate()
+    if SingleRoundLogic.highlightOn and SingleRoundLogic.currentlySplit then
+        --check if hand swap
+        if SingleRoundLogic.highlightIndex ~= SingleRoundLogic.activePlayerHandIndex then --check if moved to next hand
+            for i = 1, #SingleRoundLogic.playerHands[highlightIndex] do --for each card in previous hand:
+                CardEngine.setHighlightColor('playerCard_h'..string.format("%02d", highlightIndex)..'_c'..string.format("%02d", i), 0) -- 0 = none
+            end
+            SingleRoundLogic.highlightIndex = SingleRoundLogic.activePlayerHandIndex
+            for i = 1, #SingleRoundLogic.playerHands[activePlayerHandIndex] do --for each card in current hand:
+                CardEngine.setHighlightColor('playerCard_h'..string.format("%02d", activePlayerHandIndex)..'_c'..string.format("%02d", i), 3) -- 3 = blue
+            end
+            SingleRoundLogic.highlightCardsCount = #SingleRoundLogic.playerHands[activePlayerHandIndex]
+            return
+        end
+        --check if new cards in hand
+        if SingleRoundLogic.highlightCardsCount ~= #SingleRoundLogic.playerHands[SingleRoundLogic.activePlayerHandIndex] then
+            local newCardsCount = #SingleRoundLogic.playerHands[SingleRoundLogic.activePlayerHandIndex] - SingleRoundLogic.highlightCardsCount
+            for i = 1, newCardsCount do
+                local cardID = 'playerCard_h'..string.format("%02d", SingleRoundLogic.activePlayerHandIndex)
+                                        ..'_c'..string.format("%02d", SingleRoundLogic.highlightCardsCount+i)
+                CardEngine.setHighlightColor(cardID, 3) -- 3 = blue
+            end
+            SingleRoundLogic.highlightCardsCount = #SingleRoundLogic.playerHands[SingleRoundLogic.activePlayerHandIndex]
+        end
+    elseif SingleRoundLogic.highlightOn and not SingleRoundLogic.currentlySplit then
+        --turn off highlight
+        SingleRoundLogic.highlightOn = false
+        for i = 1, #SingleRoundLogic.playerHands do --it just turns off glow for all player cards to be safe.
+            for j = 1, #SingleRoundLogic.playerHands[i] do
+                CardEngine.setHighlightColor('playerCard_h'..string.format("%02d", i)..'_c'..string.format("%02d", j), 0) -- 0 = none
+            end
+        end
+    elseif not SingleRoundLogic.highlightOn and SingleRoundLogic.currentlySplit then
+        --turn on highlight for current hand
+        SingleRoundLogic.highlightOn = true
+        SingleRoundLogic.highlightIndex = 1
+        SingleRoundLogic.highlightCardsCount = 1 --only does 1 card to wait for 2nd card to spawn.
+        local cardID = 'playerCard_h'..string.format("%02d", SingleRoundLogic.activePlayerHandIndex)..'_c1'
+        CardEngine.setHighlightColor(cardID, 3) -- 3 = blue
+    end
+
 end
 
 --- Animate first round deal.
@@ -348,6 +396,7 @@ end
 ---@param instaBlackjack boolean if player OR dealer has instant blackjack
 local function ProcessRoundResult(instaBlackjack)
     DualPrint('--End Round!--')
+    SingleRoundLogic.currentlySplit = false
     local dealerScore = calculateBoardScore(SingleRoundLogic.dealerBoardCards)
     --isBoardBJ(SingleRoundLogic.dealerBoardCards)
     if instaBlackjack then
@@ -484,6 +533,7 @@ end
 
 --- animation for dealer to flip two cards
 function FlipDealerTwoCards(triggerDealerAction)
+    SingleRoundLogic.currentlySplit = false
     Cron.After(0.5, function()
         CardEngine.MoveCard('dCard01', Vector4.new(dFirstCardXYZ.x+0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
     end)
@@ -553,8 +603,6 @@ local function playerActionHit(handIndex)
                 SimpleCasinoChip.despawnChip('chip_hand'..tostring(handIndex)..'_left1_up2')
             end
             if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
-                FlipDealerTwoCards(true)
-                --[[
                 local allBusted = true
                 for i = 1, #SingleRoundLogic.playerHands do
                     if SingleRoundLogic.bustedHands[i] == false then
@@ -567,7 +615,6 @@ local function playerActionHit(handIndex)
                 else
                     FlipDealerTwoCards(true)
                 end
-                ]]--
             else
                 --next player hand
                 SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
@@ -596,6 +643,7 @@ end
 --- stuff when player selects split
 ---@param handIndex integer current player hand
 local function playerActionSplit(handIndex)
+    SingleRoundLogic.currentlySplit = true
     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
     Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
 
@@ -635,7 +683,8 @@ local function playerActionSplit(handIndex)
                 SingleRoundLogic.blackjackHandsPaid[handIndex] = true
                 BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + ( BlackjackMainMenu.currentBet * 2.5)
                 Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
-                PlayerAction(handIndex+1)
+                SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
+                PlayerAction(SingleRoundLogic.activePlayerHandIndex)
             else
                 PlayerAction(handIndex)
             end
@@ -668,7 +717,8 @@ local function playerActionSplit(handIndex)
                 SingleRoundLogic.blackjackHandsPaid[handIndex] = true
                 BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + ( BlackjackMainMenu.currentBet * 2.5)
                 Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
-                PlayerAction(handIndex+1)
+                SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
+                PlayerAction(SingleRoundLogic.activePlayerHandIndex)
             else
                 PlayerAction(handIndex)
             end
@@ -723,6 +773,9 @@ function SingleRoundLogic.update()
     SingleRoundLogic.dealerCardsValue = calculateBoardScore(SingleRoundLogic.dealerBoardCards)
     for i = 1, #SingleRoundLogic.playerHands do
         SingleRoundLogic.playerCardsValue[i] = calculateBoardScore(SingleRoundLogic.playerHands[i])
+    end
+    if SingleRoundLogic.currentlySplit then
+        --currentlySplitUpdate()
     end
 end
 
