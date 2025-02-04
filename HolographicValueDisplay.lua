@@ -19,6 +19,7 @@ local digitCount = 1
 local digitSpacing = 0.03
 local digitBottomMargin = 0.1
 local holoEntityID = nil
+local holoChipsEntityID = nil
 local holoCenter = nil
 local holoFacingAngle = nil
 
@@ -184,7 +185,15 @@ function HolographicValueDisplay.startDisplay(locationVector4, facingDirectionAn
     spec.tags = {"HolographicDisplay","ProjectorStand"}
     holoEntityID = Game.GetStaticEntitySystem():SpawnEntity(spec) --spawn holodisplay chip stand
 
-    local digit1Position = digitWorldPositionV4(1, 1)
+    local spec2 = StaticEntitySpec.new()
+    spec2.templatePath = holographicDigit
+    spec2.appearanceName = 'chips'
+    spec2.position = Vector4.new(holoCenter.x,holoCenter.y,holoCenter.z + (digitBottomMargin*1.5),holoCenter.w)
+    spec2.orientation = EulerAngles.ToQuat(EulerAngles.new(0,0,holoFacingAngle+180))
+    spec2.tags = {"HolographicDisplay","chips"}
+    holoChipsEntityID = Game.GetStaticEntitySystem():SpawnEntity(spec2) --spawn holodisplay chips sign
+
+
     createDigitEntity(1, '0', digit1Position, {r=0, p=0, y=holoFacingAngle+180}) --spawn 0 digit
 
     --DualPrint('HVD | '..tostring(digitWorldPositionV4(locationVector4, facingDirectionAngle, 4, 1)))
@@ -198,6 +207,7 @@ function HolographicValueDisplay.stopDisplay()
         destroyDigitEntity(i)
     end
     Game.GetStaticEntitySystem():DespawnEntity(holoEntityID)
+    Game.GetStaticEntitySystem():DespawnEntity(holoChipsEntityID)
 
 end
 
