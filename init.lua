@@ -33,6 +33,7 @@ local inGame = false
 local dealerEntID = nil
 Global_temp_Counter_ent = nil
 local temp_counter_app = 0
+local dealerSpawned = false
 
 GamblingSystemBlackjack = {
     loaded = false,
@@ -80,8 +81,8 @@ local function spawnNPCdealer()
     spec.appearanceName = "Random"
     spec.position = Vector4.new(-1041.247,1339.675,5.283,1)
     spec.orientation = EulerAngles.new(0.0, 0.0, 0.0):ToQuat()
-    spec.persistState = true;
-    spec.persistSpawn = true;
+    --spec.persistState = true;
+    --spec.persistSpawn = true;
     spec.tags = {"Blackjack","dealer"};
     dealerEntID = dynamicEntitySystem:CreateEntity(spec)
 end
@@ -143,7 +144,11 @@ registerForEvent( "onInit", function()
             SingleRoundLogic.dealerHandRevealed = false
             SpotManager.forcedCam = false
             StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
-            spawnNPCdealer()
+            if not dealerSpawned then
+                spawnNPCdealer()
+                dealerSpawned = true
+            end
+
             interactionUI.hideHub()
         end
     end)
@@ -154,6 +159,7 @@ registerForEvent( "onInit", function()
             isLoaded = false
 
             Game.GetDynamicEntitySystem():DeleteEntity(dealerEntID)
+            dealerSpawned = false
         end
     end)
 end)
