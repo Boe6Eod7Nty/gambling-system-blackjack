@@ -44,6 +44,7 @@ local function shuffleDeckInternal()
                     }
     --alignment comment.
     local devRiggedIndex = {}
+    --local devRiggedIndex = {14,1,9,9} --player and dealer both get BJ
     --local devRiggedIndex = {9,5,4,7,7,7} --player doubles on 11 and busts, dealer also busts.
     --local devRiggedIndex = {10,6,1} --player gets blackjack
     --local devRiggedIndex = {10,10,6,4,8,1,7} --player busts and dealer hits if game broken lmao
@@ -327,6 +328,7 @@ local function calculateBoardScore(board)
     --board = {"7h","Ts"} example
     local runningTotal = 0
     local aceCount = 0
+    local printList = ''
     for k,card in pairs(board) do
         local rank = string.sub(card,1,1)
         if rank == 'A' then
@@ -336,6 +338,7 @@ local function calculateBoardScore(board)
         else
             runningTotal = runningTotal + tonumber(rank)
         end
+        printList = printList..card..', '
     end
 
     for i = 1, aceCount do
@@ -346,6 +349,7 @@ local function calculateBoardScore(board)
         end
     end
 
+    --DualPrint('SRL | Board: { '..printList..'} = '..tostring(runningTotal))
     return runningTotal
 end
 
@@ -649,82 +653,38 @@ local function playerActionSplit(handIndex)
     Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
 
     local curHandIndex = SingleRoundLogic.activePlayerHandIndex
-    if curHandIndex == #SingleRoundLogic.playerHands then
 
-        --IF SPACE AVAILABLE LEFT
-
-        SingleRoundLogic.playerHands[curHandIndex+1] = {SingleRoundLogic.playerHands[curHandIndex][1]}
-        local card1app = SingleRoundLogic.playerHands[curHandIndex][1]
-        local card2app = SingleRoundLogic.playerHands[curHandIndex][2]
-        local card1id = 'playerCard_h'..string.format("%02d", curHandIndex)..'_c'..string.format("%02d", 1)
-        local card2id = 'playerCard_h'..string.format("%02d", curHandIndex)..'_c'..string.format("%02d", 2)
-        local card1pos = Vector4.new(pFirstCardXYZ.x+(0.18*curHandIndex),pFirstCardXYZ.y, pFirstCardXYZ.z, 1)
-        local card2pos = Vector4.new(pFirstCardXYZ.x+(0.18*(curHandIndex-1)), pFirstCardXYZ.y, pFirstCardXYZ.z, 1)
-        CardEngine.MoveCard(card1id,card1pos,standardOri,'smooth',false)
-        CardEngine.MoveCard(card2id,card2pos,standardOri,'smooth',false)
-        Cron.After(0.5, function()
-            local newID = 'playerCard_h'..string.format("%02d", curHandIndex+1)..'_c'..string.format("%02d", 1)
-            CardEngine.CreateCard(newID,card1app,card1pos,standardOri)
-            CardEngine.DeleteCard(card1id)
-            Cron.After(0.5, function()
-                CardEngine.DeleteCard(card2id)
-                CardEngine.CreateCard(card1id,card2app,card2pos,standardOri)
-            end)
-        end)
-        Cron.After(1, function() --deal 2 cards, 1 to each hand
-            table.remove(SingleRoundLogic.playerHands[curHandIndex],1)
-            newSplitCard(handIndex, handIndex, true)
-        end)
-        Cron.After(1.2, function()
-            newSplitCard(handIndex+1, handIndex, false)
-        end)
-        Cron.After(2, function()
-            --CHECK IF PLAYER BLACKJACK
-            if isBoardBJ(SingleRoundLogic.playerHands[handIndex]) then
-                SingleRoundLogic.blackjackHandsPaid[handIndex] = true
-                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + ( BlackjackMainMenu.currentBet * 2.5)
-                Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
-                SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
-                PlayerAction(SingleRoundLogic.activePlayerHandIndex)
-            else
-                PlayerAction(handIndex)
-            end
-        end)
-    else
-
-        --IF LEFT SPACE NOT AVAILABLE, CARD JUMPS TO LAST SPACE
-
-        local maxHandIndex = #SingleRoundLogic.playerHands
-        local cardID = 'playerCard_h'..string.format("%02d", handIndex)..'_c02'
-        local cardApp = SingleRoundLogic.playerHands[handIndex][2]
-        local cardPos = cardTableLocation(maxHandIndex, 0, false)
-        SingleRoundLogic.playerHands[maxHandIndex+1] = {SingleRoundLogic.playerHands[curHandIndex][2]}
-        CardEngine.MoveCard(cardID,cardPos,standardOri,'smooth',false)
-        table.remove(SingleRoundLogic.playerHands[curHandIndex],2)
-        Cron.After(0.8, function()
-            local newCardID = 'playerCard_h'..string.format("%02d", maxHandIndex+1)..'_c'..string.format("%02d", 1)
-            CardEngine.CreateCard(newCardID,cardApp,cardPos,standardOri)
-            CardEngine.DeleteCard(cardID)
-        end)
-        Cron.After(1, function()
-            newSplitCard(handIndex, handIndex, true)
-        end)
-        Cron.After(2, function()
-            newSplitCard(maxHandIndex+1, maxHandIndex, false)
-        end)
-        Cron.After(2.5, function()
-            --CHECK IF PLAYER BLACKJACK
-            if isBoardBJ(SingleRoundLogic.playerHands[handIndex]) then
-                SingleRoundLogic.blackjackHandsPaid[handIndex] = true
-                BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + ( BlackjackMainMenu.currentBet * 2.5)
-                Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
-                SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
-                PlayerAction(SingleRoundLogic.activePlayerHandIndex)
-            else
-                PlayerAction(handIndex)
-            end
-        end)
-    end
+    -- 2nd card jumps to closest empty hand space
+    local maxHandIndex = #SingleRoundLogic.playerHands
+    local cardID = 'playerCard_h'..string.format("%02d", handIndex)..'_c02'
+    local cardApp = SingleRoundLogic.playerHands[handIndex][2]
+    local cardPos = cardTableLocation(maxHandIndex, 0, false)
+    SingleRoundLogic.playerHands[maxHandIndex+1] = {SingleRoundLogic.playerHands[curHandIndex][2]}
+    CardEngine.MoveCard(cardID,cardPos,standardOri,'smooth',false)
+    table.remove(SingleRoundLogic.playerHands[curHandIndex],2)
+    Cron.After(0.8, function()
+        local newCardID = 'playerCard_h'..string.format("%02d", maxHandIndex+1)..'_c'..string.format("%02d", 1)
+        CardEngine.CreateCard(newCardID,cardApp,cardPos,standardOri)
+        CardEngine.DeleteCard(cardID)
+    end)
+    Cron.After(1, function()
+        newSplitCard(handIndex, handIndex, true)
+    end)
+    Cron.After(2, function()
+        newSplitCard(maxHandIndex+1, maxHandIndex, false)
+    end)
+    Cron.After(2.5, function()
+        --CHECK IF PLAYER BLACKJACK
+        if isBoardBJ(SingleRoundLogic.playerHands[handIndex]) then
+            SingleRoundLogic.blackjackHandsPaid[handIndex] = true
+            BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + ( BlackjackMainMenu.currentBet * 2.5)
+            Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
+            SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
+            PlayerAction(SingleRoundLogic.activePlayerHandIndex)
+        else
+            PlayerAction(handIndex)
+        end
+    end)
     local maxHand = #SingleRoundLogic.playerHands
     SimpleCasinoChip.spawnChip('chip_hand'..tostring(maxHand)..'_left1_up1', BlackjackMainMenu.currentBet, chipLocationCalc(maxHand,1,1), true)
 end
