@@ -2,7 +2,8 @@ HandCountDisplay = {
     version = '1.0.0',
     displayEnabled = false,
     displays = {},
-    playerActiveHands = 0
+    playerActiveHands = 0,
+    blinkingCounter = 0
 }
 --===================
 --CODE BY Boe6
@@ -15,6 +16,7 @@ HandCountDisplay = {
 local Cron = require('External/Cron.lua')
 
 local digitEntPath = "boe6\\gamblingsystemblackjack\\boe6_number_digit_vanilla.ent"
+local blinkingTimer = 12 --use even number
 
 ---Calculates the 3D origin of a hand count display
 ---@param isDealer boolean true/false
@@ -47,12 +49,14 @@ local function spawnDigit(digit1or2, displayID, appName, worldPosition, orientat
     spec.orientation = orientation
     spec.tags = {"HandCountDisplay",tostring(id)}
 
+    DualPrint('HCD | Spawning digit '..tostring(digit1or2)..' for '..tostring(displayID)..'...')
     local entityID = Game.GetStaticEntitySystem():SpawnEntity(spec)
     if digit1or2 == 1 then
         HandCountDisplay.displays[displayID].ent1ID = entityID
     else
         HandCountDisplay.displays[displayID].ent2ID = entityID
     end
+    DualPrint('HCD |        -- DONE --')
 end
 
 --- Spawns 2 digits for a hand count display
@@ -129,26 +133,71 @@ local function updateEachDisplay()
                     digit1Entity:ScheduleAppearanceChange(tostring(tens))
                     digit2Entity:ScheduleAppearanceChange(tostring(ones))
                 end
-                Cron.After(2.0, callback)
+                Cron.After(0.1, callback)
             end
         end
     end
     for i, hand in pairs(SingleRoundLogic.playerHands) do
         local playerDisplay = HandCountDisplay.displays['playerHand'..tostring(i)]
+        local tens = math.floor(playerDisplay.value / 10)
+        local ones = playerDisplay.value % 10
+        local digit1Entity = Game.FindEntityByID(playerDisplay.ent1ID)
+        local digit2Entity = Game.FindEntityByID(playerDisplay.ent2ID)
         if playerDisplay.enabled then
+            if digit1Entity == nil then
+                DualPrint('HCD | display #'..tostring(i)..' digit 1 entity is nil')
+            end
+            if digit2Entity == nil then
+                DualPrint('HCD | display #'..tostring(i)..' digit 2 entity is nil')
+            end
             playerDisplay.value = SingleRoundLogic.playerCardsValue[i]
             if playerDisplay.value ~= playerDisplay.appValue then
-                local tens = math.floor(playerDisplay.value / 10)
-                local ones = playerDisplay.value % 10
-                playerDisplay.appValue = playerDisplay.value
-                local digit1Entity = Game.FindEntityByID(playerDisplay.ent1ID)
-                local digit2Entity = Game.FindEntityByID(playerDisplay.ent2ID)
+                DualPrint('HCD | Updating display #'..tostring(i)..'; from '..tostring(playerDisplay.appValue)..' to '..tostring(playerDisplay.value))
                 if digit1Entity and digit2Entity then
                     local function callback()
+                        playerDisplay.appValue = playerDisplay.value
                         digit1Entity:ScheduleAppearanceChange(tostring(tens))
                         digit2Entity:ScheduleAppearanceChange(tostring(ones))
                     end
-                    Cron.After(2.0, callback)
+                    Cron.After(0.1, callback)
+                else
+                    DualPrint('HCD | Failed to update display #'..tostring(i))
+                    DualPrint('HCD | digit1Entity: '..tostring(digit1Entity)..', entityID: '..tostring(playerDisplay.ent1ID))
+                    DualPrint('HCD | digit2Entity: '..tostring(digit2Entity)..', entityID: '..tostring(playerDisplay.ent2ID))
+                end
+            elseif SingleRoundLogic.currentlySplit then
+                if i == SingleRoundLogic.activePlayerHandIndex then
+                    local shouldBeBlueNow = ( HandCountDisplay.blinkingCounter <= (blinkingTimer/2) )
+                    local digitsAreBlueNow = HandCountDisplay.displays['playerHand'..tostring(i)].currentlyBlinkingBlue
+                    if digitsAreBlueNow and not shouldBeBlueNow then
+                        if digit1Entity and digit2Entity then
+                            local function callback()
+                                digit1Entity:ScheduleAppearanceChange(tostring(tens))
+                                digit2Entity:ScheduleAppearanceChange(tostring(ones))
+                            end
+                            Cron.After(0.1, callback)
+                        end
+                        HandCountDisplay.displays['playerHand'..tostring(i)].currentlyBlinkingBlue = false
+                    end
+                    if not digitsAreBlueNow and shouldBeBlueNow then
+                        if digit1Entity and digit2Entity then
+                            local function callback()
+                                digit1Entity:ScheduleAppearanceChange(tostring(tens).."b")
+                                digit2Entity:ScheduleAppearanceChange(tostring(ones).."b")
+                            end
+                            Cron.After(0.1, callback)
+                        end
+                        HandCountDisplay.displays['playerHand'..tostring(i)].currentlyBlinkingBlue = true
+                    end
+                elseif HandCountDisplay.displays['playerHand'..tostring(i)].currentlyBlinkingBlue then
+                    if digit1Entity and digit2Entity then
+                        local function callback()
+                            digit1Entity:ScheduleAppearanceChange(tostring(tens))
+                            digit2Entity:ScheduleAppearanceChange(tostring(ones))
+                        end
+                        Cron.After(0.1, callback)
+                    end
+                    HandCountDisplay.displays['playerHand'..tostring(i)].currentlyBlinkingBlue = false
                 end
             end
         end
@@ -170,12 +219,20 @@ local function updateEachDisplay()
     end
 end
 
+local function blinkingUpdate()
+    HandCountDisplay.blinkingCounter = HandCountDisplay.blinkingCounter + 1
+    if HandCountDisplay.blinkingCounter > blinkingTimer then
+        HandCountDisplay.blinkingCounter = 0
+    end
+end
+
 function HandCountDisplay.init()
-    HandCountDisplay.displays['playerHand1'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil}
-    HandCountDisplay.displays['playerHand2'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil}
-    HandCountDisplay.displays['playerHand3'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil}
-    HandCountDisplay.displays['playerHand4'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil}
+    HandCountDisplay.displays['playerHand1'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil, currentlyBlinkingBlue=false}
+    HandCountDisplay.displays['playerHand2'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil, currentlyBlinkingBlue=false}
+    HandCountDisplay.displays['playerHand3'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil, currentlyBlinkingBlue=false}
+    HandCountDisplay.displays['playerHand4'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil, currentlyBlinkingBlue=false}
     HandCountDisplay.displays['dealerHand'] = {value=0, appValue=0, enabled=false, ent1ID=nil, ent2ID=nil}
+    Cron.Every(0.1, blinkingUpdate)
 end
 function HandCountDisplay.update()
     if HandCountDisplay.displayEnabled then
