@@ -282,8 +282,8 @@ function BlackjackMainMenu.StartMainMenu()
     interactionUI.callbacks[2] = function()--New Bet
         if BlackjackMainMenu.playerChipsMoney >= 5 then
             interactionUI.hideHub()
+            local valueIndex = 3
             if BlackjackMainMenu.previousBet then
-                local valueIndex = 3
                 for i, v in pairs(chip_values) do
                     if v == BlackjackMainMenu.previousBet then
                         valueIndex = i
@@ -294,10 +294,22 @@ function BlackjackMainMenu.StartMainMenu()
                 elseif valueIndex % 2 == 0 then
                     valueIndex = valueIndex + 1
                 end
-                newBetUI(valueIndex)
             else
-                newBetUI(3)
+                local newIndex = 0
+                for i, v in pairs(chip_values) do
+                    if v >= BlackjackMainMenu.playerChipsMoney then
+                        newIndex = i
+                    end
+                end
+                if newIndex > 8 then
+                    if newIndex % 2 == 0 then
+                        valueIndex = newIndex - 5
+                    else
+                        valueIndex = newIndex - 4
+                    end
+                end
             end
+            newBetUI(valueIndex)
         end
     end
     interactionUI.callbacks[3] = function()--Buy Chips
