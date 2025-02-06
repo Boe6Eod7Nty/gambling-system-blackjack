@@ -1,4 +1,4 @@
--- v0.1.0
+-- v1.0.0
 --===================
 --Copyright (c) 2025 Boe6
 --DO NOT DISTRIBUTE
@@ -174,6 +174,8 @@ registerForEvent('onUpdate', function(dt)
         SingleRoundLogic.update()
     end
 end)
+
+--[[
 registerHotkey('DevHotkey1', 'Dev Hotkey 1', function()
     DualPrint('||=1  Dev hotkey 1 Pressed =')
 
@@ -184,20 +186,20 @@ registerHotkey('DevHotkey2', 'Dev Hotkey 2', function()
     DualPrint('||=2  Dev hotkey 2 Pressed =')
     -- in case I need them script graveyard
 
-    --[[
+
     local cardID = CardEngine.CreateCard('TEMP', '7h', Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
     Cron.After(1, function()
         DualPrint('cardID: '..cardID)
-    end)]]--
+    end)
 
     --CardEngine.DeleteCard('TEMP')
-    --[[
+
     for i=1, SingleRoundLogic.playerCardCount do
         CardEngine.DeleteCard('pCard'..string.format("%02d", i))
     end
     for i=1, SingleRoundLogic.dealerCardCount do
         CardEngine.DeleteCard('dCard'..string.format("%02d", i))
-    end]]--
+    end
 
     --CardEngine.PrintAllCards(true)
 
@@ -259,6 +261,7 @@ registerHotkey('DevHotkey9', 'Dev Hotkey 9', function()
         SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
     end)
 end)
+]]--
 
 --[[ animations tested
 very nice 2 palms down:
