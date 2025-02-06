@@ -1,5 +1,5 @@
 SpotManager = {
-    version = '1.0.0',
+    version = '1.0.1',
     spots = {},
     forcedCam = false
 }
@@ -73,20 +73,14 @@ local function setForcedCamera(enable)
         local quatOri = EulerAngles.new(forcedCamOri.r, forcedCamOri.p, forcedCamOri.y):ToQuat()
         camera:SetLocalTransform(Vector4.new(0, 0.4, 0.7, 1), quatOri)
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
-        --StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.JohnnySicknessMedium")
-        --camera:SetLocalPosition(Vector4.new(0, 0.4, 0.6, 1))
-        --camera:SetLocalOrientation(quatOri)
-        --camera:Activate(5) --test if this line is needed
-        --camera.headingLocked = true
-        --camera:SceneDisableBlendingToStaticPosition()
+        Cron.After(2, function()
+            StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
+        end)
     else
         local camera = GetPlayer():GetFPPCameraComponent()
         camera:SetLocalPosition(Vector4.new(0, 0, 0, 1))
         camera:SetLocalOrientation(EulerAngles.new(0, 0, 0):ToQuat())
-        StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
-        --camera.SetLocalTransform(Vector4.new(0, 0, 0, 1), EulerAngles.new(0, 0, 0):ToQuat())
-        --camera:Activate(5)
-        --camera.headingLocked = false
+        --StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
     end
 end
 
@@ -103,7 +97,7 @@ local function satAtSpot(id, animObj)
     ]]--
     animateEnteringSpot(animObj)
     HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
-    StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+    --StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
     local callback1 = function()
         setForcedCamera(true)
     end
@@ -155,7 +149,7 @@ function SpotManager.update(dt) --runs every frame
             setForcedCamera(true)
         end
     else
-        StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl") --insurance
+        --StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl") --insurance
     end
 end
 

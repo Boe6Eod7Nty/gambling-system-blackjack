@@ -1,4 +1,4 @@
--- v1.0.0
+--init.lua v1.0.0
 --===================
 --Copyright (c) 2025 Boe6
 --DO NOT DISTRIBUTE
