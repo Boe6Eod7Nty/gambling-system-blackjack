@@ -46,7 +46,7 @@ local function shuffleDeckInternal()
     local devRiggedIndex = {}
     --local devRiggedIndex = {14,1,9,9} --player and dealer both get BJ
     --local devRiggedIndex = {9,5,4,7,7,7} --player doubles on 11 and busts, dealer also busts.
-    --local devRiggedIndex = {10,6,1} --player gets blackjack
+    --local devRiggedIndex = {11,6,1} --player gets blackjack
     --local devRiggedIndex = {10,10,6,4,8,1,7} --player busts and dealer hits if game broken lmao
     --local devRiggedIndex = {5,10,4,1} --dealer gets blackjack
     --local devRiggedIndex = {8,34,20} --2 8s to player
