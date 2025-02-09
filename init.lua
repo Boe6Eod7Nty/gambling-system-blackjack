@@ -1,4 +1,4 @@
---init.lua v1.0.0
+--init.lua v1.0.1
 --===================
 --Copyright (c) 2025 Boe6
 --DO NOT DISTRIBUTE
@@ -34,6 +34,7 @@ local dealerEntID = nil
 Global_temp_Counter_ent = nil
 local temp_counter_app = 0
 local dealerSpawned = false
+ImmersiveFirstPersonInstalled = false
 
 GamblingSystemBlackjack = {
     loaded = false,
@@ -161,6 +162,16 @@ registerForEvent( "onInit", function()
             dealerSpawned = false
         end
     end)
+
+    -- Check if ImmersiveFirstPerson mod is installed and set variable
+    local immersiveFirstPerson = GetMod("ImmersiveFirstPerson")
+    if immersiveFirstPerson == nil then
+        DualPrint('ImmersiveFirstPerson mod not found')
+        ImmersiveFirstPersonInstalled = false
+    else
+        DualPrint('ImmersiveFirstPerson mod found')
+        ImmersiveFirstPersonInstalled = true
+    end
 end)
 registerForEvent('onUpdate', function(dt)
     if  not inMenu and inGame then
@@ -175,7 +186,7 @@ registerForEvent('onUpdate', function(dt)
     end
 end)
 
---[[
+
 registerHotkey('DevHotkey1', 'Dev Hotkey 1', function()
     DualPrint('||=1  Dev hotkey 1 Pressed =')
 
@@ -261,7 +272,7 @@ registerHotkey('DevHotkey9', 'Dev Hotkey 9', function()
         SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
     end)
 end)
-]]--
+
 
 --[[ animations tested
 very nice 2 palms down:

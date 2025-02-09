@@ -1,5 +1,5 @@
 SpotManager = {
-    version = '1.0.1',
+    version = '1.0.2',
     spots = {},
     forcedCam = false
 }
@@ -71,16 +71,20 @@ local function setForcedCamera(enable)
     if enable then
         local camera = GetPlayer():GetFPPCameraComponent()
         local quatOri = EulerAngles.new(forcedCamOri.r, forcedCamOri.p, forcedCamOri.y):ToQuat()
-        camera:SetLocalTransform(Vector4.new(0, 0.4, 0.7, 1), quatOri)
+        if ImmersiveFirstPersonInstalled then
+            camera:SetLocalTransform(Vector4.new(0, 0.4, 0.9, 1), quatOri) --account for immersiveFirstPerson camera
+        else
+            camera:SetLocalTransform(Vector4.new(0, 0.4, 0.7, 1), quatOri) --default settings
+        end
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
-        Cron.After(2, function()
+        Cron.After(2, function() --maybe unnessisary, idk.
             StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
         end)
     else
         local camera = GetPlayer():GetFPPCameraComponent()
         camera:SetLocalPosition(Vector4.new(0, 0, 0, 1))
         camera:SetLocalOrientation(EulerAngles.new(0, 0, 0):ToQuat())
-        --StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+        StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
     end
 end
 
@@ -97,7 +101,9 @@ local function satAtSpot(id, animObj)
     ]]--
     animateEnteringSpot(animObj)
     HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
-    --StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+    if ImmersiveFirstPersonInstalled then
+        StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+    end
     local callback1 = function()
         setForcedCamera(true)
     end
