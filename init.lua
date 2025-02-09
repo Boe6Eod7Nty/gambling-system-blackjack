@@ -106,6 +106,8 @@ registerForEvent( "onInit", function()
     end)
     GameSession.TryLoad()
 
+    local currentHandValueSetting = DisplayHandValuesOption[1]
+
     -- Setup observer and GameUI to detect inGame / inMenu, credit: keanuwheeze | init.lua from the sitAnywhere mod
     Observe('RadialWheelController', 'OnIsInMenuChanged', function(_, isInMenu)
         inMenu = isInMenu
@@ -190,7 +192,7 @@ registerForEvent( "onInit", function()
     nativeSettings.addSubcategory("/gamblingSystem/blackjack", "Blackjack Settings") -- Add a subcategory (path, label, optionalIndex)
      -- Parameters: path, label, desc, currentValue, defaultValue, callback, optionalIndex
     nativeSettings.addSwitch("/gamblingSystem/blackjack", "Show Hand Values", 
-            "Enable/Disable the automatic calculator for hand values, 21, etc.", DisplayHandValuesOption[1], true, function(state)
+            "Enable/Disable the automatic calculator for hand values, 21, etc.", currentHandValueSetting, true, function(state)
         -- saving the changes to file / database
         --DualPrint("Changed SWITCH to "..tostring(state))
         DisplayHandValuesOption[1] = state

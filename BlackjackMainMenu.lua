@@ -297,7 +297,7 @@ function BlackjackMainMenu.StartMainMenu()
             else
                 local newIndex = 0
                 for i, v in pairs(chip_values) do
-                    if v >= BlackjackMainMenu.playerChipsMoney then
+                    if BlackjackMainMenu.playerChipsMoney >= v then
                         newIndex = i
                     end
                 end
@@ -308,6 +308,7 @@ function BlackjackMainMenu.StartMainMenu()
                         valueIndex = newIndex - 4
                     end
                 end
+                DualPrint('BMM | valueIndex: '..tostring(valueIndex)..' newIndex: '..tostring(newIndex))
             end
             newBetUI(valueIndex)
         end
