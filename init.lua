@@ -1,4 +1,4 @@
---init.lua v1.0.1
+--init.lua v1.0.2
 --===================
 --Copyright (c) 2025 Boe6
 --DO NOT DISTRIBUTE
@@ -141,7 +141,6 @@ registerForEvent( "onInit", function()
     local isLoaded = Game.GetPlayer() and Game.GetPlayer():IsAttached() and not Game.GetSystemRequestsHandler():IsPreGame()
     Observe('QuestTrackerGameController', 'OnInitialize', function()
         if not isLoaded then
-            --save loaded and launched
             --DualPrint('Game Session Started')
             isLoaded = true
 
@@ -157,7 +156,6 @@ registerForEvent( "onInit", function()
             SpotManager.forcedCam = false
             StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
             if not dealerSpawned then
-                --DualPrint('init | spawned dealer NPC')
                 spawnNPCdealer()
                 dealerSpawned = true
             end
@@ -179,7 +177,6 @@ registerForEvent( "onInit", function()
     -- Check if ImmersiveFirstPerson mod is installed and set compatibility variable
     local immersiveFirstPerson = GetMod("ImmersiveFirstPerson")
     if immersiveFirstPerson == nil then
-        --DualPrint('ImmersiveFirstPerson mod not found')
         ImmersiveFirstPersonInstalled = false
     else
         DualPrint('ImmersiveFirstPerson mod found, applying fixes.')
@@ -193,8 +190,7 @@ registerForEvent( "onInit", function()
      -- Parameters: path, label, desc, currentValue, defaultValue, callback, optionalIndex
     nativeSettings.addSwitch("/gamblingSystem/blackjack", "Show Hand Values", 
             "Enable/Disable the automatic calculator for hand values, 21, etc.", currentHandValueSetting, true, function(state)
-        -- saving the changes to file / database
-        --DualPrint("Changed SWITCH to "..tostring(state))
+        -- save the changes to session
         DisplayHandValuesOption[1] = state
     end)
 
@@ -215,7 +211,7 @@ registerForEvent('onShutdown', function()
     GameSession.TrySave()
 end)
 
-
+--[[
 registerHotkey('DevHotkey1', 'Dev Hotkey 1', function()
     DualPrint('||=1  Dev hotkey 1 Pressed =')
 
@@ -302,7 +298,7 @@ registerHotkey('DevHotkey9', 'Dev Hotkey 9', function()
         SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
     end)
 end)
-
+]]--
 
 --[[ animations tested
 very nice 2 palms down:

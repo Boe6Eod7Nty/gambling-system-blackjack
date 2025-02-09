@@ -1,5 +1,5 @@
 SingleRoundLogic = {
-    version = '1.0.0',
+    version = '1.0.1',
     deckShuffle = {},
     dealerCardCount = 0,
     dealerBoardCards = {},
@@ -349,7 +349,6 @@ local function calculateBoardScore(board)
         end
     end
 
-    --DualPrint('SRL | Board: { '..printList..'} = '..tostring(runningTotal))
     return runningTotal
 end
 

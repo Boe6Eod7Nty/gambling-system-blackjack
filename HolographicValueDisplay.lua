@@ -195,8 +195,6 @@ function HolographicValueDisplay.startDisplay(locationVector4, facingDirectionAn
 
 
     createDigitEntity(1, '0', digit1Position, {r=0, p=0, y=holoFacingAngle+180}) --spawn 0 digit
-
-    --DualPrint('HVD | '..tostring(digitWorldPositionV4(locationVector4, facingDirectionAngle, 4, 1)))
 end
 
 ---Stop showing the holographic display

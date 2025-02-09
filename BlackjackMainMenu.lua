@@ -1,5 +1,5 @@
 BlackjackMainMenu = {
-    version = '1.0.0',
+    version = '1.0.1',
     playerChipsMoney = 0,
     playerChipsHalfDollar = false,
     previousBet = nil,
@@ -15,8 +15,6 @@ BlackjackMainMenu = {
 
 local Cron = require('External/Cron.lua')
 local interactionUI = require("External/interactionUI.lua")
---local SingleRoundLogic = require('singleRoundLogic.lua') --Handles 1 round of blackjack
---DualPrint('SingleRoundLogic version: '..SingleRoundLogic.version)
 
 local chip_values = {1,5,10,25,50,100,250,500,1000,2500,5000,10000,25000,50000,250000,1000000}
 local chip_valuesStr = {"$1", "$5", "$10", "$25", "$50", "$100", "$250", "$500", "$1,000", "$2,500", "$5,000", "$10,000", "$25,000", "$50,000", "$250,000", "$1,000,000"}
@@ -116,7 +114,6 @@ end
 ---@param firstIndex number The index of the first chip value option to display. see: buy_values
 local function buyChipsUI(firstIndex)
     local playerMoney = Game.GetTransactionSystem():GetItemQuantity(GetPlayer(), MarketSystem.Money())
-    --DualPrint("Buy Chips UI, firstIndex: "..tostring(firstIndex)..", playerMoney: "..tostring(playerMoney))
     local lowChoiceType = gameinteractionsChoiceType.AlreadyRead
     local oneChoiceType = gameinteractionsChoiceType.AlreadyRead
     local twoChoiceType = gameinteractionsChoiceType.AlreadyRead
@@ -243,7 +240,6 @@ end
 
 ---Start menu 'loop' UI
 function BlackjackMainMenu.StartMainMenu()
-    --DualPrint('MM | Blackjack Main Menu Pressed =')
     local playerMoney = Game.GetTransactionSystem():GetItemQuantity(GetPlayer(), MarketSystem.Money())
     local repeatChoiceType = gameinteractionsChoiceType.AlreadyRead
     local newChoiceType = gameinteractionsChoiceType.AlreadyRead
@@ -308,7 +304,6 @@ function BlackjackMainMenu.StartMainMenu()
                         valueIndex = newIndex - 4
                     end
                 end
-                DualPrint('BMM | valueIndex: '..tostring(valueIndex)..' newIndex: '..tostring(newIndex))
             end
             newBetUI(valueIndex)
         end
