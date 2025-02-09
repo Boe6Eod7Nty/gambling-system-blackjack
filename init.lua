@@ -1,4 +1,4 @@
---init.lua v1.0.2
+--init.lua v1.0.3
 --===================
 --Copyright (c) 2025 Boe6
 --DO NOT DISTRIBUTE
@@ -185,11 +185,11 @@ registerForEvent( "onInit", function()
 
     --native settings UI
     local nativeSettings = GetMod("nativeSettings")
-    nativeSettings.addTab("/gamblingSystem", "Gambling System") -- Add a tab (path, label, callback)
-    nativeSettings.addSubcategory("/gamblingSystem/blackjack", "Blackjack Settings") -- Add a subcategory (path, label, optionalIndex)
+    nativeSettings.addTab("/gamblingSystem", GameLocale.Text("Gambling System")) -- Add a tab (path, label, callback)
+    nativeSettings.addSubcategory("/gamblingSystem/blackjack", GameLocale.Text("Blackjack Settings")) -- Add a subcategory (path, label, optionalIndex)
      -- Parameters: path, label, desc, currentValue, defaultValue, callback, optionalIndex
-    nativeSettings.addSwitch("/gamblingSystem/blackjack", "Show Hand Values", 
-            "Enable/Disable the automatic calculator for hand values, 21, etc.", currentHandValueSetting, true, function(state)
+    nativeSettings.addSwitch("/gamblingSystem/blackjack", GameLocale.Text("Show Hand Values"), 
+            GameLocale.Text("Enable/Disable the automatic calculator for hand values, 21, etc."), currentHandValueSetting, true, function(state)
         -- save the changes to session
         DisplayHandValuesOption[1] = state
     end)

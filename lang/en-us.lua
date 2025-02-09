@@ -17,4 +17,8 @@ return {
     ["Double"] = "Double",
     ["Hand #"] = "Hand #", --note; this value is immediately followed by a number, so it displays "Hand #2"
     ["Join Table"] = "Join Table",
+    ["Blackjack Settings"] = "Blackjack Settings",
+    ["Gambling System"] = "Gambling System",
+    ["Show Hand Values"] = "Show Hand Values",
+    ["Enable/Disable the automatic calculator for hand values, 21, etc."] = "Enable/Disable the automatic calculator for hand values, 21, etc.",
 }
