@@ -1,5 +1,5 @@
 SpotManager = {
-    version = '1.0.2',
+    version = '1.0.3',
     spots = {},
     forcedCam = false
 }
@@ -72,19 +72,19 @@ local function setForcedCamera(enable)
         local camera = GetPlayer():GetFPPCameraComponent()
         local quatOri = EulerAngles.new(forcedCamOri.r, forcedCamOri.p, forcedCamOri.y):ToQuat()
         if ImmersiveFirstPersonInstalled then
-            camera:SetLocalTransform(Vector4.new(0, 0.4, 0.9, 1), quatOri) --account for immersiveFirstPerson camera
-        else
-            camera:SetLocalTransform(Vector4.new(0, 0.4, 0.7, 1), quatOri) --default settings
+            --camera:SetLocalTransform(Vector4.new(0, 0.4, 0.9, 1), quatOri) --account for immersiveFirstPerson camera
+            --GetMod("ImmersiveFirstPerson").api.Disable()
+            StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
         end
-        StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
-        Cron.After(2, function() --maybe unnessisary, idk.
-            StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
-        end)
+        camera:SetLocalTransform(Vector4.new(0, 0.4, 0.7, 1), quatOri) --default settings
     else
         local camera = GetPlayer():GetFPPCameraComponent()
         camera:SetLocalPosition(Vector4.new(0, 0, 0, 1))
         camera:SetLocalOrientation(EulerAngles.new(0, 0, 0):ToQuat())
         StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+        if ImmersiveFirstPersonInstalled then
+            GetMod("ImmersiveFirstPerson").api.Enable()
+        end
     end
 end
 
@@ -103,8 +103,10 @@ local function satAtSpot(id, animObj)
     HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
     if ImmersiveFirstPersonInstalled then
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+        GetMod("ImmersiveFirstPerson").api.Disable()
     end
     local callback1 = function()
+        StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
         setForcedCamera(true)
     end
     local callback2 = function()
@@ -155,7 +157,10 @@ function SpotManager.update(dt) --runs every frame
             setForcedCamera(true)
         end
     else
-        --StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl") --insurance
+        StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl") --insurance
+        if ImmersiveFirstPersonInstalled then
+            GetMod("ImmersiveFirstPerson").api.Enable()
+        end
     end
 end
 

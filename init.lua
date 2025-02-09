@@ -1,4 +1,4 @@
---init.lua v1.0.3
+--init.lua v1.0.4
 --===================
 --Copyright (c) 2025 Boe6
 --DO NOT DISTRIBUTE
@@ -155,6 +155,7 @@ registerForEvent( "onInit", function()
             SingleRoundLogic.dealerHandRevealed = false
             SpotManager.forcedCam = false
             StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+            --GetMod("ImmersiveFirstPerson").api.Enable()
             if not dealerSpawned then
                 spawnNPCdealer()
                 dealerSpawned = true
@@ -282,10 +283,15 @@ registerHotkey('DevHotkey6', 'Dev Hotkey 6', function()
     DualPrint('||=6  Dev hotkey 6 Pressed =')
 
     DualPrint('DisplayHandValuesOption[1]: '..tostring(DisplayHandValuesOption[1]))
+
+    DualPrint('immersiveFirstPerson.API.IsEnabled(): '..tostring(GetMod("ImmersiveFirstPerson").api.IsEnabled()))
 end)
 registerHotkey('DevHotkey7', 'Dev Hotkey 7', function()
     DualPrint('||=7  Dev hotkey 7 Pressed =')
 
+    local camera = GetPlayer():GetFPPCameraComponent()
+    local quatOri = EulerAngles.new(forcedCamOri.r, forcedCamOri.p, forcedCamOri.y):ToQuat()
+    camera:SetLocalTransform(Vector4.new(0, 0.4, 0.7, 1), quatOri) --default settings
 end)
 registerHotkey('DevHotkey8', 'Dev Hotkey 8', function()
     DualPrint('||=8  Dev hotkey 8 Pressed =')
