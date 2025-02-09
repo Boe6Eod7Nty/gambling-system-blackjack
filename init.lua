@@ -180,7 +180,7 @@ registerForEvent( "onInit", function()
     if immersiveFirstPerson == nil then
         ImmersiveFirstPersonInstalled = false
     else
-        DualPrint('ImmersiveFirstPerson mod found, applying fixes.')
+        DualPrint('ImmersiveFirstPerson mod found, applying semi-fix.')
         ImmersiveFirstPersonInstalled = true
     end
 

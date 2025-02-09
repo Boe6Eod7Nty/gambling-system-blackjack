@@ -83,7 +83,7 @@ local function setForcedCamera(enable)
         camera:SetLocalOrientation(EulerAngles.new(0, 0, 0):ToQuat())
         StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
         if ImmersiveFirstPersonInstalled then
-            GetMod("ImmersiveFirstPerson").api.Enable()
+            --GetMod("ImmersiveFirstPerson").api.Enable()
         end
     end
 end
@@ -103,7 +103,7 @@ local function satAtSpot(id, animObj)
     HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
     if ImmersiveFirstPersonInstalled then
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
-        GetMod("ImmersiveFirstPerson").api.Disable()
+        --GetMod("ImmersiveFirstPerson").api.Disable()
     end
     local callback1 = function()
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
@@ -159,7 +159,7 @@ function SpotManager.update(dt) --runs every frame
     else
         StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl") --insurance
         if ImmersiveFirstPersonInstalled then
-            GetMod("ImmersiveFirstPerson").api.Enable()
+            --GetMod("ImmersiveFirstPerson").api.Enable()
         end
     end
 end
