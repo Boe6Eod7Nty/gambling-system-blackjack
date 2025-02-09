@@ -27,6 +27,7 @@ local BlackjackMainMenu = require("BlackjackMainMenu.lua")
 local HolographicValueDisplay = require('HolographicValueDisplay.lua')
 local SimpleCasinoChip = require('SimpleCasinoChip.lua')
 local HandCountDisplay = require('HandCountDisplay.lua')
+local GameSession = require('External/GameSession.lua') --detects game sessions and saves data to disk
 
 local inMenu = true --libaries requirement
 local inGame = false
@@ -35,6 +36,8 @@ Global_temp_Counter_ent = nil
 local temp_counter_app = 0
 local dealerSpawned = false
 ImmersiveFirstPersonInstalled = false
+DisplayHandValuesOption = {true}
+local state = { runtime = 0 } --GameSession runtime
 
 GamblingSystemBlackjack = {
     loaded = false,
@@ -95,6 +98,14 @@ registerForEvent( "onInit", function()
 	GameLocale.Initialize()
     HandCountDisplay.init()
 
+    GameSession.StoreInDir('sessions')
+    GameSession.Persist(DisplayHandValuesOption)
+    GameSession.OnLoad(function()
+        -- This state is not reset when the mod is reloaded
+        --DualPrint('data loaded; enabled card value: '..tostring(DisplayHandValuesOption[1]))
+    end)
+    GameSession.TryLoad()
+
     -- Setup observer and GameUI to detect inGame / inMenu, credit: keanuwheeze | init.lua from the sitAnywhere mod
     Observe('RadialWheelController', 'OnIsInMenuChanged', function(_, isInMenu)
         inMenu = isInMenu
@@ -144,7 +155,7 @@ registerForEvent( "onInit", function()
             SpotManager.forcedCam = false
             StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
             if not dealerSpawned then
-                DualPrint('init | spawned dealer NPC')
+                --DualPrint('init | spawned dealer NPC')
                 spawnNPCdealer()
                 dealerSpawned = true
             end
@@ -163,15 +174,28 @@ registerForEvent( "onInit", function()
         end
     end)
 
-    -- Check if ImmersiveFirstPerson mod is installed and set variable
+    -- Check if ImmersiveFirstPerson mod is installed and set compatibility variable
     local immersiveFirstPerson = GetMod("ImmersiveFirstPerson")
     if immersiveFirstPerson == nil then
-        DualPrint('ImmersiveFirstPerson mod not found')
+        --DualPrint('ImmersiveFirstPerson mod not found')
         ImmersiveFirstPersonInstalled = false
     else
-        DualPrint('ImmersiveFirstPerson mod found')
+        DualPrint('ImmersiveFirstPerson mod found, applying fixes.')
         ImmersiveFirstPersonInstalled = true
     end
+
+    --native settings UI
+    local nativeSettings = GetMod("nativeSettings")
+    nativeSettings.addTab("/gamblingSystem", "Gambling System") -- Add a tab (path, label, callback)
+    nativeSettings.addSubcategory("/gamblingSystem/blackjack", "Blackjack Settings") -- Add a subcategory (path, label, optionalIndex)
+     -- Parameters: path, label, desc, currentValue, defaultValue, callback, optionalIndex
+    nativeSettings.addSwitch("/gamblingSystem/blackjack", "Show Hand Values", 
+            "Enable/Disable the automatic calculator for hand values, 21, etc.", DisplayHandValuesOption[1], true, function(state)
+        -- saving the changes to file / database
+        --DualPrint("Changed SWITCH to "..tostring(state))
+        DisplayHandValuesOption[1] = state
+    end)
+
 end)
 registerForEvent('onUpdate', function(dt)
     if  not inMenu and inGame then
@@ -184,6 +208,9 @@ registerForEvent('onUpdate', function(dt)
         HandCountDisplay.update()
         SingleRoundLogic.update()
     end
+end)
+registerForEvent('onShutdown', function()
+    GameSession.TrySave()
 end)
 
 
@@ -256,6 +283,7 @@ end)
 registerHotkey('DevHotkey6', 'Dev Hotkey 6', function()
     DualPrint('||=6  Dev hotkey 6 Pressed =')
 
+    DualPrint('DisplayHandValuesOption[1]: '..tostring(DisplayHandValuesOption[1]))
 end)
 registerHotkey('DevHotkey7', 'Dev Hotkey 7', function()
     DualPrint('||=7  Dev hotkey 7 Pressed =')

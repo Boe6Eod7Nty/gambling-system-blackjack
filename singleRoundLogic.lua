@@ -818,7 +818,9 @@ function SingleRoundLogic.startRound(deckLocation, deckRotationRPY)
     end)
 
     Cron.After(4, function()
-        HandCountDisplay.DisplayEnabled(true)
+        if DisplayHandValuesOption[1] then --checks mod settings
+            HandCountDisplay.DisplayEnabled(true)
+        end
         if isBoardBJ(SingleRoundLogic.playerHands[1]) or isBoardBJ(SingleRoundLogic.dealerBoardCards) then
             ProcessRoundResult(true)
         else
