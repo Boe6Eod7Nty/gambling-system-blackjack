@@ -50,11 +50,11 @@ local function newBetUI(refMidIndex)
     if refMidIndex < 15 then
         hihChoiceType = gameinteractionsChoiceType.Selected
     end
-    local choice1 = interactionUI.createChoice(GameLocale.Text("Lower Bet"), nil, lowChoiceType)
+    local choice1 = interactionUI.createChoice(GameLocale.Text("Lower Bets"), nil, lowChoiceType)
     local choice2 = interactionUI.createChoice(oneText, nil, oneChoiceType)
     local choice3 = interactionUI.createChoice(twoText, nil, twoChoiceType)
     local choice4 = interactionUI.createChoice(thrText, nil, thrChoiceType)
-    local choice5 = interactionUI.createChoice(GameLocale.Text("Higher Bet"), nil, hihChoiceType)
+    local choice5 = interactionUI.createChoice(GameLocale.Text("Higher Bets"), nil, hihChoiceType)
     local choice6 = interactionUI.createChoice(GameLocale.Text("Back"), nil, gameinteractionsChoiceType.Selected)
     local hub = interactionUI.createHub(GameLocale.Text("Blackjack"), {choice1, choice2, choice3, choice4, choice5, choice6})
     interactionUI.setupHub(hub)

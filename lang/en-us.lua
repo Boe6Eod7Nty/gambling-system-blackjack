@@ -1,8 +1,8 @@
 --see init.lua for full readme details.
 return {
     ["Blackjack"] = "Blackjack", --GameLocale.Text("Blackjack")
-    ["Higher Bet"] = "Higher Bet",
-    ["Lower Bet"] = "Lower Bet",
+    ["Higher Bets"] = "Higher Bets",
+    ["Lower Bets"] = "Lower Bets",
     ["Higher Buy-ins"] = "Higher Buy-ins",
     ["Lower Buy-ins"] = "Lower Buy-ins",
     ["Back"] = "Back",
