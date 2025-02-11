@@ -124,18 +124,37 @@ registerForEvent( "onInit", function()
     inGame = not GameUI.IsDetached() -- Required to check if ingame after reloading all mods
 
     -- Define Hooh location
-    local worldPinUI = {
-        position = Vector4.new(-1041.2463, 1341.5469, 6.21331358, 1)
-    }
     local animObj = {
+        id = 'hooh',
         position = Vector4.new(-1041.2463, 1341.5469, 5.2774734, 1),
         orientation = {x=0,y=0,z=0},
+        exitSpotShift = {x=0.5,y=0,z=0},
         templatePath = "boe6\\gamblingsystemblackjack\\sit_workspot.ent",
         defaultAnim = "sit_chair_table_lean0__2h_on_table__01",
+        enterTime = 2,
+        delayedCallbackTime = 3.5,
+        delayedCallback = function ()
+            BlackjackMainMenu.playerChipsMoney = 0        --Reset vars safe check
+            BlackjackMainMenu.playerChipsHalfDollar = false
+            BlackjackMainMenu.previousBet = nil
+            BlackjackMainMenu.currentBet = nil
+            BlackjackMainMenu.StartMainMenu()
+        end,
         exitAnim = "sit_chair_table_lean0__2h_on_table__01__to__stand__2h_on_sides__01__turn0l__01",
-        exitTime = 2.5
+        exitTime = 2.5, --found via trial and error. Aproximate time to finish animation.
+        worldPinLocation = Vector4.new(-1041.2463, 1341.5469, 6.21331358, 1),
+        interactionRange = 1.0,
+        interactionAngle = 80,
+        iconRange = 6.5,
+        iconRangeMin = 0.5,
+        iconColor = nil,
+        choiceIcon = "ChoiceIcons.SitIcon",
+        UIhubText = GameLocale.Text("Blackjack"),
+        UIchoiceText = GameLocale.Text("Join Table"),
+        UIicon = "ChoiceCaptionParts.SitIcon",
+        UIchoiceType = gameinteractionsChoiceType.QuestImportant
     }
-    SpotManager.AddSpot('hooh', worldPinUI, animObj)
+    SpotManager.AddSpot(animObj)
 
     -- Save and Load detection, coutesy of psiberx; available in #cet-snippets in discord
     local isLoaded = Game.GetPlayer() and Game.GetPlayer():IsAttached() and not Game.GetSystemRequestsHandler():IsPreGame()

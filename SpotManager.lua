@@ -66,7 +66,7 @@ end
 
 ---Move player camera to forced position, typically above table
 ---@param enable boolean to enable, or disable the forced camera perspective
-local function setForcedCamera(enable)
+local function setForcedCamera(enable, animObj)
     SpotManager.forcedCam = enable
     if enable then
         local camera = GetPlayer():GetFPPCameraComponent()
@@ -78,37 +78,34 @@ local function setForcedCamera(enable)
         end
         camera:SetLocalTransform(Vector4.new(0, 0.4, 0.7, 1), quatOri) --default settings
     else
+        --reset to normal camera control
         local camera = GetPlayer():GetFPPCameraComponent()
         camera:SetLocalPosition(Vector4.new(0, 0, 0, 1))
         camera:SetLocalOrientation(EulerAngles.new(0, 0, 0):ToQuat())
         StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+        --[[
         if ImmersiveFirstPersonInstalled then
             --GetMod("ImmersiveFirstPerson").api.Enable()
         end
+        ]]--
     end
 end
 
 ---Triggered on interactionUI choice to enter workspot
----@param id any identification id
 ---@param animObj table spot's animation information
-local function satAtSpot(id, animObj)
-    --[[ --failed attempt at fixing how the camera has different angles sometimes.
-    local player = Game.GetPlayer()
-    local angle = player:GetWorldOrientation():ToEulerAngles()
-    local playerPos = player:GetWorldPosition()
-    local newAngle = EulerAngles.new(angle.roll, 0.0, angle.yaw)
-    Game.GetTeleportationFacility():Teleport(player, playerPos, newAngle)
-    ]]--
+local function triggeredSpot(animObj)
     animateEnteringSpot(animObj)
     HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
     if ImmersiveFirstPersonInstalled then
+        --disables camera control. User movement input + Immersive First Person causes visual bug
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
         --GetMod("ImmersiveFirstPerson").api.Disable()
     end
-    local callback1 = function()
+    local enterCallback = function()
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
-        setForcedCamera(true)
+        setForcedCamera(true, animObj)
     end
+    --[[
     local callback2 = function()
         BlackjackMainMenu.playerChipsMoney = 0        --Reset vars security
         BlackjackMainMenu.playerChipsHalfDollar = false
@@ -116,8 +113,9 @@ local function satAtSpot(id, animObj)
         BlackjackMainMenu.currentBet = nil
         BlackjackMainMenu.StartMainMenu()
     end
-    Cron.After(2, callback1)
-    Cron.After(3.5, callback2)
+    ]]--
+    Cron.After(animObj.enterTime, enterCallback)
+    Cron.After(animObj.delayedCallbackTime, animObj.delayedCallback)
 end
 
 --Register Events (passed from parent)
@@ -150,6 +148,7 @@ function SpotManager.update(dt) --runs every frame
         world.update()
     end
     if SpotManager.forcedCam then --fixes the camera being reset by workspot animation
+                                --TODO: Add yaw correction
         local camera = localPlayer:GetFPPCameraComponent()
         local o = camera:GetLocalOrientation():ToEulerAngles()
         local targetP = forcedCamOri.p
@@ -158,9 +157,11 @@ function SpotManager.update(dt) --runs every frame
         end
     else
         StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl") --insurance
+        --[[
         if ImmersiveFirstPersonInstalled then
             --GetMod("ImmersiveFirstPerson").api.Enable()
         end
+        ]]--
     end
 end
 
@@ -177,11 +178,11 @@ function SpotManager.ExitSpot(id) --Exit spot
         local player = Game.GetPlayer()
         local playerTransform = player:GetWorldTransform()
         local position = playerTransform:GetWorldPosition()
-        local x = position:GetX() + 0.5
-        local y = position:GetY()
-        local z = position:GetZ()
+        local x = position:GetX() + spot.animObj.exitSpotShift.x
+        local y = position:GetY() + spot.animObj.exitSpotShift.y
+        local z = position:GetZ() + spot.animObj.exitSpotShift.z
         local o = spot.animObj.orientation
-        Game.GetTeleportationFacility():Teleport(player, Vector4.new(x, y, z, 1), EulerAngles.new(o.x,o.y,o.z+150))
+        Game.GetTeleportationFacility():Teleport(player, Vector4.new(x, y, z, 1), EulerAngles.new(o.x,o.y,o.z+150))--150 hardcoded..?
 
         local workspotSystem = Game.GetWorkspotSystem()
         workspotSystem:SendFastExitSignal(player)
@@ -191,23 +192,18 @@ function SpotManager.ExitSpot(id) --Exit spot
 end
 
 --- Add spot to SpotManager's managed list of spots
----@param id any identification id
----@param worldPinUI table worldPinUI information
 ---@param animObj table spot's animation information
-function SpotManager.AddSpot(id, worldPinUI, animObj) --Create spot
-    SpotManager.spots[id] = {worldPinUI = worldPinUI, animObj = animObj}
-    world.addInteraction(id, worldPinUI.position, 1.0, 80, "ChoiceIcons.SitIcon", 6.5, 0.5, nil, function(state)
-                    --  (id, position, interactionRange, angle, icon, iconRange, iconRangeMin, iconColor, callback)
+function SpotManager.AddSpot(animObj) --Create spot
+    SpotManager.spots[animObj.id] = {animObj = animObj}
+    world.addInteraction(animObj.id, animObj.worldPinLocation, animObj.interactionRange, animObj.interactionAngle,
+                         animObj.choiceIcon, animObj.iconRange, animObj.iconRangeMin, animObj.iconColor, function(state)
+        --(id, position, interactionRange, angle, icon, iconRange, iconRangeMin, iconColor, callback)
         if state then -- Show
             local UIcallback = function()
-                satAtSpot(id, animObj)
+                triggeredSpot(animObj)
             end
-            basicInteractionUIPrompt(
-                GameLocale.Text("Blackjack"),
-                GameLocale.Text("Join Table"),
-                "ChoiceCaptionParts.SitIcon",
-                gameinteractionsChoiceType.QuestImportant,
-                UIcallback) --Display interactionUI menu
+            --Display interactionUI menu
+            basicInteractionUIPrompt(animObj.UIhubText,animObj.UIchoiceText,animObj.UIicon,animObj.UIchoiceType,UIcallback)
         else -- Hide
             interactionUI.hideHub()
         end
