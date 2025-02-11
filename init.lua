@@ -124,17 +124,22 @@ registerForEvent( "onInit", function()
     inGame = not GameUI.IsDetached() -- Required to check if ingame after reloading all mods
 
     -- Define Hooh location
-    local animObj = {
+     local animObj = {
         id = 'hooh',
         position = Vector4.new(-1041.2463, 1341.5469, 5.2774734, 1),
-        orientation = {x=0,y=0,z=0},
+        orientation = EulerAngles.new(0,0,0),
+        exitOrientationOffset = {r=0,p=0,y=150},-- I *think* this corrects for the 180 turn that the exit animation causes.
         exitSpotShift = {x=0.5,y=0,z=0},
         templatePath = "boe6\\gamblingsystemblackjack\\sit_workspot.ent",
         defaultAnim = "sit_chair_table_lean0__2h_on_table__01",
         enterTime = 2,
+        immediateCallback = function ()
+            HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
+            CardEngine.BuildVisualDeck(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
+        end,
         delayedCallbackTime = 3.5,
         delayedCallback = function ()
-            BlackjackMainMenu.playerChipsMoney = 0        --Reset vars safe check
+            BlackjackMainMenu.playerChipsMoney = 0        --Reset vars b4 game, safe check
             BlackjackMainMenu.playerChipsHalfDollar = false
             BlackjackMainMenu.previousBet = nil
             BlackjackMainMenu.currentBet = nil
@@ -142,6 +147,12 @@ registerForEvent( "onInit", function()
         end,
         exitAnim = "sit_chair_table_lean0__2h_on_table__01__to__stand__2h_on_sides__01__turn0l__01",
         exitTime = 2.5, --found via trial and error. Aproximate time to finish animation.
+        exitStartedCallback = function()
+            HolographicValueDisplay.stopDisplay()
+        end,
+        exitPostAnimationCallback = function()
+            CardEngine.RemoveVisualDeck()
+        end,
         worldPinLocation = Vector4.new(-1041.2463, 1341.5469, 6.21331358, 1),
         interactionRange = 1.0,
         interactionAngle = 80,
@@ -152,7 +163,9 @@ registerForEvent( "onInit", function()
         UIhubText = GameLocale.Text("Blackjack"),
         UIchoiceText = GameLocale.Text("Join Table"),
         UIicon = "ChoiceCaptionParts.SitIcon",
-        UIchoiceType = gameinteractionsChoiceType.QuestImportant
+        UIchoiceType = gameinteractionsChoiceType.QuestImportant,
+        cameraSpotPositionOffset = Vector4.new(0, 0.4, 0.7, 1),
+        cameraSpotRotationOffset = EulerAngles.new(0, -60, 0)
     }
     SpotManager.AddSpot(animObj)
 
@@ -199,7 +212,7 @@ registerForEvent( "onInit", function()
     if immersiveFirstPerson == nil then
         ImmersiveFirstPersonInstalled = false
     else
-        DualPrint('ImmersiveFirstPerson mod found, applying semi-fix.')
+        DualPrint('ImmersiveFirstPerson mod found. Applying known workarounds, expect some visual bugs.')
         ImmersiveFirstPersonInstalled = true
     end
 

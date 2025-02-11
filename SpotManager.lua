@@ -1,6 +1,7 @@
 SpotManager = {
     version = '1.0.4',
     spots = {},
+    activeCam = nil,
     forcedCam = false
 }
 --===================
@@ -11,7 +12,7 @@ SpotManager = {
 --Feel free to ask via nexus/discord, I just dont want my stuff stolen :)
 --===================
 
-local BlackjackMainMenu = require("BlackjackMainMenu.lua")
+--local BlackjackMainMenu = require("BlackjackMainMenu.lua")
 local Cron = require('External/Cron.lua')
 local world = require('External/worldInteraction.lua')
 local GameUI = require("External/GameUI.lua")
@@ -19,8 +20,6 @@ local interactionUI = require("External/interactionUI.lua")
 
 local inMenu = true --libaries requirement
 local inGame = false
-local forcedCamOri = {r=0,p=-60,y=0}
-local localPlayer
 
 --Functions
 --=========
@@ -49,8 +48,7 @@ local function animateEnteringSpot(animObj) --Triggers workspot animation
     local spec = DynamicEntitySpec.new()
     spec.templatePath = animObj.templatePath
     spec.position = animObj.position
-    local o = animObj.orientation
-    spec.orientation = EulerAngles.new(o.x,o.y,o.z):ToQuat()
+    spec.orientation = animObj.orientation:ToQuat()
     spec.tags = {"SpotManager"} --note; I don't know if this needs to be a unique value or what exactly
     -- Spawn entity
     local entID = dynamicEntitySystem:CreateEntity(spec)
@@ -59,24 +57,23 @@ local function animateEnteringSpot(animObj) --Triggers workspot animation
     Cron.After(1, function()
         local entity = Game.FindEntityByID(entID)
         workspotSystem:PlayInDevice(entity, player) --Play workspot
-
-        CardEngine.BuildVisualDeck(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
     end)
 end
 
 ---Move player camera to forced position, typically above table
 ---@param enable boolean to enable, or disable the forced camera perspective
+---@param animObj? table spot's animation object
 local function setForcedCamera(enable, animObj)
     SpotManager.forcedCam = enable
     if enable then
         local camera = GetPlayer():GetFPPCameraComponent()
-        local quatOri = EulerAngles.new(forcedCamOri.r, forcedCamOri.p, forcedCamOri.y):ToQuat()
+        local quatOri = animObj.cameraSpotRotationOffset:ToQuat()
         if ImmersiveFirstPersonInstalled then
-            --camera:SetLocalTransform(Vector4.new(0, 0.4, 0.9, 1), quatOri) --account for immersiveFirstPerson camera
+            --camera:SetLocalTransform(Vector4.new(0, 0.4, 0.9, 1), quatOri) --alt position for immersiveFirstPerson camera
             --GetMod("ImmersiveFirstPerson").api.Disable()
             StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
         end
-        camera:SetLocalTransform(Vector4.new(0, 0.4, 0.7, 1), quatOri) --default settings
+        camera:SetLocalTransform(animObj.cameraSpotPositionOffset, quatOri) --default settings
     else
         --reset to normal camera control
         local camera = GetPlayer():GetFPPCameraComponent()
@@ -95,7 +92,7 @@ end
 ---@param animObj table spot's animation information
 local function triggeredSpot(animObj)
     animateEnteringSpot(animObj)
-    HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
+    animObj.immediateCallback()
     if ImmersiveFirstPersonInstalled then
         --disables camera control. User movement input + Immersive First Person causes visual bug
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
@@ -103,6 +100,7 @@ local function triggeredSpot(animObj)
     end
     local enterCallback = function()
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
+        SpotManager.activeCam = animObj.id
         setForcedCamera(true, animObj)
     end
     --[[
@@ -130,9 +128,6 @@ function SpotManager.init() --runs on game launch
     GameUI.OnSessionStart(function() --  credit: keanuwheeze | init.lua from the sitAnywhere mod
         inGame = true
         world.onSessionStart()
-        Cron.After(1, function ()
-            localPlayer = Game.GetPlayer()
-        end)
     end)
     GameUI.OnSessionEnd(function()
         inGame = false
@@ -147,13 +142,14 @@ function SpotManager.update(dt) --runs every frame
         Cron.Update(dt) -- This is required for Cron to function
         world.update()
     end
-    if SpotManager.forcedCam then --fixes the camera being reset by workspot animation
+    if SpotManager.forcedCam and SpotManager.activeCam ~= nil then --fixes the camera being reset by workspot animation
                                 --TODO: Add yaw correction
-        local camera = localPlayer:GetFPPCameraComponent()
+        local camera = GetPlayer():GetFPPCameraComponent()
         local o = camera:GetLocalOrientation():ToEulerAngles()
-        local targetP = forcedCamOri.p
+        local spot = SpotManager.spots[SpotManager.activeCam]
+        local targetP = spot.animObj.cameraSpotRotationOffset.pitch
         if not (o.pitch < targetP+0.0001 and o.pitch > targetP-0.0001) then
-            setForcedCamera(true)
+            setForcedCamera(true, spot.animObj)
         end
     else
         StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl") --insurance
@@ -171,23 +167,25 @@ end
 --- @param id any identification id
 function SpotManager.ExitSpot(id) --Exit spot
     setForcedCamera(false) --disable forced camera perspective
-    HolographicValueDisplay.stopDisplay()
+    SpotManager.activeCam = nil
     local spot = SpotManager.spots[id]
     SpotManager.ChangeAnimation(spot.animObj.exitAnim, spot.animObj.exitTime + 3, spot.animObj.defaultAnim)
+
+    spot.animObj.exitStartedCallback()
     Cron.After(spot.animObj.exitTime, function() -- Wait for animation to finish
-        local player = Game.GetPlayer()
+        local player = GetPlayer()
         local playerTransform = player:GetWorldTransform()
         local position = playerTransform:GetWorldPosition()
         local x = position:GetX() + spot.animObj.exitSpotShift.x
         local y = position:GetY() + spot.animObj.exitSpotShift.y
         local z = position:GetZ() + spot.animObj.exitSpotShift.z
-        local o = spot.animObj.orientation
-        Game.GetTeleportationFacility():Teleport(player, Vector4.new(x, y, z, 1), EulerAngles.new(o.x,o.y,o.z+150))--150 hardcoded..?
+        local baseOri = spot.animObj.orientation
+        local offOri = spot.animObj.exitOrientationOffset
+        local localEuler = EulerAngles.new( baseOri.roll+offOri.r, baseOri.pitch+offOri.p, baseOri.yaw+offOri.y )
+        Game.GetTeleportationFacility():Teleport(player, Vector4.new(x, y, z, 1), localEuler)--150 hardcoded..?
+        Game.GetWorkspotSystem():SendFastExitSignal(player)
 
-        local workspotSystem = Game.GetWorkspotSystem()
-        workspotSystem:SendFastExitSignal(player)
-
-        CardEngine.RemoveVisualDeck()
+        spot.animObj.exitPostAnimationCallback()
     end)
 end
 
