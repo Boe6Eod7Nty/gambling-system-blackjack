@@ -22,6 +22,7 @@ local holoEntityID = nil
 local holoChipsEntityID = nil
 local holoCenter = nil
 local holoFacingAngle = nil
+local animationJumpDivisor = 30 --adjusts the speed of the animation
 
 ---Counts the number of digits in a number
 ---@param number number number to count digits of
@@ -83,6 +84,7 @@ local function digitWorldPositionV4(numberLength, digitTensPlace)
     local xOffset = digitOffset * digitSpacing * math.cos(angle)
     local yOffset = digitOffset * digitSpacing * math.sin(angle)
     if holoCenter == nil then
+        --shouldn't ever trigger
         holoCenter = Vector4.new(-1040.733, 1340.121, 6.085, 1)
     end
     local digitPosition = Vector4.new(
@@ -94,6 +96,7 @@ local function digitWorldPositionV4(numberLength, digitTensPlace)
     return digitPosition
 end
 
+--- Updates the display's value
 function HolographicValueDisplay.Update()
     if not holoActive then
         return
@@ -105,10 +108,9 @@ function HolographicValueDisplay.Update()
 
     local targetValue = BlackjackMainMenu.playerChipsMoney
 
-    local animationJump = 30 --adjusts the speed of the animation
     local difference = targetValue - currentValue
-    local divided = math.floor(difference / animationJump)
-    if math.abs(difference) < animationJump then
+    local divided = math.floor(difference / animationJumpDivisor)
+    if math.abs(difference) < animationJumpDivisor then
         if difference > 0 then
             targetValue = currentValue + 1
         elseif difference < 0 then
