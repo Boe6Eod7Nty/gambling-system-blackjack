@@ -211,6 +211,10 @@ local function buyChipsUI(firstIndex)
     end
 end
 
+function BlackjackMainMenu.getCurrentChips()
+    return BlackjackMainMenu.playerChipsMoney
+end
+
 function BlackjackMainMenu.Update()
     if BlackjackMainMenu.playerChipsMoney % 1 ~= 0 then
         local floor = math.floor(BlackjackMainMenu.playerChipsMoney)

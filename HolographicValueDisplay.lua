@@ -97,16 +97,14 @@ local function digitWorldPositionV4(numberLength, digitTensPlace)
 end
 
 --- Updates the display's value
-function HolographicValueDisplay.Update()
+function HolographicValueDisplay.Update(targetValue)
     if not holoActive then
         return
-    elseif BlackjackMainMenu.playerChipsMoney == nil then
+    elseif targetValue == nil then
         return
-    elseif currentValue == BlackjackMainMenu.playerChipsMoney then
+    elseif currentValue == targetValue then
         return
     end
-
-    local targetValue = BlackjackMainMenu.playerChipsMoney
 
     local difference = targetValue - currentValue
     local divided = math.floor(difference / animationJumpDivisor)
