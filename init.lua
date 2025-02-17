@@ -127,17 +127,22 @@ registerForEvent( "onInit", function()
      local spotObj = {
         id = 'hooh',
         position = Vector4.new(-1041.2463, 1341.5469, 5.2774734, 1),
+        -- spot_worldPosition
         orientation = EulerAngles.new(0,0,0),
-        exitOrientationOffset = {r=0,p=0,y=150},-- I *think* this corrects for the 180 turn that the exit animation causes.
-        exitSpotShift = {x=0.5,y=0,z=0},
+        -- spot_orientation
         templatePath = "boe6\\gamblingsystemblackjack\\sit_workspot.ent",
+        -- spot_entPath
         defaultAnim = "sit_chair_table_lean0__2h_on_table__01",
+        -- animation_defaultName
         enterTime = 2,
+        -- animation_enterTime
         immediateCallback = function ()
             HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
             CardEngine.BuildVisualDeck(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
         end,
+        -- callback_OnSpotEnter
         delayedCallbackTime = 3.5,
+        -- callback_OnSpotEnterAfterAnimationDelayTime
         delayedCallback = function ()
             BlackjackMainMenu.playerChipsMoney = 0        --Reset vars b4 game, safe check
             BlackjackMainMenu.playerChipsHalfDollar = false
@@ -145,27 +150,49 @@ registerForEvent( "onInit", function()
             BlackjackMainMenu.currentBet = nil
             BlackjackMainMenu.StartMainMenu()
         end,
-        exitAnim = "sit_chair_table_lean0__2h_on_table__01__to__stand__2h_on_sides__01__turn0l__01",
+        -- callback_OnSpotEnterAfterAnimation
         exitTime = 2.5, --found via trial and error. Aproximate time to finish animation.
+        -- callback_OnSpotExitAfterAnimationDelayTime
         exitStartedCallback = function()
             HolographicValueDisplay.stopDisplay()
         end,
+        -- callback_OnSpotExit
         exitPostAnimationCallback = function()
             CardEngine.RemoveVisualDeck()
         end,
+        -- callback_OnSpotExitAfterAnimation
+        exitOrientationOffset = {r=0,p=0,y=150},-- I *think* this corrects for the 180 turn that the exit animation causes.
+        -- exit_orientationCorrection
+        exitSpotShift = {x=0.5,y=0,z=0},
+        -- exit_worldPositionOffset
+        exitAnim = "sit_chair_table_lean0__2h_on_table__01__to__stand__2h_on_sides__01__turn0l__01",
+        -- exit_animationName
         worldPinLocation = Vector4.new(-1041.2463, 1341.5469, 6.21331358, 1),
+        -- mappin_worldPosition
         interactionRange = 1.0,
+        -- mappin_interactionRange
         interactionAngle = 80,
+        -- mappin_interactionAngle
         iconRange = 6.5,
+        -- mappin_rangeMax
         iconRangeMin = 0.5,
+        -- mappin_rangeMin
         iconColor = nil,
+        -- mappin_color
         choiceIcon = "ChoiceIcons.SitIcon",
+        -- mappin_worldIcon
         UIhubText = GameLocale.Text("Blackjack"),
+        -- mappin_hubText
         UIchoiceText = GameLocale.Text("Join Table"),
+        -- mappin_choiceText
         UIicon = "ChoiceCaptionParts.SitIcon",
+        -- mappin_choiceIcon
         UIchoiceType = gameinteractionsChoiceType.QuestImportant,
+        -- mappin_choiceFont
         cameraSpotPositionOffset = Vector4.new(0, 0.4, 0.7, 1),
+        -- camera_worldPositionOffset
         cameraSpotRotationOffset = EulerAngles.new(0, -60, 0)
+        -- camera_OrientationOffset
     }
     SpotManager.AddSpot(spotObj)
 
