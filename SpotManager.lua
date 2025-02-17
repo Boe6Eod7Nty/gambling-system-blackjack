@@ -143,12 +143,13 @@ function SpotManager.update(dt) --runs every frame
         world.update()
     end
     if SpotManager.forcedCam and SpotManager.activeCam ~= nil then --fixes the camera being reset by workspot animation
-                                --TODO: Add yaw correction
         local camera = GetPlayer():GetFPPCameraComponent()
         local o = camera:GetLocalOrientation():ToEulerAngles()
         local spot = SpotManager.spots[SpotManager.activeCam]
-        local targetP = spot.animObj.cameraSpotRotationOffset.pitch
-        if not (o.pitch < targetP+0.0001 and o.pitch > targetP-0.0001) then
+        local camRotation = spot.animObj.cameraSpotRotationOffset
+        local isInPitch = (o.pitch < camRotation.pitch+0.0001 and o.pitch > camRotation.pitch-0.0001)
+        local isInYaw = (o.yaw < camRotation.yaw+0.0001 and o.yaw > camRotation.yaw-0.0001)
+        if (not isInPitch) or (not isInYaw) then
             setForcedCamera(true, spot.animObj)
         end
     else
