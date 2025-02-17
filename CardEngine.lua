@@ -302,14 +302,13 @@ function CardEngine.TriggerDeckShuffle()
 end
 
 ---DualPrint a list of all cards currently spawned
-function CardEngine.PrintAllCards(excludeDeck)
+function CardEngine.PrintAllCards(excludeDeck) --shout out to deepseek for this function I never call 👍
     local cards = "CardEngine cards: "
-    for k,v in pairs(CardEngine.cards) do
-        if k:match('^deckCard_') and excludeDeck then
-            goto continue
+    for k, v in pairs(CardEngine.cards) do
+        -- Only add the card if it's not a deck card when we're excluding them
+        if not (excludeDeck and k:match('^deckCard_')) then
+            cards = cards .. tostring(k) .. ", "
         end
-        cards = cards..tostring(k)..", "
-        ::continue:: --TODO: this might break the game...
     end
     DualPrint(cards)
 end
