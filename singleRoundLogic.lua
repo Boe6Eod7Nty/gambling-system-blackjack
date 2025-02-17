@@ -587,7 +587,6 @@ local function playerActionHit(handIndex)
     table.insert(SingleRoundLogic.playerHands[handIndex], pCardXapp)
     local newLocation = cardTableLocation(handIndex, cardsNum, true)
     Cron.After(0.1, CardEngine.MoveCard(pCardXname, newLocation, standardOri, 'smooth', true))
-    --Cron.After(2.0, CardEngine.FlipCard(pCardXname, 'horizontal', 'left'))
 
     Cron.After(3, function()
         local playerScore = calculateBoardScore(SingleRoundLogic.playerHands[handIndex])

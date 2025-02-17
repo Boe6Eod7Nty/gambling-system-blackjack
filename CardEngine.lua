@@ -21,6 +21,23 @@ local deckShuffleAge = 0
 
 --functions
 --=========
+---comment
+---@param axis Vector4
+---@param angleRadians number
+---@return Quaternion
+local function rotationAxis(axis, angleRadians)
+
+    local normalAxis = axis:Normalize()
+    local halfAngle = angleRadians / 2
+
+    local w = math.cos(halfAngle)
+    local x = math.sin(halfAngle) * normalAxis.x
+    local y = math.sin(halfAngle) * normalAxis.y
+    local z = math.sin(halfAngle) * normalAxis.z
+
+    return Quaternion.new(x, y, z, w)
+end
+
 ---Processes 1 step of each current card in the flippingCards table
 local function flippingCardsProcess()
     for k,v in pairs(flippingCards) do
@@ -61,7 +78,12 @@ local function flippingCardsProcess()
             end
             local rotatedVector = forwardVector.RotateAxis(forwardVector, upVector, angleRadians)
             outQuat = entQuat.BuildFromDirectionVector(rotatedVector, upVector)
-        end --TODO: Add vertical flip. quaternions are DUMB
+        elseif v.flipAngle == 'vertical' then --still doesn't work. smh
+            local rotatedUp = upVector.RotateAxis(upVector, forwardVector, angleRadians)
+            outQuat = entQuat.BuildFromDirectionVector(forwardVector, rotatedUp)
+        else
+            DualPrint('CE | Unknown flipAngle: '..tostring(v.flipAngle))
+        end
 
         --add height during first half of flip, subtract during second. no action when in the middle. (the 0.5 does this)
         if v.flipAngle == 'horizontal' then
@@ -69,6 +91,12 @@ local function flippingCardsProcess()
                 v.curHeight = v.curHeight + liftDistance
             elseif v.lifetime > (steps / 2)-0.5 then
                 v.curHeight = v.curHeight - liftDistance
+            end
+        elseif v.flipAngle == 'vertical' then
+            if v.lifetime < (steps / 2)-0.5 then
+                v.curHeight = v.curHeight + liftDistance * 2
+            elseif v.lifetime > (steps / 2)-0.5 then
+                v.curHeight = v.curHeight - liftDistance * 2
             end
         end
         entityVector4.z = v.curHeight
@@ -120,7 +148,7 @@ local function movingCardsProcess(dt)
                 if magnitude <= moveDistance then
                     Game.GetTeleportationFacility():Teleport(entity, TargetVector4, euler)
                     if card.flipEnd then
-                        Cron.After(0.5, CardEngine.FlipCard(card.id, 'horizontal', 'left', false))
+                        Cron.After(0.5, CardEngine.FlipCard(card.id, card.flipAngle, card.flipDirection, false))
                     end
                     movingCards[i] = nil
                     break
@@ -210,15 +238,23 @@ end
 ---@param positionVector4 any Vector4 target position of card
 ---@param orientationRPY any orientation target as {r=,p=,y=}
 ---@param movementStyle string animation style
----@param flipEnd boolean flip card at end
-function CardEngine.MoveCard(id, positionVector4, orientationRPY, movementStyle, flipEnd)
+---@param flipEnd boolean flip card at end true/false
+---@param flipAngle? string Optional 'horizontal', 'facewise', or 'vertical'
+---@param flipDirection? string Optional 'left' or 'right'
+function CardEngine.MoveCard(id, positionVector4, orientationRPY, movementStyle, flipEnd, flipAngle, flipDirection)
     --DualPrint('CE | Move sent for id: '..tostring(id))
+    if flipAngle == nil then
+        flipAngle = 'horizontal'
+    end
+    if flipDirection == nil then
+        flipDirection = 'left'
+    end
     local entity = Game.FindEntityByID(CardEngine.cards[id].entID)
     if movementStyle == 'snap' then
         local euler = EulerAngles.new(orientationRPY.r, orientationRPY.p, orientationRPY.y)
         Game.GetTeleportationFacility():Teleport(entity, positionVector4, euler)
     elseif movementStyle == 'smooth' then
-        movingCards[id] = {id = id, targetPos = positionVector4, TargetOriRPY = orientationRPY, movementStyle = movementStyle, flipEnd = flipEnd, overAge = 0}
+        movingCards[id] = {id = id, targetPos = positionVector4, TargetOriRPY = orientationRPY, movementStyle = movementStyle, flipEnd = flipEnd, flipAngle = flipAngle, flipDirection = flipDirection, overAge = 0}
     end
     if entity ~= nil then
         entity:PlaySoundEvent("q115_sc_02d_card_pick_up")
