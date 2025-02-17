@@ -163,6 +163,7 @@ local function buyChipsUI(firstIndex)
         if playerMoney >= buy_values[firstIndex] then
             interactionUI.hideHub()
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex]
+            SpotManager.ChangeAnimation("sit_chair_table_lean0__2h_on_table__lh_flick__03", 1.5, "sit_chair_table_lean0__2h_on_table__01")
             Game.AddToInventory("Items.money", -(buy_values[firstIndex]) )
             BlackjackMainMenu.StartMainMenu()
         end
@@ -171,6 +172,7 @@ local function buyChipsUI(firstIndex)
         if playerMoney >= buy_values[firstIndex + 1] then
             interactionUI.hideHub()
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex + 1]
+            SpotManager.ChangeAnimation("sit_chair_table_lean0__2h_on_table__lh_flick__03", 1.5, "sit_chair_table_lean0__2h_on_table__01")
             Game.AddToInventory("Items.money", -(buy_values[firstIndex + 1]) )
             BlackjackMainMenu.StartMainMenu()
         end
@@ -179,6 +181,7 @@ local function buyChipsUI(firstIndex)
         if playerMoney >= buy_values[firstIndex + 2] then
             interactionUI.hideHub()
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex + 2]
+            SpotManager.ChangeAnimation("sit_chair_table_lean0__2h_on_table__lh_flick__03", 1.5, "sit_chair_table_lean0__2h_on_table__01")
             Game.AddToInventory("Items.money", -(buy_values[firstIndex + 2]) )
             BlackjackMainMenu.StartMainMenu()
         end
@@ -187,6 +190,7 @@ local function buyChipsUI(firstIndex)
         if playerMoney >= buy_values[firstIndex + 3] then
             interactionUI.hideHub()
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex + 3]
+            SpotManager.ChangeAnimation("sit_chair_table_lean0__2h_on_table__lh_flick__03", 1.5, "sit_chair_table_lean0__2h_on_table__01")
             Game.AddToInventory("Items.money", -(buy_values[firstIndex + 3]) )
             BlackjackMainMenu.StartMainMenu()
         end
@@ -195,6 +199,7 @@ local function buyChipsUI(firstIndex)
         if playerMoney >= buy_values[firstIndex + 4] then
             interactionUI.hideHub()
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + buy_values[firstIndex + 4]
+            SpotManager.ChangeAnimation("sit_chair_table_lean0__2h_on_table__lh_flick__03", 1.5, "sit_chair_table_lean0__2h_on_table__01")
             Game.AddToInventory("Items.money", -(buy_values[firstIndex + 4]) )
             BlackjackMainMenu.StartMainMenu()
         end
