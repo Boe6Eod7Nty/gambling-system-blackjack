@@ -46,9 +46,9 @@ local function animateEnteringSpot(spotObject) --Triggers workspot animation
     local dynamicEntitySystem = Game.GetDynamicEntitySystem()
     local workspotSystem = Game.GetWorkspotSystem()
     local spec = DynamicEntitySpec.new()
-    spec.templatePath = spotObject.templatePath
-    spec.position = spotObject.position
-    spec.orientation = spotObject.orientation:ToQuat()
+    spec.templatePath = spotObject.spot_entWorkspotPath
+    spec.position = spotObject.spot_worldPosition
+    spec.orientation = spotObject.spot_orientation:ToQuat()
     spec.tags = {"SpotManager"} --note; I don't know if this needs to be a unique value or what exactly
     -- Spawn entity
     local entID = dynamicEntitySystem:CreateEntity(spec)
@@ -170,7 +170,7 @@ function SpotManager.ExitSpot(id) --Exit spot
     setForcedCamera(false) --disable forced camera perspective
     SpotManager.activeCam = nil
     local spot = SpotManager.spots[id]
-    SpotManager.ChangeAnimation(spot.spotObject.exitAnim, spot.spotObject.exitTime + 3, spot.spotObject.defaultAnim)
+    SpotManager.ChangeAnimation(spot.spotObject.exitAnim, spot.spotObject.exitTime + 3, spot.spotObject.animation_defaultName)
 
     spot.spotObject.exitStartedCallback()
     Cron.After(spot.spotObject.exitTime, function() -- Wait for animation to finish
@@ -180,7 +180,7 @@ function SpotManager.ExitSpot(id) --Exit spot
         local x = position:GetX() + spot.spotObject.exitSpotShift.x
         local y = position:GetY() + spot.spotObject.exitSpotShift.y
         local z = position:GetZ() + spot.spotObject.exitSpotShift.z
-        local baseOri = spot.spotObject.orientation
+        local baseOri = spot.spotObject.spot_entWorkspotPath
         local offOri = spot.spotObject.exitOrientationOffset
         local localEuler = EulerAngles.new( baseOri.roll+offOri.r, baseOri.pitch+offOri.p, baseOri.yaw+offOri.y )
         Game.GetTeleportationFacility():Teleport(player, Vector4.new(x, y, z, 1), localEuler)--150 hardcoded..?

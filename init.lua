@@ -127,13 +127,13 @@ registerForEvent( "onInit", function()
      local spotObj = {
         spot_id = 'hooh',
         -- spot_id
-        position = Vector4.new(-1041.2463, 1341.5469, 5.2774734, 1),
+        spot_worldPosition = Vector4.new(-1041.2463, 1341.5469, 5.2774734, 1),
         -- spot_worldPosition
-        orientation = EulerAngles.new(0,0,0),
+        spot_orientation = EulerAngles.new(0,0,0),
         -- spot_orientation
-        templatePath = "boe6\\gamblingsystemblackjack\\sit_workspot.ent",
-        -- spot_entPath
-        defaultAnim = "sit_chair_table_lean0__2h_on_table__01",
+        spot_entWorkspotPath = "boe6\\gamblingsystemblackjack\\sit_workspot.ent",
+        -- spot_entWorkspotPath
+        animation_defaultName = "sit_chair_table_lean0__2h_on_table__01",
         -- animation_defaultName
         enterTime = 2,
         -- animation_enterTime
