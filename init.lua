@@ -125,7 +125,8 @@ registerForEvent( "onInit", function()
 
     -- Define Hooh location
      local spotObj = {
-        id = 'hooh',
+        spot_id = 'hooh',
+        -- spot_id
         position = Vector4.new(-1041.2463, 1341.5469, 5.2774734, 1),
         -- spot_worldPosition
         orientation = EulerAngles.new(0,0,0),
