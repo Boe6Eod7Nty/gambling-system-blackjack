@@ -1,5 +1,5 @@
 SpotManager = {
-    version = '1.1.0',
+    version = '1.1.1',
     spots = {},
     activeCam = nil,
     forcedCam = false
@@ -200,7 +200,11 @@ function SpotManager.AddSpot(spotObject) --Create spot
         --(id, position, interactionRange, angle, icon, iconRange, iconRangeMin, iconColor, callback)
         if state then -- Show
             local UIcallback = function()
-                triggeredSpot(spotObject)
+                if spotObject.spot_useWorkSpot then
+                    triggeredSpot(spotObject)
+                else
+                    spotObject.callback_UIwithoutWorkspotTriggered()
+                end
             end
             --Display interactionUI menu
             basicInteractionUIPrompt(spotObject.mappin_hubText,spotObject.mappin_choiceText,spotObject.mappin_choiceIcon,spotObject.mappin_choiceFont,UIcallback)

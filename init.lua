@@ -1,4 +1,4 @@
---init.lua v1.0.6
+--init.lua v1.0.7
 --===================
 --Copyright (c) 2025 Boe6
 --DO NOT DISTRIBUTE
@@ -129,8 +129,12 @@ registerForEvent( "onInit", function()
         spot_worldPosition = Vector4.new(-1041.2463, 1341.5469, 5.2774734, 1),
         spot_orientation = EulerAngles.new(0,0,0),
         spot_entWorkspotPath = "boe6\\gamblingsystemblackjack\\sit_workspot.ent",
+        spot_useWorkSpot = true,
         animation_defaultName = "sit_chair_table_lean0__2h_on_table__01",
         animation_defaultEnterTime = 2,
+        callback_UIwithoutWorkspotTriggered = function()
+            --pass
+        end,
         callback_OnSpotEnter = function ()
             HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
             CardEngine.BuildVisualDeck(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
