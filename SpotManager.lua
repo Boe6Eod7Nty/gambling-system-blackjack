@@ -67,13 +67,13 @@ local function setForcedCamera(enable, spotObject)
     SpotManager.forcedCam = enable
     if enable then
         local camera = GetPlayer():GetFPPCameraComponent()
-        local quatOri = spotObject.cameraSpotRotationOffset:ToQuat()
+        local quatOri = spotObject.camera_OrientationOffset:ToQuat()
         if ImmersiveFirstPersonInstalled then
             --camera:SetLocalTransform(Vector4.new(0, 0.4, 0.9, 1), quatOri) --alt position for immersiveFirstPerson camera
             --GetMod("ImmersiveFirstPerson").api.Disable()
             StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
         end
-        camera:SetLocalTransform(spotObject.cameraSpotPositionOffset, quatOri) --default settings
+        camera:SetLocalTransform(spotObject.camera_worldPositionOffset, quatOri) --default settings
     else
         --reset to normal camera control
         local camera = GetPlayer():GetFPPCameraComponent()
@@ -92,7 +92,7 @@ end
 ---@param spotObject table spots information object
 local function triggeredSpot(spotObject)
     animateEnteringSpot(spotObject)
-    spotObject.immediateCallback()
+    spotObject.callback_OnSpotEnter()
     if ImmersiveFirstPersonInstalled then
         --disables camera control. User movement input + Immersive First Person causes visual bug
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
@@ -112,8 +112,8 @@ local function triggeredSpot(spotObject)
         BlackjackMainMenu.StartMainMenu()
     end
     ]]--
-    Cron.After(spotObject.enterTime, enterCallback)
-    Cron.After(spotObject.delayedCallbackTime, spotObject.delayedCallback)
+    Cron.After(spotObject.animation_defaultEnterTime, enterCallback)
+    Cron.After(spotObject.callback_OnSpotEnterAfterAnimationDelayTime, spotObject.callback_OnSpotEnterAfterAnimation)
 end
 
 --Register Events (passed from parent)
@@ -146,7 +146,7 @@ function SpotManager.update(dt) --runs every frame
         local camera = GetPlayer():GetFPPCameraComponent()
         local o = camera:GetLocalOrientation():ToEulerAngles()
         local spot = SpotManager.spots[SpotManager.activeCam]
-        local camRotation = spot.spotObject.cameraSpotRotationOffset
+        local camRotation = spot.spotObject.camera_OrientationOffset
         local isInPitch = (o.pitch < camRotation.pitch+0.0001 and o.pitch > camRotation.pitch-0.0001)
         local isInYaw = (o.yaw < camRotation.yaw+0.0001 and o.yaw > camRotation.yaw-0.0001)
         if (not isInPitch) or (not isInYaw) then
@@ -170,23 +170,24 @@ function SpotManager.ExitSpot(id) --Exit spot
     setForcedCamera(false) --disable forced camera perspective
     SpotManager.activeCam = nil
     local spot = SpotManager.spots[id]
-    SpotManager.ChangeAnimation(spot.spotObject.exitAnim, spot.spotObject.exitTime + 3, spot.spotObject.animation_defaultName)
+    SpotManager.ChangeAnimation(spot.spotObject.exit_animationName, spot.spotObject.callback_OnSpotExitAfterAnimationDelayTime + 3, spot.spotObject.animation_defaultName)
 
-    spot.spotObject.exitStartedCallback()
-    Cron.After(spot.spotObject.exitTime, function() -- Wait for animation to finish
+    spot.spotObject.callback_OnSpotExit()
+    Cron.After(spot.spotObject.callback_OnSpotExitAfterAnimationDelayTime, function() -- Wait for animation to finish
         local player = GetPlayer()
         local playerTransform = player:GetWorldTransform()
         local position = playerTransform:GetWorldPosition()
-        local x = position:GetX() + spot.spotObject.exitSpotShift.x
-        local y = position:GetY() + spot.spotObject.exitSpotShift.y
-        local z = position:GetZ() + spot.spotObject.exitSpotShift.z
-        local baseOri = spot.spotObject.spot_entWorkspotPath
-        local offOri = spot.spotObject.exitOrientationOffset
+        local teleportPosition = Vector4.new(
+            position:GetX() + spot.spotObject.exit_worldPositionOffset.x,
+            position:GetY() + spot.spotObject.exit_worldPositionOffset.y,
+            position:GetZ() + spot.spotObject.exit_worldPositionOffset.z,1)
+        local baseOri = spot.spotObject.spot_orientation
+        local offOri = spot.spotObject.exit_orientationCorrection
         local localEuler = EulerAngles.new( baseOri.roll+offOri.r, baseOri.pitch+offOri.p, baseOri.yaw+offOri.y )
-        Game.GetTeleportationFacility():Teleport(player, Vector4.new(x, y, z, 1), localEuler)--150 hardcoded..?
+        Game.GetTeleportationFacility():Teleport(player, teleportPosition, localEuler)--150 hardcoded..?
         Game.GetWorkspotSystem():SendFastExitSignal(player)
 
-        spot.spotObject.exitPostAnimationCallback()
+        spot.spotObject.callback_OnSpotExitAfterAnimation()
     end)
 end
 
@@ -194,15 +195,15 @@ end
 ---@param spotObject table spot information object
 function SpotManager.AddSpot(spotObject) --Create spot
     SpotManager.spots[spotObject.spot_id] = {spotObject = spotObject}
-    world.addInteraction(spotObject.spot_id, spotObject.worldPinLocation, spotObject.interactionRange, spotObject.interactionAngle,
-        spotObject.choiceIcon, spotObject.iconRange, spotObject.iconRangeMin, spotObject.iconColor, function(state)
+    world.addInteraction(spotObject.spot_id, spotObject.mappin_worldPosition, spotObject.mappin_interactionRange, spotObject.mappin_interactionAngle,
+        spotObject.mappin_worldIcon, spotObject.mappin_rangeMax, spotObject.mappin_rangeMin, spotObject.mappin_color, function(state)
         --(id, position, interactionRange, angle, icon, iconRange, iconRangeMin, iconColor, callback)
         if state then -- Show
             local UIcallback = function()
                 triggeredSpot(spotObject)
             end
             --Display interactionUI menu
-            basicInteractionUIPrompt(spotObject.UIhubText,spotObject.UIchoiceText,spotObject.UIicon,spotObject.UIchoiceType,UIcallback)
+            basicInteractionUIPrompt(spotObject.mappin_hubText,spotObject.mappin_choiceText,spotObject.mappin_choiceIcon,spotObject.mappin_choiceFont,UIcallback)
         else -- Hide
             interactionUI.hideHub()
         end
