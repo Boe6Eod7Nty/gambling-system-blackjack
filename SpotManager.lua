@@ -14,7 +14,6 @@ SpotManager = {
 
 --local BlackjackMainMenu = require("BlackjackMainMenu.lua")
 local Cron = require('External/Cron.lua')
-local world = require('External/worldInteraction.lua')
 local GameUI = require("External/GameUI.lua")
 local interactionUI = require("External/interactionUI.lua")
 
@@ -103,15 +102,6 @@ local function triggeredSpot(spotObject)
         SpotManager.activeCam = spotObject.spot_id
         setForcedCamera(true, spotObject)
     end
-    --[[
-    local callback2 = function()
-        BlackjackMainMenu.playerChipsMoney = 0        --Reset vars security
-        BlackjackMainMenu.playerChipsHalfDollar = false
-        BlackjackMainMenu.previousBet = nil
-        BlackjackMainMenu.currentBet = nil
-        BlackjackMainMenu.StartMainMenu()
-    end
-    ]]--
     Cron.After(spotObject.animation_defaultEnterTime, enterCallback)
     Cron.After(spotObject.callback_OnSpotEnterAfterAnimationDelayTime, spotObject.callback_OnSpotEnterAfterAnimation)
 end
@@ -124,23 +114,41 @@ function SpotManager.init() --runs on game launch
         inMenu = isInMenu
     end)
 
+    ObserveAfter("BaseMappinBaseController", "UpdateRootState", function(this) -- Custom mappin texture
+        local mappin = this:GetMappin()
+        if not mappin then
+            return
+        end
+        local worldPosition = mappin:GetWorldPosition()
+        for i, spotTable in pairs(SpotManager.spots) do
+            if Vector4.Distance(worldPosition, spotTable.spotObject.mappin_worldPosition) < 0.05 and spotTable.spotObject.spot_showingInteractUI then
+                local record = TweakDBInterface.GetUIIconRecord(spotObject.mappin_worldIcon)
+                this.iconWidget:SetAtlasResource(record:AtlasResourcePath())
+                this.iconWidget:SetTexturePart(record:AtlasPartName())
+                this.iconWidget:SetTintColor(spotTable.spotObject.mappin_color or HDRColor.new({ Red = 0.15829999744892, Green = 1.3033000230789, Blue = 1.4141999483109, Alpha = 1.0 }))
+            end
+        end
+    end)
+
     inGame = false          --Setup observer and GameUI to detect inGame / inMenu
     GameUI.OnSessionStart(function() --  credit: keanuwheeze | init.lua from the sitAnywhere mod
         inGame = true
-        world.onSessionStart()
+
+        for i, spotTable in pairs(SpotManager.spots) do
+            spotTable.spotObject.spot_showingInteractUI = false
+            spotTable.spotObject.mappin_visible = false
+            spotTable.spotObject.mappin_gameMappinID = nil
+        end
     end)
     GameUI.OnSessionEnd(function()
         inGame = false
     end)
     inGame = not GameUI.IsDetached() -- Required to check if ingame after reloading all mods
 
-    world.init()
-
 end
 function SpotManager.update(dt) --runs every frame
     if  not inMenu and inGame then
         Cron.Update(dt) -- This is required for Cron to function
-        world.update()
     end
     if SpotManager.forcedCam and SpotManager.activeCam ~= nil then --fixes the camera being reset by workspot animation
         local camera = GetPlayer():GetFPPCameraComponent()
@@ -159,6 +167,82 @@ function SpotManager.update(dt) --runs every frame
             --GetMod("ImmersiveFirstPerson").api.Enable()
         end
         ]]--
+    end
+
+    for i, spotTable in pairs(SpotManager.spots) do --mappin updating and UI interaction. credit to keanuwheeze for working code references
+        local shouldShowUI = true
+        local shouldShowIcon = true
+        local player = GetPlayer()
+        local position = player:GetWorldPosition()
+        local forwardVector = player:GetWorldForward()
+        local mapping_pos = spotTable.spotObject.mappin_worldPosition
+        -- check interaction range
+        if not ( Vector4.Distance(position, mapping_pos) < spotTable.spotObject.mappin_interactionRange ) then
+            shouldShowUI = false
+        end
+        -- check interaction angle
+        local vector4difference = Vector4.new(position.x - mapping_pos.x, position.y - mapping_pos.y, position.z - mapping_pos.z, 0)
+        local angleBetween = Vector4.GetAngleBetween(forwardVector, vector4difference)
+        if not ( 180 - angleBetween < spotTable.spotObject.mappin_interactionAngle ) then
+            shouldShowUI = false
+        end
+        -- check looking pitch_angle, if looking too far up or down
+        local pitch = Game.GetCameraSystem():GetActiveCameraData().rotation:ToEulerAngles().pitch
+        local min, max = -75, -10
+        if not (min < pitch and pitch < max) then
+            shouldShowUI = false
+        end
+        if Vector4.Distance(position, mapping_pos) > spotTable.spotObject.mappin_rangeMax then
+            shouldShowIcon = false
+        end
+        if Vector4.Distance(position, mapping_pos) < spotTable.spotObject.mappin_rangeMin then
+            shouldShowIcon = false
+        end
+
+        if shouldShowUI ~= spotTable.spotObject.spot_showingInteractUI then --show or hide the "join" dialog UI
+            if shouldShowUI then
+                -- currently off, turning on UI
+                spotTable.spotObject.spot_showingInteractUI = true
+                local UIcallback = function()
+                    if spotTable.spotObject.spot_useWorkSpot then
+                        triggeredSpot(spotTable.spotObject)
+                    else
+                        spotTable.spotObject.callback_UIwithoutWorkspotTriggered()
+                    end
+                end
+                --Display interactionUI menu
+                basicInteractionUIPrompt(spotTable.spotObject.mappin_hubText,spotTable.spotObject.mappin_choiceText,spotTable.spotObject.mappin_choiceIcon,spotTable.spotObject.mappin_choiceFont,UIcallback)
+
+                --below probably not needed, sit anywhere doesnt use it.
+                local blackboardDefs = Game.GetAllBlackboardDefs();
+                local blackboardPSM = Game.GetBlackboardSystem():GetLocalInstanced(GetPlayer():GetEntityID(), blackboardDefs.PlayerStateMachine);
+                blackboardPSM:SetInt(blackboardDefs.PlayerStateMachine.SceneTier, 1, true);
+            else
+                -- currently on, hide UI.
+                spotTable.spotObject.spot_showingInteractUI = false
+                interactionUI.hideHub()
+            end
+        end
+
+        if shouldShowIcon ~= spotTable.spotObject.mappin_visible then --shows or hides the mappin
+            if shouldShowIcon then
+                spotTable.spotObject.mappin_visible = true
+                if spotTable.spotObject.mappin_gameMappinID == nil then
+                    local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = gamedataMappinVariant.SitVariant, visibleThroughWalls = true }) --TODO: add customizability for variant and visibility
+                    spotTable.spotObject.mappin_gameMappinID = Game.GetMappinSystem():RegisterMappin(mappin_data, spotTable.spotObject.mappin_worldPosition)
+                else
+                    DualPrint('SM | Extra mappin left in memory: '..tostring(spotTable.spotObject.mappin_gameMappinID)..', Error #8833')
+                end
+            else
+                spotTable.spotObject.mappin_visible = false
+                if spotTable.spotObject.mappin_gameMappinID ~= nil then
+                    Game.GetMappinSystem():UnregisterMappin(spotTable.spotObject.mappin_gameMappinID)
+                    spotTable.spotObject.mappin_gameMappinID = nil
+                else
+                    DualPrint('SM | Missing mappin: '..tostring(spotTable.spotObject.mappin_gameMappinID)..', Error #8844')
+                end
+            end
+        end
     end
 end
 
@@ -195,24 +279,8 @@ end
 ---@param spotObject table spot information object
 function SpotManager.AddSpot(spotObject) --Create spot
     SpotManager.spots[spotObject.spot_id] = {spotObject = spotObject}
-    world.addInteraction(spotObject.spot_id, spotObject.mappin_worldPosition, spotObject.mappin_interactionRange, spotObject.mappin_interactionAngle,
-        spotObject.mappin_worldIcon, spotObject.mappin_rangeMax, spotObject.mappin_rangeMin, spotObject.mappin_color, function(state)
-        --(id, position, interactionRange, angle, icon, iconRange, iconRangeMin, iconColor, callback)
-        if state then -- Show
-            local UIcallback = function()
-                if spotObject.spot_useWorkSpot then
-                    triggeredSpot(spotObject)
-                else
-                    spotObject.callback_UIwithoutWorkspotTriggered()
-                end
-            end
-            --Display interactionUI menu
-            basicInteractionUIPrompt(spotObject.mappin_hubText,spotObject.mappin_choiceText,spotObject.mappin_choiceIcon,spotObject.mappin_choiceFont,UIcallback)
-        else -- Hide
-            interactionUI.hideHub()
-        end
-    end)
 end
+
 --- Change Animation for set time, then return to 'default' animation position
 ---@param animName string Animation to trigger
 ---@param duration number Duration of animation

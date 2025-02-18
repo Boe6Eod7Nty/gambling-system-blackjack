@@ -13,6 +13,9 @@
 --ArchiveXL
 --TweakXL
 --===================
+--CREDITS:
+-- All respective devs of all requirements and development software!
+-- keanuwheeze for worldInteraction.lua & workspotUtils.lua, which I used as a guide for implementing UI and mappins into SpotManager.lua
 
 --Modules
 --=======
@@ -33,7 +36,6 @@ local inMenu = true --libaries requirement
 local inGame = false
 local dealerEntID = nil
 Global_temp_Counter_ent = nil
-local temp_counter_app = 0
 local dealerSpawned = false
 ImmersiveFirstPersonInstalled = false
 DisplayHandValuesOption = {true}
@@ -130,6 +132,7 @@ registerForEvent( "onInit", function()
         spot_orientation = EulerAngles.new(0,0,0),
         spot_entWorkspotPath = "boe6\\gamblingsystemblackjack\\sit_workspot.ent",
         spot_useWorkSpot = true,
+        spot_showingInteractUI = false,
         animation_defaultName = "sit_chair_table_lean0__2h_on_table__01",
         animation_defaultEnterTime = 2,
         callback_UIwithoutWorkspotTriggered = function()
@@ -157,7 +160,7 @@ registerForEvent( "onInit", function()
         exit_worldPositionOffset = {x=0.5,y=0,z=0},
         exit_animationName = "sit_chair_table_lean0__2h_on_table__01__to__stand__2h_on_sides__01__turn0l__01",
         mappin_worldPosition = Vector4.new(-1041.2463, 1341.5469, 6.21331358, 1),
-        mappin_interactionRange = 1.0,
+        mappin_interactionRange = 1.4,
         mappin_interactionAngle = 80,
         mappin_rangeMax = 6.5,
         mappin_rangeMin = 0.5,
@@ -167,6 +170,8 @@ registerForEvent( "onInit", function()
         mappin_choiceText = GameLocale.Text("Join Table"),
         mappin_choiceIcon = "ChoiceCaptionParts.SitIcon",
         mappin_choiceFont = gameinteractionsChoiceType.QuestImportant,
+        mappin_gameMappinID = nil,
+        mappin_visible = false,
         camera_worldPositionOffset = Vector4.new(0, 0.4, 0.7, 1),
         camera_OrientationOffset = EulerAngles.new(0, -60, 0)
     }
