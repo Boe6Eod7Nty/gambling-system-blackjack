@@ -1,5 +1,5 @@
 SpotManager = {
-    version = '1.1.3',
+    version = '1.1.4',
     spots = {},
     activeCam = nil,
     forcedCam = false
@@ -242,7 +242,11 @@ function SpotManager.update(dt) --runs every frame
             if shouldShowIcon then
                 spotTable.spotObject.mappin_visible = true
                 if spotTable.spotObject.mappin_gameMappinID == nil then
-                    local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = gamedataMappinVariant.SitVariant, visibleThroughWalls = true }) --TODO: add customizability for variant and visibility
+                    local mappinVariant = gamedataMappinVariant.SitVariant
+                    if spotTable.spotObject.mappin_variant ~= nil then
+                        mappinVariant = spotTable.spotObject.mappin_variant
+                    end
+                    local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = mappinVariant, visibleThroughWalls = true }) --TODO: add customizability for variant and visibility
                     spotTable.spotObject.mappin_gameMappinID = Game.GetMappinSystem():RegisterMappin(mappin_data, spotTable.spotObject.mappin_worldPosition)
                 else
                     DualPrint('SM | Extra mappin left in memory: '..tostring(spotTable.spotObject.mappin_gameMappinID)..', Error #8833')

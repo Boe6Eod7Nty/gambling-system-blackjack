@@ -172,6 +172,7 @@ registerForEvent( "onInit", function()
         mappin_choiceFont = gameinteractionsChoiceType.QuestImportant,
         mappin_gameMappinID = nil,
         mappin_visible = false,
+        mappin_variant = gamedataMappinVariant.SitVariant,
         camera_worldPositionOffset = Vector4.new(0, 0.4, 0.7, 1),
         camera_OrientationOffset = EulerAngles.new(0, -60, 0)
     }
