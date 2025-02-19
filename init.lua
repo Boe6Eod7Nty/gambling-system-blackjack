@@ -1,3 +1,8 @@
+GamblingSystemBlackjack = {
+    version = '1.0.8',
+    loaded = false,
+    ready = false
+}
 --init.lua v1.0.7
 --===================
 --Copyright (c) 2025 Boe6
@@ -40,11 +45,6 @@ local dealerSpawned = false
 ImmersiveFirstPersonInstalled = false
 DisplayHandValuesOption = {true}
 local state = { runtime = 0 } --GameSession runtime
-
-GamblingSystemBlackjack = {
-    loaded = false,
-    ready = false
-}
 
 --Functions
 --=========
