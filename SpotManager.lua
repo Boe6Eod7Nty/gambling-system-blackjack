@@ -28,18 +28,20 @@ local inGame = false
 ---@param icon string UI icon tweak record
 ---@param choiceType string gameinteractionsChoiceType
 ---@param callback function callback when UI is selected
----@param hideHub? boolean Optional hide hub after selection
+---@param reShowHub? boolean/string Optional hide hub after selection
 local function basicInteractionUIPrompt(hubText, choiceText, icon, choiceType, callback, reShowHub) --Display interactionUI menu
     local choice = interactionUI.createChoice(choiceText, TweakDBInterface.GetChoiceCaptionIconPartRecord(icon), choiceType)
     local hub = interactionUI.createHub(hubText, {choice})
     interactionUI.setupHub(hub)
     interactionUI.showHub()
     interactionUI.callbacks[1] = function()
-        if reShowHub then
+        if reShowHub == 'hide' or reShowHub == nil or not reShowHub then
+            interactionUI.hideHub()
+        elseif reShowHub or reShowHub == 'instantReshow' then
             interactionUI.hideHub()
             basicInteractionUIPrompt(hubText, choiceText, icon, choiceType, callback, reShowHub)
-        else
-            interactionUI.hideHub()
+        elseif reShowHub == 'keep' then
+            --pass
         end
         callback()
     end
@@ -217,10 +219,13 @@ function SpotManager.update(dt) --runs every frame
                     end
                 end
                 --Display interactionUI menu
-                if spotTable.spotObject.mappin_reShowHub == nil then
-                    spotTable.spotObject.mappin_reShowHub = false
-                end
-                basicInteractionUIPrompt(spotTable.spotObject.mappin_hubText,spotTable.spotObject.mappin_choiceText,spotTable.spotObject.mappin_choiceIcon,spotTable.spotObject.mappin_choiceFont,UIcallback,spotTable.spotObject.mappin_reShowHub)
+                basicInteractionUIPrompt(
+                    spotTable.spotObject.mappin_hubText,
+                    spotTable.spotObject.mappin_choiceText,
+                    spotTable.spotObject.mappin_choiceIcon,
+                    spotTable.spotObject.mappin_choiceFont,
+                    UIcallback,
+                    spotTable.spotObject.mappin_reShowHub)
 
                 --below probably not needed, sit anywhere doesnt use it.
                 local blackboardDefs = Game.GetAllBlackboardDefs();
