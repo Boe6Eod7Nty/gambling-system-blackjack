@@ -29,9 +29,21 @@ local inGame = false
 ---@param choiceType string gameinteractionsChoiceType
 ---@param callback function callback when UI is selected
 ---@param reShowHub? boolean/string Optional hide hub after selection
-local function basicInteractionUIPrompt(hubText, choiceText, icon, choiceType, callback, reShowHub) --Display interactionUI menu
-    local choice = interactionUI.createChoice(choiceText, TweakDBInterface.GetChoiceCaptionIconPartRecord(icon), choiceType)
-    local hub = interactionUI.createHub(hubText, {choice})
+local function basicInteractionUIPrompt(spotTable) --Display interactionUI menu
+    
+    --setup UI
+    local callback = function()
+        if spotTable.spotObject.spot_useWorkSpot then --if using workspot or only UI prompt
+            TriggeredSpot(spotTable.spotObject)
+        else
+            spotTable.spotObject.callback_UIwithoutWorkspotTriggered()
+        end
+    end
+    local choiceText = (type(spotTable.spotObject.mappin_choiceText) == 'function') and spotTable.spotObject.mappin_choiceText() or spotTable.spotObject.mappin_choiceText
+    local reShowHub = spotTable.spotObject.mappin_reShowHub
+    local choice = interactionUI.createChoice(choiceText, TweakDBInterface.GetChoiceCaptionIconPartRecord(spotTable.spotObject.mappin_choiceIcon), spotTable.spotObject.mappin_choiceFont)
+    local hub = interactionUI.createHub(spotTable.spotObject.mappin_hubText, {choice})
+    --show UI
     interactionUI.setupHub(hub)
     interactionUI.showHub()
     interactionUI.callbacks[1] = function()
@@ -39,7 +51,7 @@ local function basicInteractionUIPrompt(hubText, choiceText, icon, choiceType, c
             interactionUI.hideHub()
         elseif reShowHub or reShowHub == 'instantReshow' then
             interactionUI.hideHub()
-            basicInteractionUIPrompt(hubText, choiceText, icon, choiceType, callback, reShowHub)
+            basicInteractionUIPrompt(spotTable)
         elseif reShowHub == 'keep' then
             --pass
         end
@@ -97,7 +109,7 @@ end
 
 ---Triggered on interactionUI choice to enter workspot
 ---@param spotObject table spots information object
-local function triggeredSpot(spotObject)
+function TriggeredSpot(spotObject)
     animateEnteringSpot(spotObject)
     spotObject.callback_OnSpotEnter()
     if ImmersiveFirstPersonInstalled then
@@ -211,21 +223,28 @@ function SpotManager.update(dt) --runs every frame
             if shouldShowUI then
                 -- currently off, turning on UI
                 spotTable.spotObject.spot_showingInteractUI = true
+                --[[
                 local UIcallback = function()
                     if spotTable.spotObject.spot_useWorkSpot then
-                        triggeredSpot(spotTable.spotObject)
+                        TriggeredSpot(spotTable.spotObject)
                     else
                         spotTable.spotObject.callback_UIwithoutWorkspotTriggered()
                     end
                 end
                 --Display interactionUI menu
-                basicInteractionUIPrompt(
+                local choiceText = (type(spotTable.spotObject.mappin_choiceText) == 'function') and spotTable.spotObject.mappin_choiceText() or spotTable.spotObject.mappin_choiceText
+                ]]--
+
+                basicInteractionUIPrompt(spotTable)
+
+                --[[
                     spotTable.spotObject.mappin_hubText,
-                    spotTable.spotObject.mappin_choiceText,
+                    choiceText,
                     spotTable.spotObject.mappin_choiceIcon,
                     spotTable.spotObject.mappin_choiceFont,
                     UIcallback,
                     spotTable.spotObject.mappin_reShowHub)
+                ]]--
 
                 --below probably not needed, sit anywhere doesnt use it.
                 local blackboardDefs = Game.GetAllBlackboardDefs();
