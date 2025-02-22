@@ -1,5 +1,5 @@
 SpotManager = {
-    version = '1.1.7',
+    version = '1.1.8',
     spots = {},
     activeCam = nil,
     forcedCam = false
@@ -68,7 +68,7 @@ local function animateEnteringSpot(spotObject) --Triggers workspot animation
     spec.templatePath = spotObject.spot_entWorkspotPath
     spec.position = spotObject.spot_worldPosition
     spec.orientation = spotObject.spot_orientation:ToQuat()
-    spec.tags = {"SpotManager"} --note; I don't know if this needs to be a unique value or what exactly
+    spec.tags = {"SpotManager"}
     -- Spawn entity
     local entID = dynamicEntitySystem:CreateEntity(spec)
     spotObject.entID = entID
@@ -104,6 +104,15 @@ local function setForcedCamera(enable, spotObject)
             --GetMod("ImmersiveFirstPerson").api.Enable()
         end
         ]]--
+    end
+end
+
+--- Modify existing spot data
+---@param spotID string spotID unique; example 'hooh'
+---@param changesObject table same as spotObject structure. only include values to change.
+local function modifySpot(spotObject, changesObject)
+    for k,v in pairs(changesObject) do
+        spotObject[k] = v
     end
 end
 
@@ -236,8 +245,12 @@ function SpotManager.update(dt) --runs every frame
             end
         end
 
+        local shouldShowMappinSetting = true --set visibility setting in case not declared
+        if spotTable.spotObject.mappin_showWorldMappinIcon == false then
+            shouldShowMappinSetting = false
+        end
         if shouldShowIcon ~= spotTable.spotObject.mappin_visible then --shows or hides the mappin
-            if shouldShowIcon then
+            if shouldShowIcon and shouldShowMappinSetting then
                 spotTable.spotObject.mappin_visible = true
                 if spotTable.spotObject.mappin_gameMappinID == nil then
                     local mappinVariant = gamedataMappinVariant.SitVariant
@@ -247,15 +260,13 @@ function SpotManager.update(dt) --runs every frame
                     local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = mappinVariant, visibleThroughWalls = spotTable.spotObject.mappin_visibleThroughWalls })
                     spotTable.spotObject.mappin_gameMappinID = Game.GetMappinSystem():RegisterMappin(mappin_data, spotTable.spotObject.mappin_worldPosition)
                 else
-                    DualPrint('SM | Extra mappin left in memory: '..tostring(spotTable.spotObject.mappin_gameMappinID)..', Error #8833')
+                    --DualPrint('SM | Extra mappin left in memory: '..tostring(spotTable.spotObject.mappin_gameMappinID)..', Error #8833')
                 end
             else
                 spotTable.spotObject.mappin_visible = false
                 if spotTable.spotObject.mappin_gameMappinID ~= nil then
                     Game.GetMappinSystem():UnregisterMappin(spotTable.spotObject.mappin_gameMappinID)
                     spotTable.spotObject.mappin_gameMappinID = nil
-                else
-                    DualPrint('SM | Missing mappin: '..tostring(spotTable.spotObject.mappin_gameMappinID)..', Error #8844')
                 end
             end
         end
@@ -310,6 +321,19 @@ function SpotManager.ChangeAnimation(animName, duration, returnAnimName)
     end)
 end
 
+--- Change 1 or all spot's values
+---@param isAllSpots boolean 
+---@param changesObject table same as spotObject structure. only include values to change.
+---@param spotID? string Optional if not isAllSpots, required to provide a single spotID
+function SpotManager.changeSpotData(isAllSpots, changesObject, spotID)
+    if isAllSpots then
+        for _, spotTable in pairs(SpotManager.spots) do
+            modifySpot(spotTable.spotObject, changesObject)
+        end
+    else
+        modifySpot(SpotManager.spots[spotID].spotObject, changesObject)
+    end
+end
 
 
 return SpotManager
