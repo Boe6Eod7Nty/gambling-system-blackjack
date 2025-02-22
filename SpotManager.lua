@@ -15,7 +15,7 @@ SpotManager = {
 --local BlackjackMainMenu = require("BlackjackMainMenu.lua")
 local Cron = require('External/Cron.lua')
 local GameUI = require("External/GameUI.lua")
-local interactionUI = require("External/interactionUI.lua")
+local interactionUI = require("External/interactionUI.lua")-- by keanuwheeze
 
 local inMenu = true --libaries requirement
 local inGame = false
@@ -223,30 +223,9 @@ function SpotManager.update(dt) --runs every frame
             if shouldShowUI then
                 -- currently off, turning on UI
                 spotTable.spotObject.spot_showingInteractUI = true
-                --[[
-                local UIcallback = function()
-                    if spotTable.spotObject.spot_useWorkSpot then
-                        TriggeredSpot(spotTable.spotObject)
-                    else
-                        spotTable.spotObject.callback_UIwithoutWorkspotTriggered()
-                    end
-                end
-                --Display interactionUI menu
-                local choiceText = (type(spotTable.spotObject.mappin_choiceText) == 'function') and spotTable.spotObject.mappin_choiceText() or spotTable.spotObject.mappin_choiceText
-                ]]--
-
                 basicInteractionUIPrompt(spotTable)
 
-                --[[
-                    spotTable.spotObject.mappin_hubText,
-                    choiceText,
-                    spotTable.spotObject.mappin_choiceIcon,
-                    spotTable.spotObject.mappin_choiceFont,
-                    UIcallback,
-                    spotTable.spotObject.mappin_reShowHub)
-                ]]--
-
-                --below probably not needed, sit anywhere doesnt use it.
+                --TODO: below maybe not needed, sit anywhere doesnt use it.
                 local blackboardDefs = Game.GetAllBlackboardDefs();
                 local blackboardPSM = Game.GetBlackboardSystem():GetLocalInstanced(GetPlayer():GetEntityID(), blackboardDefs.PlayerStateMachine);
                 blackboardPSM:SetInt(blackboardDefs.PlayerStateMachine.SceneTier, 1, true);
@@ -265,11 +244,7 @@ function SpotManager.update(dt) --runs every frame
                     if spotTable.spotObject.mappin_variant ~= nil then
                         mappinVariant = spotTable.spotObject.mappin_variant
                     end
-                    local visible = true
-                    if spotTable.spotObject.mappin_visibleThroughWalls ~= nil then
-                        visible = spotTable.spotObject.mappin_visibleThroughWalls
-                    end
-                    local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = mappinVariant, visibleThroughWalls = visible })
+                    local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = mappinVariant, visibleThroughWalls = spotTable.spotObject.mappin_visibleThroughWalls })
                     spotTable.spotObject.mappin_gameMappinID = Game.GetMappinSystem():RegisterMappin(mappin_data, spotTable.spotObject.mappin_worldPosition)
                 else
                     DualPrint('SM | Extra mappin left in memory: '..tostring(spotTable.spotObject.mappin_gameMappinID)..', Error #8833')
