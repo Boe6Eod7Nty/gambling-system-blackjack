@@ -173,7 +173,8 @@ registerForEvent( "onInit", function()
         mappin_gameMappinID = nil,
         mappin_visible = false,
         camera_worldPositionOffset = Vector4.new(0, 0.4, 0.7, 1),
-        camera_OrientationOffset = EulerAngles.new(0, -60, 0)
+        camera_OrientationOffset = EulerAngles.new(0, -60, 0),
+        camera_showElectroshockEffect = true
     }
     SpotManager.AddSpot(spotObj)
 

@@ -106,7 +106,9 @@ local function triggeredSpot(spotObject)
         --GetMod("ImmersiveFirstPerson").api.Disable()
     end
     local enterCallback = function()
-        StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
+        if spotObject.camera_showElectroshockEffect then
+            StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
+        end
         SpotManager.activeCam = spotObject.spot_id
         setForcedCamera(true, spotObject)
     end
