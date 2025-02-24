@@ -1,5 +1,5 @@
 SpotManager = {
-    version = '1.1.2',
+    version = '1.1.8',
     spots = {},
     activeCam = nil,
     forcedCam = false
@@ -15,7 +15,7 @@ SpotManager = {
 --local BlackjackMainMenu = require("BlackjackMainMenu.lua")
 local Cron = require('External/Cron.lua')
 local GameUI = require("External/GameUI.lua")
-local interactionUI = require("External/interactionUI.lua")
+local interactionUI = require("External/interactionUI.lua")-- by keanuwheeze
 
 local inMenu = true --libaries requirement
 local inGame = false
@@ -29,9 +29,21 @@ local inGame = false
 ---@param choiceType string gameinteractionsChoiceType
 ---@param callback function callback when UI is selected
 ---@param reShowHub? boolean/string Optional hide hub after selection
-local function basicInteractionUIPrompt(hubText, choiceText, icon, choiceType, callback, reShowHub) --Display interactionUI menu
-    local choice = interactionUI.createChoice(choiceText, TweakDBInterface.GetChoiceCaptionIconPartRecord(icon), choiceType)
-    local hub = interactionUI.createHub(hubText, {choice})
+local function basicInteractionUIPrompt(spotTable) --Display interactionUI menu
+    
+    --setup UI
+    local callback = function()
+        if spotTable.spotObject.spot_useWorkSpot then --if using workspot or only UI prompt
+            TriggeredSpot(spotTable.spotObject)
+        else
+            spotTable.spotObject.callback_UIwithoutWorkspotTriggered()
+        end
+    end
+    local choiceText = (type(spotTable.spotObject.mappin_choiceText) == 'function') and spotTable.spotObject.mappin_choiceText() or spotTable.spotObject.mappin_choiceText
+    local reShowHub = spotTable.spotObject.mappin_reShowHub
+    local choice = interactionUI.createChoice(choiceText, TweakDBInterface.GetChoiceCaptionIconPartRecord(spotTable.spotObject.mappin_choiceIcon), spotTable.spotObject.mappin_choiceFont)
+    local hub = interactionUI.createHub(spotTable.spotObject.mappin_hubText, {choice})
+    --show UI
     interactionUI.setupHub(hub)
     interactionUI.showHub()
     interactionUI.callbacks[1] = function()
@@ -39,7 +51,7 @@ local function basicInteractionUIPrompt(hubText, choiceText, icon, choiceType, c
             interactionUI.hideHub()
         elseif reShowHub or reShowHub == 'instantReshow' then
             interactionUI.hideHub()
-            basicInteractionUIPrompt(hubText, choiceText, icon, choiceType, callback, reShowHub)
+            basicInteractionUIPrompt(spotTable)
         elseif reShowHub == 'keep' then
             --pass
         end
@@ -56,7 +68,7 @@ local function animateEnteringSpot(spotObject) --Triggers workspot animation
     spec.templatePath = spotObject.spot_entWorkspotPath
     spec.position = spotObject.spot_worldPosition
     spec.orientation = spotObject.spot_orientation:ToQuat()
-    spec.tags = {"SpotManager"} --note; I don't know if this needs to be a unique value or what exactly
+    spec.tags = {"SpotManager"}
     -- Spawn entity
     local entID = dynamicEntitySystem:CreateEntity(spec)
     spotObject.entID = entID
@@ -95,9 +107,18 @@ local function setForcedCamera(enable, spotObject)
     end
 end
 
+--- Modify existing spot data
+---@param spotID string spotID unique; example 'hooh'
+---@param changesObject table same as spotObject structure. only include values to change.
+local function modifySpot(spotObject, changesObject)
+    for k,v in pairs(changesObject) do
+        spotObject[k] = v
+    end
+end
+
 ---Triggered on interactionUI choice to enter workspot
 ---@param spotObject table spots information object
-local function triggeredSpot(spotObject)
+function TriggeredSpot(spotObject)
     animateEnteringSpot(spotObject)
     spotObject.callback_OnSpotEnter()
     if ImmersiveFirstPersonInstalled then
@@ -132,7 +153,7 @@ function SpotManager.init() --runs on game launch
         local worldPosition = mappin:GetWorldPosition()
         for i, spotTable in pairs(SpotManager.spots) do
             if Vector4.Distance(worldPosition, spotTable.spotObject.mappin_worldPosition) < 0.05 and spotTable.spotObject.spot_showingInteractUI then
-                local record = TweakDBInterface.GetUIIconRecord(spotObject.mappin_worldIcon)
+                local record = TweakDBInterface.GetUIIconRecord(spotTable.spotObject.mappin_worldIcon)
                 this.iconWidget:SetAtlasResource(record:AtlasResourcePath())
                 this.iconWidget:SetTexturePart(record:AtlasPartName())
                 this.iconWidget:SetTintColor(spotTable.spotObject.mappin_color or HDRColor.new({ Red = 0.15829999744892, Green = 1.3033000230789, Blue = 1.4141999483109, Alpha = 1.0 }))
@@ -213,23 +234,9 @@ function SpotManager.update(dt) --runs every frame
             if shouldShowUI then
                 -- currently off, turning on UI
                 spotTable.spotObject.spot_showingInteractUI = true
-                local UIcallback = function()
-                    if spotTable.spotObject.spot_useWorkSpot then
-                        triggeredSpot(spotTable.spotObject)
-                    else
-                        spotTable.spotObject.callback_UIwithoutWorkspotTriggered()
-                    end
-                end
-                --Display interactionUI menu
-                basicInteractionUIPrompt(
-                    spotTable.spotObject.mappin_hubText,
-                    spotTable.spotObject.mappin_choiceText,
-                    spotTable.spotObject.mappin_choiceIcon,
-                    spotTable.spotObject.mappin_choiceFont,
-                    UIcallback,
-                    spotTable.spotObject.mappin_reShowHub)
+                basicInteractionUIPrompt(spotTable)
 
-                --below probably not needed, sit anywhere doesnt use it.
+                --TODO: below maybe not needed, sit anywhere doesnt use it.
                 local blackboardDefs = Game.GetAllBlackboardDefs();
                 local blackboardPSM = Game.GetBlackboardSystem():GetLocalInstanced(GetPlayer():GetEntityID(), blackboardDefs.PlayerStateMachine);
                 blackboardPSM:SetInt(blackboardDefs.PlayerStateMachine.SceneTier, 1, true);
@@ -240,22 +247,28 @@ function SpotManager.update(dt) --runs every frame
             end
         end
 
+        local shouldShowMappinSetting = true --set visibility setting in case not declared
+        if spotTable.spotObject.mappin_showWorldMappinIcon == false then
+            shouldShowMappinSetting = false
+        end
         if shouldShowIcon ~= spotTable.spotObject.mappin_visible then --shows or hides the mappin
-            if shouldShowIcon then
+            if shouldShowIcon and shouldShowMappinSetting then
                 spotTable.spotObject.mappin_visible = true
                 if spotTable.spotObject.mappin_gameMappinID == nil then
-                    local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = gamedataMappinVariant.SitVariant, visibleThroughWalls = true }) --TODO: add customizability for variant and visibility
+                    local mappinVariant = gamedataMappinVariant.SitVariant
+                    if spotTable.spotObject.mappin_variant ~= nil then
+                        mappinVariant = spotTable.spotObject.mappin_variant
+                    end
+                    local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = mappinVariant, visibleThroughWalls = spotTable.spotObject.mappin_visibleThroughWalls })
                     spotTable.spotObject.mappin_gameMappinID = Game.GetMappinSystem():RegisterMappin(mappin_data, spotTable.spotObject.mappin_worldPosition)
                 else
-                    DualPrint('SM | Extra mappin left in memory: '..tostring(spotTable.spotObject.mappin_gameMappinID)..', Error #8833')
+                    --DualPrint('SM | Extra mappin left in memory: '..tostring(spotTable.spotObject.mappin_gameMappinID)..', Error #8833')
                 end
             else
                 spotTable.spotObject.mappin_visible = false
                 if spotTable.spotObject.mappin_gameMappinID ~= nil then
                     Game.GetMappinSystem():UnregisterMappin(spotTable.spotObject.mappin_gameMappinID)
                     spotTable.spotObject.mappin_gameMappinID = nil
-                else
-                    DualPrint('SM | Missing mappin: '..tostring(spotTable.spotObject.mappin_gameMappinID)..', Error #8844')
                 end
             end
         end
@@ -310,6 +323,19 @@ function SpotManager.ChangeAnimation(animName, duration, returnAnimName)
     end)
 end
 
+--- Change 1 or all spot's values
+---@param isAllSpots boolean 
+---@param changesObject table same as spotObject structure. only include values to change.
+---@param spotID? string Optional if not isAllSpots, required to provide a single spotID
+function SpotManager.changeSpotData(isAllSpots, changesObject, spotID)
+    if isAllSpots then
+        for _, spotTable in pairs(SpotManager.spots) do
+            modifySpot(spotTable.spotObject, changesObject)
+        end
+    else
+        modifySpot(SpotManager.spots[spotID].spotObject, changesObject)
+    end
+end
 
 
 return SpotManager

@@ -1,3 +1,8 @@
+GamblingSystemBlackjack = {
+    version = '1.0.8',
+    loaded = false,
+    ready = false
+}
 --init.lua v1.0.7
 --===================
 --Copyright (c) 2025 Boe6
@@ -40,11 +45,6 @@ local dealerSpawned = false
 ImmersiveFirstPersonInstalled = false
 DisplayHandValuesOption = {true}
 local state = { runtime = 0 } --GameSession runtime
-
-GamblingSystemBlackjack = {
-    loaded = false,
-    ready = false
-}
 
 --Functions
 --=========
@@ -172,6 +172,7 @@ registerForEvent( "onInit", function()
         mappin_choiceFont = gameinteractionsChoiceType.QuestImportant,
         mappin_gameMappinID = nil,
         mappin_visible = false,
+        mappin_variant = gamedataMappinVariant.SitVariant,
         camera_worldPositionOffset = Vector4.new(0, 0.4, 0.7, 1),
         camera_OrientationOffset = EulerAngles.new(0, -60, 0),
         camera_showElectroshockEffect = true
