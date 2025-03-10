@@ -116,6 +116,21 @@ local function modifySpot(spotObject, changesObject)
     end
 end
 
+local function exitSpotTeleport(spotObj)
+    local player = GetPlayer()
+    local playerTransform = player:GetWorldTransform()
+    local position = playerTransform:GetWorldPosition()
+    local teleportPosition = Vector4.new(
+        position:GetX() + spotObj.exit_worldPositionOffset.x,
+        position:GetY() + spotObj.exit_worldPositionOffset.y,
+        position:GetZ() + spotObj.exit_worldPositionOffset.z,1)
+    local baseOri = spotObj.spot_orientation
+    local offOri = spotObj.exit_orientationCorrection
+    local localEuler = EulerAngles.new( baseOri.roll+offOri.r, baseOri.pitch+offOri.p, baseOri.yaw+offOri.y )
+    Game.GetTeleportationFacility():Teleport(player, teleportPosition, localEuler)--150 hardcoded..?
+    Game.GetWorkspotSystem():SendFastExitSignal(player)
+end
+
 ---Triggered on interactionUI choice to enter workspot
 ---@param spotObject table spots information object
 function TriggeredSpot(spotObject)
@@ -289,19 +304,7 @@ function SpotManager.ExitSpot(id) --Exit spot
 
     spot.spotObject.callback_OnSpotExit()
     Cron.After(spotObj.callback_OnSpotExitAfterAnimationDelayTime, function() -- Wait for animation to finish
-        local player = GetPlayer()
-        local playerTransform = player:GetWorldTransform()
-        local position = playerTransform:GetWorldPosition()
-        local teleportPosition = Vector4.new(
-            position:GetX() + spotObj.exit_worldPositionOffset.x,
-            position:GetY() + spotObj.exit_worldPositionOffset.y,
-            position:GetZ() + spotObj.exit_worldPositionOffset.z,1)
-        local baseOri = spotObj.spot_orientation
-        local offOri = spotObj.exit_orientationCorrection
-        local localEuler = EulerAngles.new( baseOri.roll+offOri.r, baseOri.pitch+offOri.p, baseOri.yaw+offOri.y )
-        Game.GetTeleportationFacility():Teleport(player, teleportPosition, localEuler)--150 hardcoded..?
-        Game.GetWorkspotSystem():SendFastExitSignal(player)
-
+        exitSpotTeleport(spotObj)
         spot.spotObject.callback_OnSpotExitAfterAnimation()
     end)
 end
