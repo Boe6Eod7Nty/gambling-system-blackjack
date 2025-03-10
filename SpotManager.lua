@@ -284,19 +284,20 @@ function SpotManager.ExitSpot(id) --Exit spot
     setForcedCamera(false) --disable forced camera perspective
     SpotManager.activeCam = nil
     local spot = SpotManager.spots[id]
+    local spotObj = spot.spotObject
     SpotManager.ChangeAnimation(spot.spotObject.exit_animationName, spot.spotObject.callback_OnSpotExitAfterAnimationDelayTime + 3, spot.spotObject.animation_defaultName)
 
     spot.spotObject.callback_OnSpotExit()
-    Cron.After(spot.spotObject.callback_OnSpotExitAfterAnimationDelayTime, function() -- Wait for animation to finish
+    Cron.After(spotObj.callback_OnSpotExitAfterAnimationDelayTime, function() -- Wait for animation to finish
         local player = GetPlayer()
         local playerTransform = player:GetWorldTransform()
         local position = playerTransform:GetWorldPosition()
         local teleportPosition = Vector4.new(
-            position:GetX() + spot.spotObject.exit_worldPositionOffset.x,
-            position:GetY() + spot.spotObject.exit_worldPositionOffset.y,
-            position:GetZ() + spot.spotObject.exit_worldPositionOffset.z,1)
-        local baseOri = spot.spotObject.spot_orientation
-        local offOri = spot.spotObject.exit_orientationCorrection
+            position:GetX() + spotObj.exit_worldPositionOffset.x,
+            position:GetY() + spotObj.exit_worldPositionOffset.y,
+            position:GetZ() + spotObj.exit_worldPositionOffset.z,1)
+        local baseOri = spotObj.spot_orientation
+        local offOri = spotObj.exit_orientationCorrection
         local localEuler = EulerAngles.new( baseOri.roll+offOri.r, baseOri.pitch+offOri.p, baseOri.yaw+offOri.y )
         Game.GetTeleportationFacility():Teleport(player, teleportPosition, localEuler)--150 hardcoded..?
         Game.GetWorkspotSystem():SendFastExitSignal(player)
