@@ -201,20 +201,21 @@ function SpotManager.update(dt) --runs every frame
     end
 
     for i, spotTable in pairs(SpotManager.spots) do --mappin updating and UI interaction. credit to keanuwheeze for working code references
+        local spotObj = spotTable.spotObject
         local shouldShowUI = true
         local shouldShowIcon = true
         local player = GetPlayer()
         local position = player:GetWorldPosition()
         local forwardVector = player:GetWorldForward()
-        local mapping_pos = spotTable.spotObject.mappin_worldPosition
+        local mapping_pos = spotObj.mappin_worldPosition
         -- check interaction range
-        if not ( Vector4.Distance(position, mapping_pos) < spotTable.spotObject.mappin_interactionRange ) then
+        if not ( Vector4.Distance(position, mapping_pos) < spotObj.mappin_interactionRange ) then
             shouldShowUI = false
         end
         -- check interaction angle
         local vector4difference = Vector4.new(position.x - mapping_pos.x, position.y - mapping_pos.y, position.z - mapping_pos.z, 0)
         local angleBetween = Vector4.GetAngleBetween(forwardVector, vector4difference)
-        if not ( 180 - angleBetween < spotTable.spotObject.mappin_interactionAngle ) then
+        if not ( 180 - angleBetween < spotObj.mappin_interactionAngle ) then
             shouldShowUI = false
         end
         -- check looking pitch_angle, if looking too far up or down
@@ -223,14 +224,14 @@ function SpotManager.update(dt) --runs every frame
         if not (min < pitch and pitch < max) then
             shouldShowUI = false
         end
-        if Vector4.Distance(position, mapping_pos) > spotTable.spotObject.mappin_rangeMax then
+        if Vector4.Distance(position, mapping_pos) > spotObj.mappin_rangeMax then
             shouldShowIcon = false
         end
-        if Vector4.Distance(position, mapping_pos) < spotTable.spotObject.mappin_rangeMin then
+        if Vector4.Distance(position, mapping_pos) < spotObj.mappin_rangeMin then
             shouldShowIcon = false
         end
 
-        if shouldShowUI ~= spotTable.spotObject.spot_showingInteractUI then --show or hide the "join" dialog UI
+        if shouldShowUI ~= spotObj.spot_showingInteractUI then --show or hide the "join" dialog UI
             if shouldShowUI then
                 -- currently off, turning on UI
                 spotTable.spotObject.spot_showingInteractUI = true
@@ -248,16 +249,16 @@ function SpotManager.update(dt) --runs every frame
         end
 
         local shouldShowMappinSetting = true --set visibility setting in case not declared
-        if spotTable.spotObject.mappin_showWorldMappinIcon == false then
+        if spotObj.mappin_showWorldMappinIcon == false then
             shouldShowMappinSetting = false
         end
-        if shouldShowIcon ~= spotTable.spotObject.mappin_visible then --shows or hides the mappin
+        if shouldShowIcon ~= spotObj.mappin_visible then --shows or hides the mappin
             if shouldShowIcon and shouldShowMappinSetting then
                 spotTable.spotObject.mappin_visible = true
-                if spotTable.spotObject.mappin_gameMappinID == nil then
+                if spotObj.mappin_gameMappinID == nil then
                     local mappinVariant = gamedataMappinVariant.SitVariant
-                    if spotTable.spotObject.mappin_variant ~= nil then
-                        mappinVariant = spotTable.spotObject.mappin_variant
+                    if spotObj.mappin_variant ~= nil then
+                        mappinVariant = spotObj.mappin_variant
                     end
                     local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = mappinVariant, visibleThroughWalls = spotTable.spotObject.mappin_visibleThroughWalls })
                     spotTable.spotObject.mappin_gameMappinID = Game.GetMappinSystem():RegisterMappin(mappin_data, spotTable.spotObject.mappin_worldPosition)
@@ -266,7 +267,7 @@ function SpotManager.update(dt) --runs every frame
                 end
             else
                 spotTable.spotObject.mappin_visible = false
-                if spotTable.spotObject.mappin_gameMappinID ~= nil then
+                if spotObj.mappin_gameMappinID ~= nil then
                     Game.GetMappinSystem():UnregisterMappin(spotTable.spotObject.mappin_gameMappinID)
                     spotTable.spotObject.mappin_gameMappinID = nil
                 end
