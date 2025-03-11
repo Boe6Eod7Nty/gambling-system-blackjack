@@ -20,6 +20,7 @@ local interactionUI = require("External/interactionUI.lua")-- by keanuwheeze
 local inMenu = true --libaries requirement
 local inGame = false
 
+--[[
 local spotTemplate = {                                         --Use this as reference when creating new spot
     spot_id = 'default',                                                                                        --REQUIRED | string, unique name. NO REPEATS. DO NOT LEAVE AS 'default'
     spot_worldPosition = Vector4.new(0, 0, 0, 1),  ---------------------------------------------------------------REQUIRED | Vector4, center reference for spot's position in the world
@@ -70,7 +71,7 @@ local spotTemplate = {                                         --Use this as ref
     camera_OrientationOffset = EulerAngles.new(0, 0, 0),                                                        --OPTIONAL | EulerAngles, forced camera orientation offset
     camera_showElectroshockEffect = true,   ----------------------------------------------------------------------OPTIONAL | boolean, show electroshock effect on workspot enter. Especially helpful to cover forcedCam glitchyness.
     camera_useForcedCamInWorkspot = nil                                                                         --OPTIONAL | boolean, if forcedCam should be used in workspot animation.
-}
+}]]--
 
 --Functions
 --=========
@@ -178,6 +179,102 @@ local function exitSpotTeleport(spotObj)
     Game.GetWorkspotSystem():SendFastExitSignal(player)
 end
 
+local function updateForcedCamera()
+    if SpotManager.forcedCam and SpotManager.activeCam ~= nil then --fixes the camera being reset by workspot animation
+        local camera = GetPlayer():GetFPPCameraComponent()
+        local o = camera:GetLocalOrientation():ToEulerAngles()
+        local spot = SpotManager.spots[SpotManager.activeCam]
+        local camRotation = spot.spotObject.camera_OrientationOffset
+        local isCorrectOrientation = math.abs(o.pitch - camRotation.pitch) < 0.0001 and math.abs(o.yaw - camRotation.yaw) < 0.0001
+        if not isCorrectOrientation then
+            setForcedCamera(true, spot.spotObject)
+        end
+    else
+        StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl") --insurance
+        --[[
+        if ImmersiveFirstPersonInstalled then
+            --GetMod("ImmersiveFirstPerson").api.Enable()
+        end
+        ]]--
+    end
+end
+
+local function spotUIUpdate(spotTable)
+    local spotObj = spotTable.spotObject
+    local shouldShowUI = true
+    local shouldShowIcon = true
+    local player = GetPlayer()
+    local position = player:GetWorldPosition()
+    local forwardVector = player:GetWorldForward()
+    local mapping_pos = spotObj.mappin_worldPosition
+    local player2mappinDistance = Vector4.Distance(position, mapping_pos)
+    -- check interaction range
+    if not ( player2mappinDistance < spotObj.mappin_interactionRange ) then
+        shouldShowUI = false
+    end
+    -- check interaction angle
+    local vector4difference = Vector4.new(position.x - mapping_pos.x, position.y - mapping_pos.y, position.z - mapping_pos.z, 0)
+    local angleBetween = Vector4.GetAngleBetween(forwardVector, vector4difference)
+    if not ( 180 - angleBetween < spotObj.mappin_interactionAngle ) then
+        shouldShowUI = false
+    end
+    -- check looking pitch_angle, if looking too far up or down
+    local pitch = Game.GetCameraSystem():GetActiveCameraData().rotation:ToEulerAngles().pitch
+    local min, max = -75, -10
+    if not (min < pitch and pitch < max) then
+        shouldShowUI = false
+    end
+    if player2mappinDistance > spotObj.mappin_rangeMax then
+        shouldShowIcon = false
+    end
+    if player2mappinDistance < spotObj.mappin_rangeMin then
+        shouldShowIcon = false
+    end
+
+    if shouldShowUI ~= spotObj.spot_showingInteractUI then --show or hide the "join" dialog UI
+        if shouldShowUI then
+            -- currently off, turning on UI
+            spotTable.spotObject.spot_showingInteractUI = true
+            basicInteractionUIPrompt(spotTable)
+
+            --TODO: below maybe not needed, sit anywhere doesnt use it.
+            local blackboardDefs = Game.GetAllBlackboardDefs();
+            local blackboardPSM = Game.GetBlackboardSystem():GetLocalInstanced(GetPlayer():GetEntityID(), blackboardDefs.PlayerStateMachine);
+            blackboardPSM:SetInt(blackboardDefs.PlayerStateMachine.SceneTier, 1, true);
+        else
+            -- currently on, hide UI.
+            spotTable.spotObject.spot_showingInteractUI = false
+            interactionUI.hideHub()
+        end
+    end
+
+    local shouldShowMappinSetting = true --set visibility setting in case not declared
+    if spotObj.mappin_showWorldMappinIcon == false then
+        shouldShowMappinSetting = false
+    end
+    if shouldShowIcon ~= spotObj.mappin_visible then --shows or hides the mappin
+        if shouldShowIcon and shouldShowMappinSetting then
+            spotTable.spotObject.mappin_visible = true
+            if spotObj.mappin_gameMappinID == nil then
+                local mappinVariant = gamedataMappinVariant.SitVariant
+                if spotObj.mappin_variant ~= nil then
+                    mappinVariant = spotObj.mappin_variant
+                end
+                local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = mappinVariant, visibleThroughWalls = spotTable.spotObject.mappin_visibleThroughWalls })
+                spotTable.spotObject.mappin_gameMappinID = Game.GetMappinSystem():RegisterMappin(mappin_data, spotTable.spotObject.mappin_worldPosition)
+            else
+                --DualPrint('SM | Extra mappin left in memory: '..tostring(spotTable.spotObject.mappin_gameMappinID)..', Error #8833')
+            end
+        else
+            spotTable.spotObject.mappin_visible = false
+            if spotObj.mappin_gameMappinID ~= nil then
+                Game.GetMappinSystem():UnregisterMappin(spotTable.spotObject.mappin_gameMappinID)
+                spotTable.spotObject.mappin_gameMappinID = nil
+            end
+        end
+    end
+end
+
 ---Triggered on interactionUI choice to enter workspot
 ---@param spotObject table spots information object
 function TriggeredSpot(spotObject)
@@ -243,98 +340,10 @@ function SpotManager.update(dt) --runs every frame
     if  not inMenu and inGame then
         Cron.Update(dt) -- This is required for Cron to function
     end
-    if SpotManager.forcedCam and SpotManager.activeCam ~= nil then --fixes the camera being reset by workspot animation
-        local camera = GetPlayer():GetFPPCameraComponent()
-        local o = camera:GetLocalOrientation():ToEulerAngles()
-        local spot = SpotManager.spots[SpotManager.activeCam]
-        local camRotation = spot.spotObject.camera_OrientationOffset
-        local isCorrectOrientation = math.abs(o.pitch - camRotation.pitch) < 0.0001 and math.abs(o.yaw - camRotation.yaw) < 0.0001
-        if not isCorrectOrientation then
-            setForcedCamera(true, spot.spotObject)
-        end
-    else
-        StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl") --insurance
-        --[[
-        if ImmersiveFirstPersonInstalled then
-            --GetMod("ImmersiveFirstPerson").api.Enable()
-        end
-        ]]--
-    end
+    updateForcedCamera()
 
-    for i, spotTable in pairs(SpotManager.spots) do --mappin updating and UI interaction. credit to keanuwheeze for working code references
-        local spotObj = spotTable.spotObject
-        local shouldShowUI = true
-        local shouldShowIcon = true
-        local player = GetPlayer()
-        local position = player:GetWorldPosition()
-        local forwardVector = player:GetWorldForward()
-        local mapping_pos = spotObj.mappin_worldPosition
-        local player2mappinDistance = Vector4.Distance(position, mapping_pos)
-        -- check interaction range
-        if not ( player2mappinDistance < spotObj.mappin_interactionRange ) then
-            shouldShowUI = false
-        end
-        -- check interaction angle
-        local vector4difference = Vector4.new(position.x - mapping_pos.x, position.y - mapping_pos.y, position.z - mapping_pos.z, 0)
-        local angleBetween = Vector4.GetAngleBetween(forwardVector, vector4difference)
-        if not ( 180 - angleBetween < spotObj.mappin_interactionAngle ) then
-            shouldShowUI = false
-        end
-        -- check looking pitch_angle, if looking too far up or down
-        local pitch = Game.GetCameraSystem():GetActiveCameraData().rotation:ToEulerAngles().pitch
-        local min, max = -75, -10
-        if not (min < pitch and pitch < max) then
-            shouldShowUI = false
-        end
-        if player2mappinDistance > spotObj.mappin_rangeMax then
-            shouldShowIcon = false
-        end
-        if player2mappinDistance < spotObj.mappin_rangeMin then
-            shouldShowIcon = false
-        end
-
-        if shouldShowUI ~= spotObj.spot_showingInteractUI then --show or hide the "join" dialog UI
-            if shouldShowUI then
-                -- currently off, turning on UI
-                spotTable.spotObject.spot_showingInteractUI = true
-                basicInteractionUIPrompt(spotTable)
-
-                --TODO: below maybe not needed, sit anywhere doesnt use it.
-                local blackboardDefs = Game.GetAllBlackboardDefs();
-                local blackboardPSM = Game.GetBlackboardSystem():GetLocalInstanced(GetPlayer():GetEntityID(), blackboardDefs.PlayerStateMachine);
-                blackboardPSM:SetInt(blackboardDefs.PlayerStateMachine.SceneTier, 1, true);
-            else
-                -- currently on, hide UI.
-                spotTable.spotObject.spot_showingInteractUI = false
-                interactionUI.hideHub()
-            end
-        end
-
-        local shouldShowMappinSetting = true --set visibility setting in case not declared
-        if spotObj.mappin_showWorldMappinIcon == false then
-            shouldShowMappinSetting = false
-        end
-        if shouldShowIcon ~= spotObj.mappin_visible then --shows or hides the mappin
-            if shouldShowIcon and shouldShowMappinSetting then
-                spotTable.spotObject.mappin_visible = true
-                if spotObj.mappin_gameMappinID == nil then
-                    local mappinVariant = gamedataMappinVariant.SitVariant
-                    if spotObj.mappin_variant ~= nil then
-                        mappinVariant = spotObj.mappin_variant
-                    end
-                    local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = mappinVariant, visibleThroughWalls = spotTable.spotObject.mappin_visibleThroughWalls })
-                    spotTable.spotObject.mappin_gameMappinID = Game.GetMappinSystem():RegisterMappin(mappin_data, spotTable.spotObject.mappin_worldPosition)
-                else
-                    --DualPrint('SM | Extra mappin left in memory: '..tostring(spotTable.spotObject.mappin_gameMappinID)..', Error #8833')
-                end
-            else
-                spotTable.spotObject.mappin_visible = false
-                if spotObj.mappin_gameMappinID ~= nil then
-                    Game.GetMappinSystem():UnregisterMappin(spotTable.spotObject.mappin_gameMappinID)
-                    spotTable.spotObject.mappin_gameMappinID = nil
-                end
-            end
-        end
+    for _, spotTable in pairs(SpotManager.spots) do --mappin updating and UI interaction. credit to keanuwheeze for working code references
+        spotUIUpdate(spotTable)
     end
 end
 
