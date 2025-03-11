@@ -311,11 +311,12 @@ function SpotManager.init() --runs on game launch
         end
         local worldPosition = mappin:GetWorldPosition()
         for i, spotTable in pairs(SpotManager.spots) do
-            if Vector4.Distance(worldPosition, spotTable.spotObject.mappin_worldPosition) < 0.05 and spotTable.spotObject.spot_showingInteractUI then
-                local record = TweakDBInterface.GetUIIconRecord(spotTable.spotObject.mappin_worldIcon)
+            local spotObj = spotTable.spotObject
+            if Vector4.Distance(worldPosition, spotObj.mappin_worldPosition) < 0.05 and spotObj.spot_showingInteractUI then
+                local record = TweakDBInterface.GetUIIconRecord(spotObj.mappin_worldIcon)
                 this.iconWidget:SetAtlasResource(record:AtlasResourcePath())
                 this.iconWidget:SetTexturePart(record:AtlasPartName())
-                this.iconWidget:SetTintColor(spotTable.spotObject.mappin_color or HDRColor.new({ Red = 0.15829999744892, Green = 1.3033000230789, Blue = 1.4141999483109, Alpha = 1.0 }))
+                this.iconWidget:SetTintColor(spotObj.mappin_color or HDRColor.new({ Red = 0.15829999744892, Green = 1.3033000230789, Blue = 1.4141999483109, Alpha = 1.0 }))
             end
         end
     end)
