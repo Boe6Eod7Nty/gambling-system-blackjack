@@ -229,11 +229,6 @@ local function spotUIUpdate(spotTable) --mappin updating and UI interaction. cre
             -- currently off, turning on UI
             spotTable.spotObject.spot_showingInteractUI = true
             basicInteractionUIPrompt(spotTable)
-
-            --TODO: below maybe not needed, sit anywhere doesnt use it.
-            local blackboardDefs = Game.GetAllBlackboardDefs();
-            local blackboardPSM = Game.GetBlackboardSystem():GetLocalInstanced(GetPlayer():GetEntityID(), blackboardDefs.PlayerStateMachine);
-            blackboardPSM:SetInt(blackboardDefs.PlayerStateMachine.SceneTier, 1, true);
         else
             -- currently on, hide UI.s
             spotTable.spotObject.spot_showingInteractUI = false
