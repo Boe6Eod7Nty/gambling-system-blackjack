@@ -199,7 +199,7 @@ local function updateForcedCamera()
     end
 end
 
-local function spotUIUpdate(spotTable)
+local function spotUIUpdate(spotTable) --mappin updating and UI interaction. credit to keanuwheeze for working code references
     local spotObj = spotTable.spotObject
     local shouldShowUI = true
     local shouldShowIcon = true
@@ -342,7 +342,7 @@ function SpotManager.update(dt) --runs every frame
     end
     updateForcedCamera()
 
-    for _, spotTable in pairs(SpotManager.spots) do --mappin updating and UI interaction. credit to keanuwheeze for working code references
+    for _, spotTable in pairs(SpotManager.spots) do
         spotUIUpdate(spotTable)
     end
 end
