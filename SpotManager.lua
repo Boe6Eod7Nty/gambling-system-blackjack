@@ -223,8 +223,9 @@ function SpotManager.update(dt) --runs every frame
         local position = player:GetWorldPosition()
         local forwardVector = player:GetWorldForward()
         local mapping_pos = spotObj.mappin_worldPosition
+        local player2mappinDistance = Vector4.Distance(position, mapping_pos)
         -- check interaction range
-        if not ( Vector4.Distance(position, mapping_pos) < spotObj.mappin_interactionRange ) then
+        if not ( player2mappinDistance < spotObj.mappin_interactionRange ) then
             shouldShowUI = false
         end
         -- check interaction angle
@@ -239,10 +240,10 @@ function SpotManager.update(dt) --runs every frame
         if not (min < pitch and pitch < max) then
             shouldShowUI = false
         end
-        if Vector4.Distance(position, mapping_pos) > spotObj.mappin_rangeMax then
+        if player2mappinDistance > spotObj.mappin_rangeMax then
             shouldShowIcon = false
         end
-        if Vector4.Distance(position, mapping_pos) < spotObj.mappin_rangeMin then
+        if player2mappinDistance < spotObj.mappin_rangeMin then
             shouldShowIcon = false
         end
 
