@@ -78,19 +78,19 @@ local spotTemplate = {                                         --Use this as ref
 --- Display Basic UI interaction prompt
 ---@param spotTable table same as spotObject structure
 local function basicInteractionUIPrompt(spotTable) --Display interactionUI menu
-    
+    local spotObj = spotTable.spotObject
     --setup UI
     local callback = function()
-        if spotTable.spotObject.spot_useWorkSpot then --if using workspot or only UI prompt
+        if spotObj.spot_useWorkSpot then --if using workspot or only UI prompt
             TriggeredSpot(spotTable.spotObject)
         else
             spotTable.spotObject.callback_UIwithoutWorkspotTriggered()
         end
     end
-    local choiceText = (type(spotTable.spotObject.mappin_choiceText) == 'function') and spotTable.spotObject.mappin_choiceText() or spotTable.spotObject.mappin_choiceText
-    local reShowHubBehavior = spotTable.spotObject.mappin_reShowHubBehavior
-    local choice = interactionUI.createChoice(choiceText, TweakDBInterface.GetChoiceCaptionIconPartRecord(spotTable.spotObject.mappin_choiceIcon), spotTable.spotObject.mappin_choiceFont)
-    local hub = interactionUI.createHub(spotTable.spotObject.mappin_hubText, {choice})
+    local choiceText = (type(spotObj.mappin_choiceText) == 'function') and spotObj.mappin_choiceText() or spotObj.mappin_choiceText
+    local reShowHubBehavior = spotObj.mappin_reShowHubBehavior
+    local choice = interactionUI.createChoice(choiceText, TweakDBInterface.GetChoiceCaptionIconPartRecord(spotObj.mappin_choiceIcon), spotObj.mappin_choiceFont)
+    local hub = interactionUI.createHub(spotObj.mappin_hubText, {choice})
     --show UI
     interactionUI.setupHub(hub)
     interactionUI.showHub()
