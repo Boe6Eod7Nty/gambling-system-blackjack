@@ -1,5 +1,5 @@
 SpotManager = {
-    version = '1.1.9',
+    version = '1.1.10',
     spots = {},
     activeCam = nil,
     forcedCam = false
