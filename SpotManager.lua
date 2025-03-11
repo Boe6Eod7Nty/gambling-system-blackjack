@@ -190,26 +190,25 @@ end
 
 local function spotUIUpdate(spotTable) --mappin updating and UI interaction. credit to keanuwheeze for working code references
     local spotObj = spotTable.spotObject
-    local shouldShowUI = true
     local player = GetPlayer()
     local position = player:GetWorldPosition()
-    local forwardVector = player:GetWorldForward()
     local mapping_pos = spotObj.mappin_worldPosition
     local player2mappinDistance = Vector4.Distance(position, mapping_pos)
-    -- check interaction range
-    if not ( player2mappinDistance < spotObj.mappin_interactionRange ) then
-        shouldShowUI = false
-    end
-    -- check interaction angle
+
+    local shouldShowUI = true --start shouldShowUI logic
     local vector4difference = Vector4.new(position.x - mapping_pos.x, position.y - mapping_pos.y, position.z - mapping_pos.z, 0)
+    local forwardVector = player:GetWorldForward()
     local angleBetween = Vector4.GetAngleBetween(forwardVector, vector4difference)
-    if not ( 180 - angleBetween < spotObj.mappin_interactionAngle ) then
-        shouldShowUI = false
-    end
-    -- check looking pitch_angle, if looking too far up or down
     local pitch = Game.GetCameraSystem():GetActiveCameraData().rotation:ToEulerAngles().pitch
     local min, max = -75, -10
-    if not (min < pitch and pitch < max) then
+
+    if not ( player2mappinDistance < spotObj.mappin_interactionRange ) then -- check interaction range
+        shouldShowUI = false
+    end
+    if not ( 180 - angleBetween < spotObj.mappin_interactionAngle ) then -- check interaction angle
+        shouldShowUI = false
+    end
+    if not (min < pitch and pitch < max) then -- check looking pitch_angle, if looking too far up or down
         shouldShowUI = false
     end
 
@@ -225,8 +224,8 @@ local function spotUIUpdate(spotTable) --mappin updating and UI interaction. cre
         end
     end
 
+    local shouldShowIcon = true --start shouldShowIcon logic
     local currentlyShowingIcon = spotObj.mappin_visible
-    local shouldShowIcon = true
 
     if player2mappinDistance > spotObj.mappin_rangeMax then
         shouldShowIcon = false
