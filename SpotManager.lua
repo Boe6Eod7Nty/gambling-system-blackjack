@@ -78,7 +78,6 @@ local spotTemplate = {                                         --Use this as ref
 ---@param spotTable table same as spotObject structure
 local function basicInteractionUIPrompt(spotTable) --Display interactionUI menu
     local spotObj = spotTable.spotObject
-    --setup UI
     local callback = function()
         if spotObj.spot_useWorkSpot then --if using workspot or only UI prompt
             TriggeredSpot(spotTable.spotObject)
@@ -100,7 +99,7 @@ local function basicInteractionUIPrompt(spotTable) --Display interactionUI menu
             interactionUI.hideHub()
             basicInteractionUIPrompt(spotTable)
         elseif reShowHubBehavior == 'keep' then
-            --pass
+            --no change
         end
         callback()
     end
@@ -116,11 +115,10 @@ local function animateEnteringSpot(spotObject) --Triggers workspot animation
     spec.position = spotObject.spot_worldPosition
     spec.orientation = spotObject.spot_orientation:ToQuat()
     spec.tags = {"SpotManager"}
-    -- Spawn entity
-    local entID = dynamicEntitySystem:CreateEntity(spec)
+    local entID = dynamicEntitySystem:CreateEntity(spec)-- Spawn entity
     spotObject.entID = entID
 
-    Cron.After(1, function()
+    Cron.After(1, function() --some delay required, so game can process the new entity
         local entity = Game.FindEntityByID(entID)
         workspotSystem:PlayInDevice(entity, player) --Play workspot
     end)
@@ -135,12 +133,10 @@ local function setForcedCamera(enable, spotObject)
         local camera = GetPlayer():GetFPPCameraComponent()
         local quatOri = spotObject.camera_OrientationOffset:ToQuat()
         if ImmersiveFirstPersonInstalled then
-            --camera:SetLocalTransform(Vector4.new(0, 0.4, 0.9, 1), quatOri) --alt position for immersiveFirstPerson camera
             StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
         end
         camera:SetLocalTransform(spotObject.camera_worldPositionOffset, quatOri) --default settings
-    else
-        --reset to normal camera control
+    else--reset to normal camera control
         local camera = GetPlayer():GetFPPCameraComponent()
         camera:SetLocalPosition(Vector4.new(0, 0, 0, 1))
         camera:SetLocalOrientation(EulerAngles.new(0, 0, 0):ToQuat())
