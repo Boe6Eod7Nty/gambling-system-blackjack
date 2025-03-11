@@ -22,10 +22,10 @@ local inGame = false
 --[[
 local spotTemplate = {                                         --Use this as reference when creating new spot
     spot_id = 'default',                                                                                        --REQUIRED | string, unique name. NO REPEATS. DO NOT LEAVE AS 'default'
-    spot_worldPosition = Vector4.new(0, 0, 0, 1),  ---------------------------------------------------------------REQUIRED | Vector4, center reference for spot's position in the world
+    spot_worldPosition = Vector4.new(0, 0, 0, 1),  ---------------------------------------------------------------REQUIRED | Vector4, center reference for spot's position in the world. Used for rotation!
     spot_orientation = EulerAngles.new(0,0,0),                                                                  --OPTIONAL | EulerAngles, spot facing direction, used to face entities and to calculate spot rotations
     spot_entWorkspotPath = nil,   --------------------------------------------------------------------------------OPTIONAL | string, relative path to workspot entity, required for workspot animation features
-    spot_useWorkSpot = false,                                                                                   --OPTIONAL | boolean, use workspot animation, or only UI features.
+    spot_useWorkSpot = false,                                                                                   --OPTIONAL | boolean, use workspot animation, or only UI features.s
     spot_showingInteractUI = false, ------------------------------------------------------------------------------UNNEEDED | internal boolean, if interaction UI is currently displayed
     animation_defaultName = nil,                                                                                --OPTIONAL | string, animation to return to, when alt animations finish playing, required for workspot animation features
     animation_defaultEnterTime = 2, ------------------------------------------------------------------------------OPTIONAL | number, time(seconds) to wait before triggering return to default animation
@@ -381,5 +381,16 @@ function SpotManager.changeSpotData(isAllSpots, changesObject, spotID)
     end
 end
 
+---Converts spot's local coordinates to real world position
+---@param spotID string
+---@param xyz table local position to convert. syntax: {x=0, y=0, z=0}
+---@param rpy table local direction to convert. syntax: {r=0, p=0, y=0}
+function SpotManager.spotCoordsToWorldVector(spotID, xyz, rpy)
+    local spot = SpotManager.spots[spotID]
+    local spotCenter = spot.spotObject.spot_worldPosition   --Vector4.new()
+    local spotDirection = spot.spotObject.spot_orientation  --EulerAngles.new()
+
+    --wip
+end
 
 return SpotManager
