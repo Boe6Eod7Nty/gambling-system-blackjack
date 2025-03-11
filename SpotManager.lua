@@ -55,7 +55,7 @@ local spotTemplate = {                                         --Use this as ref
     mappin_interactionAngle = 80,                                                                               --REQUIRED | number, mappin interaction angle distance allowed from player's looking direction.
     mappin_rangeMax = 8,    --------------------------------------------------------------------------------------REQUIRED | number, mappin range max distance from player position
     mappin_rangeMin = 0,                                                                                        --REQUIRED | number, mappin range min distance from player position
-    mappin_color = HDRColor.new({ Red = 0.1582999, Green = 1.3033000, Blue = 1.4141999, Alpha = 1.0 }), ----------OPTIONAL | HDRColor, mappin color tint. default is light blue
+    mappin_color = HDRColor.new({ Red = 0.1582999, Green = 1.3033000, Blue = 1.4141999, Alpha = 1.0 }), ----------OPTIONAL | HDRColor, mappin color tint after viewed by player. default is light blue
     mappin_worldIcon = "ChoiceIcons.SitIcon",                                                                   --REQUIRED | Tweak string, mappin world icon. default is the sit icon
     mappin_hubText = "Hub Text",    ------------------------------------------------------------------------------REQUIRED | string, mappin left UI side hub text. GameLocale recommended. (psiberx github cet-kit)
     mappin_choiceText = "Interact Text",                                                                        --REQUIRED | string, mappin right UI side choice text. see above GameLocale
@@ -202,7 +202,6 @@ end
 local function spotUIUpdate(spotTable) --mappin updating and UI interaction. credit to keanuwheeze for working code references
     local spotObj = spotTable.spotObject
     local shouldShowUI = true
-    local shouldShowIcon = true
     local player = GetPlayer()
     local position = player:GetWorldPosition()
     local forwardVector = player:GetWorldForward()
@@ -224,12 +223,6 @@ local function spotUIUpdate(spotTable) --mappin updating and UI interaction. cre
     if not (min < pitch and pitch < max) then
         shouldShowUI = false
     end
-    if player2mappinDistance > spotObj.mappin_rangeMax then
-        shouldShowIcon = false
-    end
-    if player2mappinDistance < spotObj.mappin_rangeMin then
-        shouldShowIcon = false
-    end
 
     if shouldShowUI ~= spotObj.spot_showingInteractUI then --show or hide the "join" dialog UI
         if shouldShowUI then
@@ -242,37 +235,37 @@ local function spotUIUpdate(spotTable) --mappin updating and UI interaction. cre
             local blackboardPSM = Game.GetBlackboardSystem():GetLocalInstanced(GetPlayer():GetEntityID(), blackboardDefs.PlayerStateMachine);
             blackboardPSM:SetInt(blackboardDefs.PlayerStateMachine.SceneTier, 1, true);
         else
-            -- currently on, hide UI.
+            -- currently on, hide UI.s
             spotTable.spotObject.spot_showingInteractUI = false
             interactionUI.hideHub()
         end
     end
 
-    local shouldShowMappinSetting = true --set visibility setting in case not declared
-    if spotObj.mappin_showWorldMappinIcon == false then
-        shouldShowMappinSetting = false
+    local currentlyShowingIcon = spotObj.mappin_visible
+    local shouldShowIcon = true
+
+    if player2mappinDistance > spotObj.mappin_rangeMax then
+        shouldShowIcon = false
     end
-    if shouldShowIcon ~= spotObj.mappin_visible then --shows or hides the mappin
-        if shouldShowIcon and shouldShowMappinSetting then
+    if player2mappinDistance < spotObj.mappin_rangeMin then
+        shouldShowIcon = false
+    end
+    if spotObj.mappin_showWorldMappinIconSetting == false then
+        shouldShowIcon = false
+    end
+
+    if shouldShowIcon ~= currentlyShowingIcon then -- show or hide the mappin
+        if shouldShowIcon then
             spotTable.spotObject.mappin_visible = true
-            if spotObj.mappin_gameMappinID == nil then
-                local mappinVariant = gamedataMappinVariant.SitVariant
-                if spotObj.mappin_variant ~= nil then
-                    mappinVariant = spotObj.mappin_variant
-                end
-                local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = mappinVariant, visibleThroughWalls = spotTable.spotObject.mappin_visibleThroughWalls })
-                spotTable.spotObject.mappin_gameMappinID = Game.GetMappinSystem():RegisterMappin(mappin_data, spotTable.spotObject.mappin_worldPosition)
-            else
-                --DualPrint('SM | Extra mappin left in memory: '..tostring(spotTable.spotObject.mappin_gameMappinID)..', Error #8833')
-            end
+            local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = spotObj.mappin_variant, visibleThroughWalls = spotTable.spotObject.mappin_visibleThroughWalls })
+            spotTable.spotObject.mappin_gameMappinID = Game.GetMappinSystem():RegisterMappin(mappin_data, spotTable.spotObject.mappin_worldPosition)
         else
             spotTable.spotObject.mappin_visible = false
-            if spotObj.mappin_gameMappinID ~= nil then
-                Game.GetMappinSystem():UnregisterMappin(spotTable.spotObject.mappin_gameMappinID)
-                spotTable.spotObject.mappin_gameMappinID = nil
-            end
+            Game.GetMappinSystem():UnregisterMappin(spotTable.spotObject.mappin_gameMappinID)
+            spotTable.spotObject.mappin_gameMappinID = nil
         end
     end
+
 end
 
 ---Triggered on interactionUI choice to enter workspot
