@@ -1,5 +1,5 @@
 SpotManager = {
-    version = '1.1.8',
+    version = '1.1.9',
     spots = {},
     activeCam = nil,
     forcedCam = false
@@ -20,15 +20,62 @@ local interactionUI = require("External/interactionUI.lua")-- by keanuwheeze
 local inMenu = true --libaries requirement
 local inGame = false
 
+local spotTemplate = {                                         --Use this as reference when creating new spot
+    spot_id = 'default',                                                                                        --REQUIRED | string, unique name. NO REPEATS. DO NOT LEAVE AS 'default'
+    spot_worldPosition = Vector4.new(0, 0, 0, 1),  ---------------------------------------------------------------REQUIRED | Vector4, center reference for spot's position in the world
+    spot_orientation = EulerAngles.new(0,0,0),                                                                  --OPTIONAL | EulerAngles, spot facing direction, used to face entities and to calculate spot rotations
+    spot_entWorkspotPath = nil,   --------------------------------------------------------------------------------OPTIONAL | string, relative path to workspot entity, required for workspot animation features
+    spot_useWorkSpot = false,                                                                                   --OPTIONAL | boolean, use workspot animation, or only UI features.
+    spot_showingInteractUI = false, ------------------------------------------------------------------------------UNNEEDED | internal boolean, if interaction UI is currently displayed
+    animation_defaultName = nil,                                                                                --OPTIONAL | string, animation to return to, when alt animations finish playing, required for workspot animation features
+    animation_defaultEnterTime = 2, ------------------------------------------------------------------------------OPTIONAL | number, time(seconds) to wait before triggering return to default animation
+    callback_UIwithoutWorkspotTriggered = function()                                                            --OPTIONAL | function, called when interaction UI is triggered without using workspot animation
+        --pass
+    end,
+    callback_OnSpotEnter = function ()  --------------------------------------------------------------------------OPTIONAL | function, called when player first enters spot
+        --pass
+    end,
+    callback_OnSpotEnterAfterAnimationDelayTime = nil,                                                          --OPTIONAL | number, time(seconds) to wait before triggering callback_OnSpotEnterAfterAnimation. Allows for animation time to finish before performing game.
+    callback_OnSpotEnterAfterAnimation = function ()    ----------------------------------------------------------OPTIONAL | function, called when player entering spot animation finishes.
+        --pass
+    end,
+    callback_OnSpotExitAfterAnimationDelayTime = nil,                                                           --OPTIONAL | number, time(seconds) to wait after exit before triggering callback_OnSpotExitAfterAnimation. found via trial and error, its Aproximate.
+    callback_OnSpotExit = function()    --------------------------------------------------------------------------OPTIONAL | function, called when player first exits spot
+        --pass
+    end,
+    callback_OnSpotExitAfterAnimation = function()                                                              --OPTIONAL | function, called when player exiting spot animation finishes
+        --pass
+    end,
+    exit_orientationCorrection = {r=0,p=0,y=0}, ------------------------------------------------------------------OPTIONAL | {x,y,z}, player orientation adjustment on spot exit.
+    exit_worldPositionOffset = {x=0,y=0,z=0},                                                                   --OPTIONAL | {x,y,z}, player position adjustment on spot exit. Location the player exits the spot to.
+    exit_animationName = nil,   ----------------------------------------------------------------------------------OPTIONAL | string, animation to trigger on spot exit. transition animation needed. required for workspot animation features
+    mappin_worldPosition = Vector4.new(0, 0, 0, 1),                                                             --REQUIRED | Vector4, center reference for mappin's position in the world
+    mappin_interactionRange = 2,    ------------------------------------------------------------------------------REQUIRED | number, mappin interaction distance range from player
+    mappin_interactionAngle = 80,                                                                               --REQUIRED | number, mappin interaction angle distance allowed from player's looking direction.
+    mappin_rangeMax = 8,    --------------------------------------------------------------------------------------REQUIRED | number, mappin range max distance from player position
+    mappin_rangeMin = 0,                                                                                        --REQUIRED | number, mappin range min distance from player position
+    mappin_color = HDRColor.new({ Red = 0.1582999, Green = 1.3033000, Blue = 1.4141999, Alpha = 1.0 }), ----------OPTIONAL | HDRColor, mappin color tint. default is light blue
+    mappin_worldIcon = "ChoiceIcons.SitIcon",                                                                   --REQUIRED | Tweak string, mappin world icon. default is the sit icon
+    mappin_hubText = "Hub Text",    ------------------------------------------------------------------------------REQUIRED | string, mappin left UI side hub text. GameLocale recommended. (psiberx github cet-kit)
+    mappin_choiceText = "Interact Text",                                                                        --REQUIRED | string, mappin right UI side choice text. see above GameLocale
+    mappin_choiceIcon = "ChoiceCaptionParts.SitIcon",   ----------------------------------------------------------REQUIRED | Tweak string, icon used in the UI interaction popup with hub and choice texts
+    mappin_choiceFont = gameinteractionsChoiceType.QuestImportant,                                              --REQUIRED | gameinteractionsChoiceType, controls font color used in the UI interaction popup
+    mappin_gameMappinID = nil,  ----------------------------------------------------------------------------------UNNEEDED | internal, game mappin id returned from RegisterMappin(). Used to unregister mappin on exit.
+    mappin_visible = false,                                                                                     --UNNEEDED | internal boolean, Controls if mappin is currently visible. Used for settings option.
+    mappin_variant = gamedataMappinVariant.SitVariant,  ----------------------------------------------------------REQUIRED | gamedataMappinVariant, mappin variant. default is sit. idk which icon in-game this controls tbh. lmk if you know lol
+    mappin_showWorldMappinIconSetting = true,                                                                   --OPTIONAL | boolean, If world mappin icon displays at all. This should be controlled by user settings (link to settingsUI DIY)
+    mappin_reShowHubBehavior = nil,  -----------------------------------------------------------------------------OPTIONAL | string, sets if the interaction UI should be re-shown after exiting the spot, and in which display manner.
+    mappin_visibleThroughWalls = nil,                                                                           --OPTIONAL | boolean, if mappin should be visible through walls. This seems to not work atm? idk lol
+    camera_worldPositionOffset = Vector4.new(0, 0, 0, 1),   ------------------------------------------------------OPTIONAL | Vector4, forced camera position offset from player workspot position
+    camera_OrientationOffset = EulerAngles.new(0, 0, 0),                                                        --OPTIONAL | EulerAngles, forced camera orientation offset
+    camera_showElectroshockEffect = true,   ----------------------------------------------------------------------OPTIONAL | boolean, show electroshock effect on workspot enter. Especially helpful to cover forcedCam glitchyness.
+    camera_useForcedCamInWorkspot = nil                                                                         --OPTIONAL | boolean, if forcedCam should be used in workspot animation.
+}
+
 --Functions
 --=========
 --- Display Basic UI interaction prompt
----@param hubText string "hub" text, left side
----@param choiceText string option text, right side
----@param icon string UI icon tweak record
----@param choiceType string gameinteractionsChoiceType
----@param callback function callback when UI is selected
----@param reShowHub? boolean/string Optional hide hub after selection
+---@param spotTable table same as spotObject structure
 local function basicInteractionUIPrompt(spotTable) --Display interactionUI menu
     
     --setup UI
@@ -40,19 +87,19 @@ local function basicInteractionUIPrompt(spotTable) --Display interactionUI menu
         end
     end
     local choiceText = (type(spotTable.spotObject.mappin_choiceText) == 'function') and spotTable.spotObject.mappin_choiceText() or spotTable.spotObject.mappin_choiceText
-    local reShowHub = spotTable.spotObject.mappin_reShowHub
+    local reShowHubBehavior = spotTable.spotObject.mappin_reShowHubBehavior
     local choice = interactionUI.createChoice(choiceText, TweakDBInterface.GetChoiceCaptionIconPartRecord(spotTable.spotObject.mappin_choiceIcon), spotTable.spotObject.mappin_choiceFont)
     local hub = interactionUI.createHub(spotTable.spotObject.mappin_hubText, {choice})
     --show UI
     interactionUI.setupHub(hub)
     interactionUI.showHub()
     interactionUI.callbacks[1] = function()
-        if reShowHub == 'hide' or reShowHub == nil or not reShowHub then
+        if reShowHubBehavior == 'hide' or reShowHubBehavior == nil or not reShowHubBehavior then
             interactionUI.hideHub()
-        elseif reShowHub or reShowHub == 'instantReshow' then
+        elseif reShowHubBehavior or reShowHubBehavior == 'instantReshow' then
             interactionUI.hideHub()
             basicInteractionUIPrompt(spotTable)
-        elseif reShowHub == 'keep' then
+        elseif reShowHubBehavior == 'keep' then
             --pass
         end
         callback()
