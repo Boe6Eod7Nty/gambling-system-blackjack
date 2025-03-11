@@ -12,7 +12,6 @@ SpotManager = {
 --Feel free to ask via nexus/discord, I just dont want my stuff stolen :)
 --===================
 
---local BlackjackMainMenu = require("BlackjackMainMenu.lua")
 local Cron = require('External/Cron.lua')
 local GameUI = require("External/GameUI.lua")
 local interactionUI = require("External/interactionUI.lua")-- by keanuwheeze
