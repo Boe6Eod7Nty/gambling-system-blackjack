@@ -1,5 +1,5 @@
 SingleRoundLogic = {
-    version = '1.0.1',
+    version = '1.0.2',
     deckShuffle = {},
     dealerCardCount = 0,
     dealerBoardCards = {},
@@ -411,14 +411,14 @@ local function ProcessRoundResult(instaBlackjack)
             if dealerBJ and playerBJ then
                 DualPrint('End Round: Both Blackjack. Push')
                 BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
-                Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
+                GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
             elseif dealerBJ then
                 DualPrint('End Round: Dealer Blackjack.')
                 SimpleCasinoChip.despawnChip('chip_hand1_left1_up1')
             elseif playerBJ then
                 DualPrint('End Round: Player Blackjack.')
                 BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet * 2.5
-                Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
+                GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
                 SimpleCasinoChip.spawnChip('chip_hand1_left1_up2', BlackjackMainMenu.currentBet, chipLocationCalc(1,1,2), true)
             end
         end
@@ -438,7 +438,7 @@ local function ProcessRoundResult(instaBlackjack)
                 if isBoardBJ(hand) then
                     DualPrint('End Hand #'..tostring(i)..': Both Blackjack. Push')
                     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
-                    Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
+                    GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
                     continueHandCheck = false
                 end
                 DualPrint('End Hand #'..tostring(i)..': Dealer Blackjack.')
@@ -457,7 +457,7 @@ local function ProcessRoundResult(instaBlackjack)
                 if not SingleRoundLogic.blackjackHandsPaid[i] then
                     DualPrint('playing player BJ point 5')
                     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + (BlackjackMainMenu.currentBet * 2.5)
-                    Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
+                    GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
                     hand.blackjackHandPaid = true
                 end
                 continueHandCheck = false
@@ -468,7 +468,7 @@ local function ProcessRoundResult(instaBlackjack)
                 if dealerScore > 21 then
                     DualPrint('End Hand #'..tostring(i)..': Dealer Busted!')
                     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + (BlackjackMainMenu.currentBet * 2)
-                    Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
+                    GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
                     SimpleCasinoChip.spawnChip('chip_hand'..tostring(i)..'_left1_up2', BlackjackMainMenu.currentBet, chipLocationCalc(i,1,2), true)
                     if SingleRoundLogic.doubledHands[i] then
                         BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + (BlackjackMainMenu.currentBet * 2)
@@ -477,7 +477,7 @@ local function ProcessRoundResult(instaBlackjack)
                 elseif playerScore > dealerScore then
                     DualPrint('End Hand #'..tostring(i)..': Player Wins!')
                     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + (BlackjackMainMenu.currentBet * 2)
-                    Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
+                    GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
                     SimpleCasinoChip.spawnChip('chip_hand'..tostring(i)..'_left1_up2', BlackjackMainMenu.currentBet, chipLocationCalc(i,1,2), true)
                     if SingleRoundLogic.doubledHands[i] then
                         BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + (BlackjackMainMenu.currentBet * 2)
@@ -492,7 +492,7 @@ local function ProcessRoundResult(instaBlackjack)
                 else
                     DualPrint('End Hand #'..tostring(i)..': Tie, Push.')
                     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
-                    Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
+                    GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
                     if SingleRoundLogic.doubledHands[i] then
                         BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + BlackjackMainMenu.currentBet
                     end
@@ -648,7 +648,7 @@ end
 local function playerActionSplit(handIndex)
     SingleRoundLogic.currentlySplit = true
     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
-    Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
+    GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
 
     local curHandIndex = SingleRoundLogic.activePlayerHandIndex
 
@@ -676,7 +676,7 @@ local function playerActionSplit(handIndex)
         if isBoardBJ(SingleRoundLogic.playerHands[handIndex]) then
             SingleRoundLogic.blackjackHandsPaid[handIndex] = true
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + ( BlackjackMainMenu.currentBet * 2.5)
-            Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
+            GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
             SingleRoundLogic.activePlayerHandIndex = SingleRoundLogic.activePlayerHandIndex + 1
             PlayerAction(SingleRoundLogic.activePlayerHandIndex)
         else
@@ -693,7 +693,7 @@ end
 local function playerActionDouble(handIndex)
     SingleRoundLogic.doubledHands[handIndex] = true
     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
-    Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
+    GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
 
     local cardID = 'playerCard_h'..string.format("%02d", handIndex)..'_c03'
     local cardApp = SingleRoundLogic.deckShuffle[1]
@@ -759,7 +759,7 @@ function PlayerAction(handIndex)
         if isBoardBJ(SingleRoundLogic.playerHands[handIndex]) and SingleRoundLogic.blackjackHandsPaid[handIndex] == false then
             SingleRoundLogic.blackjackHandsPaid[handIndex] = true
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney + ( BlackjackMainMenu.currentBet * 2.5 )
-            Game.GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
+            GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_stack")
         end
         if SingleRoundLogic.activePlayerHandIndex == #SingleRoundLogic.playerHands then
             FlipDealerTwoCards(true)

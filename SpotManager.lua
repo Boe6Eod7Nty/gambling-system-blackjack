@@ -1,5 +1,5 @@
 SpotManager = {
-    version = '1.1.10',
+    version = '1.1.11',
     spots = {},
     activeCam = nil,
     forcedCam = false
@@ -108,7 +108,7 @@ end
 --- Animate player entering spot
 ---@param spotObject table spots information object
 local function animateEnteringSpot(spotObject) --Triggers workspot animation
-    local player = Game.GetPlayer()
+    local player = GetPlayer()
     local dynamicEntitySystem = Game.GetDynamicEntitySystem()
     local workspotSystem = Game.GetWorkspotSystem()
     local spec = DynamicEntitySpec.new()

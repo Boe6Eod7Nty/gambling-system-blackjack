@@ -3,7 +3,7 @@ GamblingSystemBlackjack = {
     loaded = false,
     ready = false
 }
---init.lua v1.0.7
+--init.lua v1.0.8
 --===================
 --Copyright (c) 2025 Boe6
 --DO NOT DISTRIBUTE
@@ -181,7 +181,7 @@ registerForEvent( "onInit", function()
     SpotManager.AddSpot(spotObj)
 
     -- Save and Load detection, coutesy of psiberx; available in #cet-snippets in discord
-    local isLoaded = Game.GetPlayer() and Game.GetPlayer():IsAttached() and not Game.GetSystemRequestsHandler():IsPreGame()
+    local isLoaded = GetPlayer() and GetPlayer():IsAttached() and not Game.GetSystemRequestsHandler():IsPreGame()
     Observe('QuestTrackerGameController', 'OnInitialize', function()
         if not isLoaded then
             --DualPrint('Game Session Started')
@@ -208,7 +208,7 @@ registerForEvent( "onInit", function()
         end
     end)
     Observe('QuestTrackerGameController', 'OnUninitialize', function()
-        if Game.GetPlayer() == nil then
+        if GetPlayer() == nil then
             --loading new save initiated
             --print('Game Session Ended')
             isLoaded = false
