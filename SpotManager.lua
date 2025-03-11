@@ -201,9 +201,8 @@ function SpotManager.update(dt) --runs every frame
         local o = camera:GetLocalOrientation():ToEulerAngles()
         local spot = SpotManager.spots[SpotManager.activeCam]
         local camRotation = spot.spotObject.camera_OrientationOffset
-        local isInPitch = (o.pitch < camRotation.pitch+0.0001 and o.pitch > camRotation.pitch-0.0001)
-        local isInYaw = (o.yaw < camRotation.yaw+0.0001 and o.yaw > camRotation.yaw-0.0001)
-        if (not isInPitch) or (not isInYaw) then
+        local isCorrectOrientation = math.abs(o.pitch - camRotation.pitch) < 0.0001 and math.abs(o.yaw - camRotation.yaw) < 0.0001
+        if not isCorrectOrientation then
             setForcedCamera(true, spot.spotObject)
         end
     else
