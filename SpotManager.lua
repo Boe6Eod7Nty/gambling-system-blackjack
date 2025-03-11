@@ -137,7 +137,6 @@ local function setForcedCamera(enable, spotObject)
         local quatOri = spotObject.camera_OrientationOffset:ToQuat()
         if ImmersiveFirstPersonInstalled then
             --camera:SetLocalTransform(Vector4.new(0, 0.4, 0.9, 1), quatOri) --alt position for immersiveFirstPerson camera
-            --GetMod("ImmersiveFirstPerson").api.Disable()
             StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
         end
         camera:SetLocalTransform(spotObject.camera_worldPositionOffset, quatOri) --default settings
@@ -147,11 +146,6 @@ local function setForcedCamera(enable, spotObject)
         camera:SetLocalPosition(Vector4.new(0, 0, 0, 1))
         camera:SetLocalOrientation(EulerAngles.new(0, 0, 0):ToQuat())
         StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
-        --[[
-        if ImmersiveFirstPersonInstalled then
-            --GetMod("ImmersiveFirstPerson").api.Enable()
-        end
-        ]]--
     end
 end
 
@@ -190,12 +184,7 @@ local function updateForcedCamera()
             setForcedCamera(true, spot.spotObject)
         end
     else
-        StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl") --insurance
-        --[[
-        if ImmersiveFirstPersonInstalled then
-            --GetMod("ImmersiveFirstPerson").api.Enable()
-        end
-        ]]--
+        StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl") --insurance/safety
     end
 end
 
@@ -271,7 +260,6 @@ function TriggeredSpot(spotObject)
     if ImmersiveFirstPersonInstalled then
         --disables camera control. User movement input + Immersive First Person causes visual bug
         StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
-        --GetMod("ImmersiveFirstPerson").api.Disable()
     end
     local enterCallback = function()
         if spotObject.camera_showElectroshockEffect then
