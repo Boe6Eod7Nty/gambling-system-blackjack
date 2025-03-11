@@ -188,7 +188,7 @@ local function updateForcedCamera()
     end
 end
 
-local function spotUIUpdate(spotTable) --mappin updating and UI interaction. credit to keanuwheeze for working code references
+local function interactionUIUpdate(spotTable)
     local spotObj = spotTable.spotObject
     local player = GetPlayer()
     local position = player:GetWorldPosition()
@@ -223,6 +223,14 @@ local function spotUIUpdate(spotTable) --mappin updating and UI interaction. cre
             interactionUI.hideHub()
         end
     end
+end
+
+local function mappinUIUpdate(spotTable)
+    local spotObj = spotTable.spotObject
+    local player = GetPlayer()
+    local position = player:GetWorldPosition()
+    local mapping_pos = spotObj.mappin_worldPosition
+    local player2mappinDistance = Vector4.Distance(position, mapping_pos)
 
     local shouldShowIcon = true --start shouldShowIcon logic
     local currentlyShowingIcon = spotObj.mappin_visible
@@ -248,7 +256,6 @@ local function spotUIUpdate(spotTable) --mappin updating and UI interaction. cre
             spotTable.spotObject.mappin_gameMappinID = nil
         end
     end
-
 end
 
 ---Triggered on interactionUI choice to enter workspot
@@ -319,7 +326,8 @@ function SpotManager.update(dt) --runs every frame
     updateForcedCamera()
 
     for _, spotTable in pairs(SpotManager.spots) do
-        spotUIUpdate(spotTable)
+        interactionUIUpdate(spotTable)
+        mappinUIUpdate(spotTable)
     end
 end
 
