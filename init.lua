@@ -175,7 +175,8 @@ registerForEvent( "onInit", function()
         mappin_variant = gamedataMappinVariant.SitVariant,
         camera_worldPositionOffset = Vector4.new(0, 0.4, 0.7, 1),
         camera_OrientationOffset = EulerAngles.new(0, -60, 0),
-        camera_showElectroshockEffect = true
+        camera_showElectroshockEffect = true,
+        camera_useForcedCamInWorkspot = true
     }
     SpotManager.AddSpot(spotObj)
 
