@@ -22,23 +22,6 @@ local DEFAULT_DECK_APPEARANCE = '7h'
 
 --functions
 --=========
----comment
----@param axis Vector4
----@param angleRadians number
----@return Quaternion
-local function rotationAxis(axis, angleRadians)
-
-    local normalAxis = axis:Normalize()
-    local halfAngle = angleRadians / 2
-
-    local w = math.cos(halfAngle)
-    local x = math.sin(halfAngle) * normalAxis.x
-    local y = math.sin(halfAngle) * normalAxis.y
-    local z = math.sin(halfAngle) * normalAxis.z
-
-    return Quaternion.new(x, y, z, w)
-end
-
 ---Processes 1 step of each current card in the CardEngine.inFlippingMotionCardsList table
 local function cardsInFlippingMotionProcessStep()
     for k,v in pairs(CardEngine.inFlippingMotionCardsList) do
