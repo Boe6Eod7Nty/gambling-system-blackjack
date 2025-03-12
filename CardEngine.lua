@@ -1,7 +1,3 @@
-CardEngine = {
-    version = '1.0.0',
-    cards = {}
-}
 --===================
 --CODE BY Boe6
 --DO NOT DISTRIBUTE
@@ -9,15 +5,18 @@ CardEngine = {
 --DO NOT REUPLOAD TO OTHER SITES
 --Feel free to ask via nexus/discord, I just dont want my stuff stolen :)
 --===================
+CardEngine = {
+    version = '1.0.1',
+    cards = {},
+    inMotionCardsList = {},
+    inFlippingMotionCardsList = {},
+    deckShufflingAnimationActive = false,
+    deckShuffleAnimationAge = 0
+}
 
 local Cron = require('External/Cron.lua')
 
 local cardPath = "boe6\\gambling_props\\boe6_playing_card.ent"
-local movingCards = {}
-local flippingCards = {}
-local deckShuffling = false
-local deckShuffleAge = 0
-
 
 --functions
 --=========
@@ -38,10 +37,10 @@ local function rotationAxis(axis, angleRadians)
     return Quaternion.new(x, y, z, w)
 end
 
----Processes 1 step of each current card in the flippingCards table
-local function flippingCardsProcess()
-    for k,v in pairs(flippingCards) do
-        if flippingCards[v.id] == nil then
+---Processes 1 step of each current card in the CardEngine.inFlippingMotionCardsList table
+local function cardsInFlippingMotionProcessStep()
+    for k,v in pairs(CardEngine.inFlippingMotionCardsList) do
+        if CardEngine.inFlippingMotionCardsList[v.id] == nil then
             break
         end
 
@@ -53,9 +52,9 @@ local function flippingCardsProcess()
             flipAngle = flipAngle * -1
         end
 
-        local steps = totalFlipDegrees / flipAngle --how many iterations of FlippingCardsProcess() to flip 180 degrees
+        local steps = totalFlipDegrees / flipAngle --how many iterations of cardsInFlippingMotionProcessStep() to flip 180 degrees
         if v.lifetime >= steps then --after steps (degrees x steps = 180) mark card as done flipping. ('delete')
-            flippingCards[v.id] = nil
+            CardEngine.inFlippingMotionCardsList[v.id] = nil
             break
         end
 
@@ -109,10 +108,10 @@ local function flippingCardsProcess()
         v.lifetime = v.lifetime + 1
     end
 end
----Processes 1 step of each current card in the movingCards table
-local function movingCardsProcess(dt)
-    if next(movingCards) then
-        for i, card in pairs(movingCards) do
+---Processes 1 step of each current card in the CardEngine.inMotionCardsList table
+local function cardsInMotionProcessStep(dt)
+    if next(CardEngine.inMotionCardsList) then
+        for i, card in pairs(CardEngine.inMotionCardsList) do
             local stepSize = 1.0
             local moveDistance = stepSize * dt * 1
             local rotateDistance = stepSize * dt * 1
@@ -124,7 +123,7 @@ local function movingCardsProcess(dt)
             if entity == nil then
                 --DualPrint('CE | Card missing! id: '..tostring(card.id)..' overAge: '..tostring(card.overAge))
                 if card.overAge >= 3 then
-                    movingCards[i] = nil
+                    CardEngine.inMotionCardsList[i] = nil
                 end
                 card.overAge = card.overAge + 1
                 doContinue = false
@@ -150,7 +149,7 @@ local function movingCardsProcess(dt)
                     if card.flipEnd then
                         Cron.After(0.5, CardEngine.FlipCard(card.id, card.flipAngle, card.flipDirection, false))
                     end
-                    movingCards[i] = nil
+                    CardEngine.inMotionCardsList[i] = nil
                     break
                 end
                 local directionXYZ = {x=vectorXYZ.x/magnitude,y=vectorXYZ.y/magnitude,z=vectorXYZ.z/magnitude}
@@ -167,16 +166,16 @@ local function movingCardsProcess(dt)
 end
 ---If deck shuffling, process 1 step
 local function shuffleDeckAnim()
-    if not deckShuffling then
+    if not CardEngine.deckShufflingAnimationActive then
         return
     end
-    deckShuffleAge = deckShuffleAge + 1
-    if deckShuffleAge > 20 then
-        deckShuffleAge = 0
-        deckShuffling = false
+    CardEngine.deckShuffleAnimationAge = CardEngine.deckShuffleAnimationAge + 1
+    if CardEngine.deckShuffleAnimationAge > 20 then
+        CardEngine.deckShuffleAnimationAge = 0
+        CardEngine.deckShufflingAnimationActive = false
         return
     end
-    if deckShuffleAge % 4 == 0 then
+    if CardEngine.deckShuffleAnimationAge % 4 == 0 then
         local bottomCardentID = CardEngine.cards['deckCard_'..tostring(0)].entID
         local bottomCard = Game.FindEntityByID(bottomCardentID)
         bottomCard:PlaySoundEvent("q115_sc_02d_card_grab")
@@ -188,21 +187,21 @@ local function shuffleDeckAnim()
     if math.random(1,2) == 1 then --randomly set rotation direction, clockwise or counterclockwise.
         direction = 'right'
     end
-    CardEngine.FlipCard('deckCard_'..tostring(cardOrder[deckShuffleAge]), 'facewise', direction, false)
+    CardEngine.FlipCard('deckCard_'..tostring(cardOrder[CardEngine.deckShuffleAnimationAge]), 'facewise', direction, false)
 end
 
 --Methods
 --=========
 ---Runs on init
 function CardEngine.init() --runs on game launch
-    Cron.Every(0.05, flippingCardsProcess)
+    Cron.Every(0.05, cardsInFlippingMotionProcessStep)
     Cron.Every(0.05, shuffleDeckAnim)
 end
 
 --- Runs every frame
 ---@param dt any delta time
 function CardEngine.update(dt)
-    movingCardsProcess(dt)
+    cardsInMotionProcessStep(dt)
 end
 
 ---Create card entity and lua object
@@ -254,7 +253,7 @@ function CardEngine.MoveCard(id, positionVector4, orientationRPY, movementStyle,
         local euler = EulerAngles.new(orientationRPY.r, orientationRPY.p, orientationRPY.y)
         Game.GetTeleportationFacility():Teleport(entity, positionVector4, euler)
     elseif movementStyle == 'smooth' then
-        movingCards[id] = {id = id, targetPos = positionVector4, TargetOriRPY = orientationRPY, movementStyle = movementStyle, flipEnd = flipEnd, flipAngle = flipAngle, flipDirection = flipDirection, overAge = 0}
+        CardEngine.inMotionCardsList[id] = {id = id, targetPos = positionVector4, TargetOriRPY = orientationRPY, movementStyle = movementStyle, flipEnd = flipEnd, flipAngle = flipAngle, flipDirection = flipDirection, overAge = 0}
     end
     if entity ~= nil then
         entity:PlaySoundEvent("q115_sc_02d_card_pick_up")
@@ -275,7 +274,7 @@ function CardEngine.FlipCard(id, flipAngle, direction, halfFlip)
     entity:PlaySoundEvent("q115_sc_02d_card_put_down")
     local entityVector4 = entity:GetWorldPosition()
     local curEuler = entity:GetWorldOrientation():ToEulerAngles()
-    flippingCards[id] = {id = id, flipAngle = flipAngle, direction = direction, lifetime = 0, curEuler = curEuler, curHeight = entityVector4.z, halfFlip = halfFlip}
+    CardEngine.inFlippingMotionCardsList[id] = {id = id, flipAngle = flipAngle, direction = direction, lifetime = 0, curEuler = curEuler, curHeight = entityVector4.z, halfFlip = halfFlip}
 end
 
 ---Spawns card entities to look like a deck
@@ -296,9 +295,9 @@ function CardEngine.RemoveVisualDeck()
     end
 end
 
----Flips deckShuffling to true, causing the deck 'shuffle' animation
+---Flips deckShuffling var to true, causing the deck 'shuffle' animation
 function CardEngine.TriggerDeckShuffle()
-    deckShuffling = true
+    CardEngine.deckShufflingAnimationActive = true
 end
 
 ---DualPrint a list of all cards currently spawned
