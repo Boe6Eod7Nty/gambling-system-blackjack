@@ -17,6 +17,8 @@ CardEngine = {
 local Cron = require('External/Cron.lua')
 
 local cardPath = "boe6\\gambling_props\\boe6_playing_card.ent"
+local DECK_CARD_COUNT = 40
+local DEFAULT_DECK_APPEARANCE = '7h'
 
 --functions
 --=========
@@ -281,10 +283,10 @@ end
 ---@param positionVector4 Vector4 spawn position
 ---@param orientationRPY any orientation as {r=,p=,y=}, p=180 for face down
 function CardEngine.BuildVisualDeck(positionVector4, orientationRPY)
-    for i = 0, 39 do
+    for i = 0, (DECK_CARD_COUNT-1) do
         local newZ = positionVector4.z + (0.0005 * i)
         local newPositionVector4 = Vector4.new(positionVector4.x, positionVector4.y, newZ, 1)
-        CardEngine.CreateCard('deckCard_'..tostring(i), '7h', newPositionVector4, orientationRPY)
+        CardEngine.CreateCard('deckCard_'..tostring(i), DEFAULT_DECK_APPEARANCE, newPositionVector4, orientationRPY)
     end
 end
 
