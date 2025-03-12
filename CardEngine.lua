@@ -304,14 +304,13 @@ end
 
 ---DualPrint a list of all cards currently spawned
 function CardEngine.PrintAllCards(excludeDeck) --shout out to deepseek for this function I never call 👍
-    local cards = "CardEngine cards: "
-    for k, v in pairs(CardEngine.cards) do
-        -- Only add the card if it's not a deck card when we're excluding them
+    local cardList = {}
+    for id in pairs(CardEngine.cards) do
         if not (excludeDeck and k:match('^deckCard_')) then
-            cards = cards .. tostring(k) .. ", "
+            table.insert(cardList, id)
         end
     end
-    DualPrint(cards)
+    DualPrint("Cards: "..table.concat(cardList, ", "))
 end
 
 --- Sets card highlight color
