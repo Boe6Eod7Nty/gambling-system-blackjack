@@ -99,11 +99,7 @@ end
 
 --- Updates the display's value
 function HolographicValueDisplay.Update(targetValue)
-    if not holoActive then
-        return
-    elseif targetValue == nil then
-        return
-    elseif currentValue == targetValue then
+    if not holoActive or not targetValue or currentValue == targetValue then
         return
     end
 
