@@ -1,5 +1,5 @@
 HolographicValueDisplay = {
-    version = '1.0.0',
+    version = '1.0.1',
     digits = {}
 }
 --===================
@@ -13,16 +13,17 @@ HolographicValueDisplay = {
 local chipsStackHoloProjector = "boe6\\gamblingsystemblackjack\\q303_chips_stacks_edit.ent"
 local holographicDigit = "boe6\\gamblingsystemblackjack\\boe6_number_digit.ent"
 
+local DIGIT_SPACING = 0.03
+local DIGIT_BOTTOM_MARGIN = 0.1
+local ANIM_JUMP_DIVISOR = 30 --adjusts the speed of the animation
+
 local holoActive = false
 local currentValue = 0
 local digitCount = 1
-local digitSpacing = 0.03
-local digitBottomMargin = 0.1
 local holoEntityID = nil
 local holoChipsEntityID = nil
 local holoCenter = nil
 local holoFacingAngle = nil
-local animationJumpDivisor = 30 --adjusts the speed of the animation
 
 ---Counts the number of digits in a number
 ---@param number number number to count digits of
@@ -81,8 +82,8 @@ local function digitWorldPositionV4(numberLength, digitTensPlace)
     local angle = holoFacingAngle * math.pi / 180
     local halfLength = (numberLength - 1) / 2
     local digitOffset = (digitTensPlace - 1) - halfLength
-    local xOffset = digitOffset * digitSpacing * math.cos(angle)
-    local yOffset = digitOffset * digitSpacing * math.sin(angle)
+    local xOffset = digitOffset * DIGIT_SPACING * math.cos(angle)
+    local yOffset = digitOffset * DIGIT_SPACING * math.sin(angle)
     if holoCenter == nil then
         --shouldn't ever trigger
         holoCenter = Vector4.new(-1040.733, 1340.121, 6.085, 1)
@@ -90,7 +91,7 @@ local function digitWorldPositionV4(numberLength, digitTensPlace)
     local digitPosition = Vector4.new(
         holoCenter.x + xOffset,
         holoCenter.y + yOffset,
-        holoCenter.z + digitBottomMargin,
+        holoCenter.z + DIGIT_BOTTOM_MARGIN,
         holoCenter.w
     )
     return digitPosition
@@ -107,8 +108,8 @@ function HolographicValueDisplay.Update(targetValue)
     end
 
     local difference = targetValue - currentValue
-    local divided = math.floor(difference / animationJumpDivisor)
-    if math.abs(difference) < animationJumpDivisor then
+    local divided = math.floor(difference / ANIM_JUMP_DIVISOR)
+    if math.abs(difference) < ANIM_JUMP_DIVISOR then
         if difference > 0 then
             targetValue = currentValue + 1
         elseif difference < 0 then
@@ -188,7 +189,7 @@ function HolographicValueDisplay.startDisplay(locationVector4, facingDirectionAn
     local spec2 = StaticEntitySpec.new()
     spec2.templatePath = holographicDigit
     spec2.appearanceName = 'chips'
-    spec2.position = Vector4.new(holoCenter.x,holoCenter.y,holoCenter.z + (digitBottomMargin*1.5),holoCenter.w)
+    spec2.position = Vector4.new(holoCenter.x,holoCenter.y,holoCenter.z + (DIGIT_BOTTOM_MARGIN*1.5),holoCenter.w)
     spec2.orientation = EulerAngles.ToQuat(EulerAngles.new(0,0,holoFacingAngle+180))
     spec2.tags = {"HolographicDisplay","chips"}
     holoChipsEntityID = Game.GetStaticEntitySystem():SpawnEntity(spec2) --spawn holodisplay chips sign
