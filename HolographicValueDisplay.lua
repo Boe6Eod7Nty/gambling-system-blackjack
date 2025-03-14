@@ -118,17 +118,26 @@ function HolographicValueDisplay.Update(targetValue)
     local startingDigits = countDigits(currentValue)
     local targetDigits = countDigits(targetValue)
     currentValue = targetValue
-    if targetDigits == startingDigits then
-        -- SAME DIGIT COUNT
-        for i, j in pairs(HolographicValueDisplay.digits) do
-            local digitValue = nthNumber(targetValue, i)
-            local entity = Game.FindEntityByID(j.entID)
-            if entity then
-                entity:ScheduleAppearanceChange(tostring(digitValue))
-            end
+
+    local function getAndChangeDigit(entID, i)
+        local entity = Game.FindEntityByID(entID)
+        local value = nthNumber(targetValue, i)
+        if entity then
+            entity:ScheduleAppearanceChange(tostring(value))
         end
-    elseif targetDigits > startingDigits then
-        -- MORE DIGITS
+        return entity
+    end
+    local function alignDigit(i, entity)
+        local digitPosition = digitWorldPositionV4(targetDigits, i)
+        local EulerAngles = EulerAngles.new(0, 0, holoFacingAngle+180)
+        Game.GetTeleportationFacility():Teleport(entity, digitPosition, EulerAngles)
+    end
+
+    if targetDigits == startingDigits then -- SAME DIGIT COUNT
+        for i, j in pairs(HolographicValueDisplay.digits) do
+            local entity = getAndChangeDigit(j.entID, i)
+        end
+    elseif targetDigits > startingDigits then -- MORE DIGITS
         local amountNewDigits = targetDigits - startingDigits
         for i = 1, amountNewDigits do
             local digitValue = nthNumber(targetValue, startingDigits + i)
@@ -136,30 +145,17 @@ function HolographicValueDisplay.Update(targetValue)
             createDigitEntity(startingDigits + i, tostring(digitValue), digitPosition, {r=0,p=0,y=holoFacingAngle+180})
         end
         for i = 1, startingDigits do
-            local digitValue = nthNumber(targetValue, i)
-            local entity = Game.FindEntityByID(HolographicValueDisplay.digits[i].entID)
-            if entity then
-                entity:ScheduleAppearanceChange(tostring(digitValue))
-            end
-            local digitPosition = digitWorldPositionV4(targetDigits, i)
-            local EulerAngles = EulerAngles.new(0, 0, holoFacingAngle+180)
-            Game.GetTeleportationFacility():Teleport(entity, digitPosition, EulerAngles)
+            local entity = getAndChangeDigit(HolographicValueDisplay.digits[i].entID, i)
+            alignDigit(i, entity)
         end
-    elseif targetDigits < startingDigits then
-        -- LESS DIGITS
+    elseif targetDigits < startingDigits then -- LESS DIGITS
         local amountDeletedDigits = startingDigits - targetDigits
         for i = 1, amountDeletedDigits do
             destroyDigitEntity(targetDigits + i)
         end
         for i = 1, targetDigits do
-            local digitValue = nthNumber(targetValue, i)
-            local entity = Game.FindEntityByID(HolographicValueDisplay.digits[i].entID)
-            if entity then
-                entity:ScheduleAppearanceChange(tostring(digitValue))
-            end
-            local digitPosition = digitWorldPositionV4(targetDigits, i)
-            local EulerAngles = EulerAngles.new(0, 0, holoFacingAngle+180)
-            Game.GetTeleportationFacility():Teleport(entity, digitPosition, EulerAngles)
+            local entity = getAndChangeDigit(HolographicValueDisplay.digits[i].entID, i)
+            alignDigit(i, entity)
         end
     end
 end
