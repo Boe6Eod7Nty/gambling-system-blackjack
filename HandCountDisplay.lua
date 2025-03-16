@@ -1,5 +1,5 @@
 HandCountDisplay = {
-    version = '1.0.0',
+    version = '1.0.1',
     displayEnabled = false,
     displays = {},
     playerActiveHands = 0,
@@ -108,8 +108,6 @@ local function displayShutdown(isDealer, handIndex)
         DualPrint('HCD | Incorrect displayShutdown() call. Error #4027')
         return
     end
-    --local entity1 = Game.GetStaticEntitySystem():GetEntityByID(display.ent1ID)
-    --local entity2 = Game.GetStaticEntitySystem():GetEntityByID(display.ent2ID)
     Game.GetStaticEntitySystem():DespawnEntity(display.ent1ID)
     Game.GetStaticEntitySystem():DespawnEntity(display.ent2ID)
     display.enabled = false
@@ -142,15 +140,8 @@ local function updateEachDisplay()
         local digit1Entity = Game.FindEntityByID(playerDisplay.ent1ID)
         local digit2Entity = Game.FindEntityByID(playerDisplay.ent2ID)
         if playerDisplay.enabled then
-            if digit1Entity == nil then
-                --DualPrint('HCD | display #'..tostring(i)..' digit 1 entity is nil')
-            end
-            if digit2Entity == nil then
-                --DualPrint('HCD | display #'..tostring(i)..' digit 2 entity is nil')
-            end
             playerDisplay.value = SingleRoundLogic.playerCardsValue[i]
             if playerDisplay.value ~= playerDisplay.appValue then
-                --DualPrint('HCD | Updating display #'..tostring(i)..'; from '..tostring(playerDisplay.appValue)..' to '..tostring(playerDisplay.value))
                 if digit1Entity and digit2Entity then
                     local function callback()
                         playerDisplay.appValue = playerDisplay.value
@@ -158,10 +149,6 @@ local function updateEachDisplay()
                         digit2Entity:ScheduleAppearanceChange(tostring(ones))
                     end
                     Cron.After(0.1, callback)
-                else
-                    --DualPrint('HCD | Failed to update display #'..tostring(i))
-                    --DualPrint('HCD | digit1Entity: '..tostring(digit1Entity)..', entityID: '..tostring(playerDisplay.ent1ID))
-                    --DualPrint('HCD | digit2Entity: '..tostring(digit2Entity)..', entityID: '..tostring(playerDisplay.ent2ID))
                 end
             elseif SingleRoundLogic.currentlySplit then
                 if i == SingleRoundLogic.activePlayerHandIndex then
@@ -200,7 +187,6 @@ local function updateEachDisplay()
             end
         end
     end
-
     --detect new split hands as they happen
     if HandCountDisplay.playerActiveHands ~= #SingleRoundLogic.playerHands then
         if HandCountDisplay.playerActiveHands < #SingleRoundLogic.playerHands then
@@ -210,7 +196,6 @@ local function updateEachDisplay()
         end
         HandCountDisplay.playerActiveHands = #SingleRoundLogic.playerHands
     end
-
     --detect new dealer hand reveal
     if SingleRoundLogic.dealerHandRevealed and not HandCountDisplay.displays['dealerHand'].enabled then
         displayStartup(true)
