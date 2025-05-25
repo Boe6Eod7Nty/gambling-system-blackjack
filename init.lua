@@ -12,7 +12,7 @@ GamblingSystemBlackjack = {
 --Feel free to ask via nexus/discord, I just dont want my stuff stolen :)
 --===================
 --REQUIREMENTS:
---RED4ext   
+--RED4ext
 --Cyber Engine Tweaks
 --Codeware
 --ArchiveXL
