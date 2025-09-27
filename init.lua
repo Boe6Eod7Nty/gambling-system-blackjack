@@ -229,7 +229,9 @@ registerForEvent( "onInit", function()
 
     --native settings UI
     local nativeSettings = GetMod("nativeSettings")
-    nativeSettings.addTab("/gamblingSystem", GameLocale.Text("Gambling System")) -- Add a tab (path, label, callback)
+    if (not nativeSettings.pathExists("/gamblingSystem")) then
+        nativeSettings.addTab("/gamblingSystem", GameLocale.Text("Gambling System")) -- Add a tab (path, label, callback)
+    end
     nativeSettings.addSubcategory("/gamblingSystem/blackjack", GameLocale.Text("Blackjack Settings")) -- Add a subcategory (path, label, optionalIndex)
      -- Parameters: path, label, desc, currentValue, defaultValue, callback, optionalIndex
     nativeSettings.addSwitch("/gamblingSystem/blackjack", GameLocale.Text("Show Hand Values"), 
