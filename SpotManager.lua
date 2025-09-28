@@ -2,7 +2,12 @@ SpotManager = {
     version = '1.1.12',
     spots = {},
     activeCam = nil,
-    forcedCam = false
+    forcedCam = false,
+    -- Performance optimization variables
+    uiUpdateTimer = nil,
+    playerCacheTimer = nil,
+    cachedPlayer = nil,
+    cachedPlayerPosition = nil
 }
 --===================
 --CODE BY Boe6
@@ -18,6 +23,19 @@ local interactionUI = require("External/interactionUI.lua")-- by keanuwheeze
 
 local inMenu = true --libaries requirement
 local inGame = false
+
+-- Performance optimization: Cache player data to avoid expensive calls every frame
+local function getCachedPlayerData()
+    return SpotManager.cachedPlayer, SpotManager.cachedPlayerPosition
+end
+
+-- Update player cache using Cron
+local function updatePlayerCache()
+    SpotManager.cachedPlayer = GetPlayer()
+    if SpotManager.cachedPlayer then
+        SpotManager.cachedPlayerPosition = SpotManager.cachedPlayer:GetWorldPosition()
+    end
+end
 
 --[[
 local spotTemplate = {                                         --Use this as reference when creating new spot
@@ -185,26 +203,42 @@ end
 
 local function interactionUIUpdate(spotTable)
     local spotObj = spotTable.spotObject
-    local player = GetPlayer()
-    local position = player:GetWorldPosition()
+    local player, position = getCachedPlayerData()
+    
+    -- Early exit if player data is invalid
+    if not player or not position then
+        return
+    end
+    
     local mapping_pos = spotObj.mappin_worldPosition
     local player2mappinDistance = Vector4.Distance(position, mapping_pos)
+
+    -- Early exit if too far away (most common case)
+    if player2mappinDistance >= spotObj.mappin_interactionRange then
+        if spotObj.spot_showingInteractUI then
+            spotObj.spot_showingInteractUI = false
+            interactionUI.hideHub()
+        end
+        return
+    end
 
     local shouldShowUI = true --start shouldShowUI logic
     local vector4difference = Vector4.new(position.x - mapping_pos.x, position.y - mapping_pos.y, position.z - mapping_pos.z, 0)
     local forwardVector = player:GetWorldForward()
     local angleBetween = Vector4.GetAngleBetween(forwardVector, vector4difference)
-    local pitch = Game.GetCameraSystem():GetActiveCameraData().rotation:ToEulerAngles().pitch
-    local min, max = -75, -10
-
-    if not ( player2mappinDistance < spotObj.mappin_interactionRange ) then -- check interaction range
+    
+    -- Check interaction angle
+    if not ( 180 - angleBetween < spotObj.mappin_interactionAngle ) then
         shouldShowUI = false
     end
-    if not ( 180 - angleBetween < spotObj.mappin_interactionAngle ) then -- check interaction angle
-        shouldShowUI = false
-    end
-    if not (min < pitch and pitch < max) then -- check looking pitch_angle, if looking too far up or down
-        shouldShowUI = false
+    
+    -- Only check pitch if angle check passed (expensive camera call)
+    if shouldShowUI then
+        local pitch = Game.GetCameraSystem():GetActiveCameraData().rotation:ToEulerAngles().pitch
+        local min, max = -75, -10
+        if not (min < pitch and pitch < max) then -- check looking pitch_angle, if looking too far up or down
+            shouldShowUI = false
+        end
     end
 
     if shouldShowUI ~= spotObj.spot_showingInteractUI then --show or hide the "join" dialog UI
@@ -222,21 +256,25 @@ end
 
 local function mappinUIUpdate(spotTable)
     local spotObj = spotTable.spotObject
-    local player = GetPlayer()
-    local position = player:GetWorldPosition()
+    local player, position = getCachedPlayerData()
+    
+    -- Early exit if player data is invalid
+    if not player or not position then
+        return
+    end
+    
     local mapping_pos = spotObj.mappin_worldPosition
     local player2mappinDistance = Vector4.Distance(position, mapping_pos)
 
     local shouldShowIcon = true --start shouldShowIcon logic
     local currentlyShowingIcon = spotObj.mappin_visible
 
-    if player2mappinDistance > spotObj.mappin_rangeMax then
-        shouldShowIcon = false
-    end
-    if player2mappinDistance < spotObj.mappin_rangeMin then
-        shouldShowIcon = false
-    end
+    -- Early exit conditions - check most restrictive first
     if spotObj.mappin_showWorldMappinIconSetting == false then
+        shouldShowIcon = false
+    elseif player2mappinDistance > spotObj.mappin_rangeMax then
+        shouldShowIcon = false
+    elseif player2mappinDistance < spotObj.mappin_rangeMin then
         shouldShowIcon = false
     end
 
@@ -277,6 +315,17 @@ end
 --===============
 function SpotManager.init() --runs on game launch
 
+    -- Performance optimization: Set up Cron timers for UI updates
+    SpotManager.playerCacheTimer = Cron.Every(0.05, updatePlayerCache) -- Update player cache every 50ms
+    SpotManager.uiUpdateTimer = Cron.Every(0.1, function() -- Update UI elements every 100ms
+        if not inMenu and inGame then
+            for _, spotTable in pairs(SpotManager.spots) do
+                interactionUIUpdate(spotTable)
+                mappinUIUpdate(spotTable)
+            end
+        end
+    end)
+
     Observe('RadialWheelController', 'OnIsInMenuChanged', function(_, isInMenu) -- Setup observer and GameUI to detect inGame / inMenu, credit: keanuwheeze | init.lua from the sitAnywhere mod
         inMenu = isInMenu
     end)
@@ -310,6 +359,15 @@ function SpotManager.init() --runs on game launch
     end)
     GameUI.OnSessionEnd(function()
         inGame = false
+        -- Clean up performance optimization timers
+        if SpotManager.playerCacheTimer then
+            SpotManager.playerCacheTimer:Destroy()
+            SpotManager.playerCacheTimer = nil
+        end
+        if SpotManager.uiUpdateTimer then
+            SpotManager.uiUpdateTimer:Destroy()
+            SpotManager.uiUpdateTimer = nil
+        end
     end)
     inGame = not GameUI.IsDetached() -- Required to check if ingame after reloading all mods
 
@@ -319,11 +377,6 @@ function SpotManager.update(dt) --runs every frame
         Cron.Update(dt) -- This is required for Cron to function
     end
     updateForcedCamera()
-
-    for _, spotTable in pairs(SpotManager.spots) do
-        interactionUIUpdate(spotTable)
-        mappinUIUpdate(spotTable)
-    end
 end
 
 --Methods
