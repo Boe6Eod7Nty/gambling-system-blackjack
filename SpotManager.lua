@@ -1,5 +1,5 @@
 SpotManager = {
-    version = '1.1.12',
+    version = '1.1.13',
     spots = {},
     activeCam = nil,
     forcedCam = false,
@@ -360,11 +360,11 @@ function SpotManager.init() --runs on game launch
         inGame = false
         -- Clean up performance optimization timers
         if SpotManager.playerCacheTimer then
-            SpotManager.playerCacheTimer:Destroy()
+            Cron.Halt(SpotManager.playerCacheTimer)
             SpotManager.playerCacheTimer = nil
         end
         if SpotManager.uiUpdateTimer then
-            SpotManager.uiUpdateTimer:Destroy()
+            Cron.Halt(SpotManager.uiUpdateTimer)
             SpotManager.uiUpdateTimer = nil
         end
     end)
