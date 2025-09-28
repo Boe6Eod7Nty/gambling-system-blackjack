@@ -11,7 +11,9 @@ CardEngine = {
     inMotionCardsList = {},
     inFlippingMotionCardsList = {},
     deckShufflingAnimationActive = false,
-    deckShuffleAnimationAge = 0
+    deckShuffleAnimationAge = 0,
+    -- Performance optimization caches
+    entityCache = {}
 }
 
 local Cron = require('External/Cron.lua')
@@ -40,10 +42,25 @@ local function cardsInFlippingMotionProcessStep()
         local steps = totalFlipDegrees / flipAngle --how many iterations of cardsInFlippingMotionProcessStep() to flip 180 degrees
         if v.lifetime >= steps then --after steps (degrees x steps = 180) mark card as done flipping. ('delete')
             CardEngine.inFlippingMotionCardsList[v.id] = nil
+            -- Clear from cache when animation completes
+            CardEngine.entityCache[v.id] = nil
             break
         end
 
-        local entity = Game.FindEntityByID(CardEngine.cards[v.id].entID)
+        -- Cache entity lookup to avoid repeated Game.FindEntityByID calls
+        local entity = CardEngine.entityCache[v.id]
+        if not entity then
+            entity = Game.FindEntityByID(CardEngine.cards[v.id].entID)
+            if entity then
+                CardEngine.entityCache[v.id] = entity
+            else
+                -- Entity not found, skip this animation
+                CardEngine.inFlippingMotionCardsList[v.id] = nil
+                break
+            end
+        end
+
+        -- Pre-calculate quaternion and vectors once per animation step
         local entQuat = v.curEuler:ToQuat()
         local entityVector4 = entity:GetWorldPosition() --XYZ world position
         local forwardVector = entQuat:GetForward()  --Vector4
@@ -95,57 +112,68 @@ local function cardsInFlippingMotionProcessStep()
 end
 ---Processes 1 step of each current card in the CardEngine.inMotionCardsList table
 local function cardsInMotionProcessStep(dt)
-    if next(CardEngine.inMotionCardsList) then
-        for i, card in pairs(CardEngine.inMotionCardsList) do
-            local stepSize = 1.0
-            local moveDistance = stepSize * dt * 1
-            local rotateDistance = stepSize * dt * 1
+    if not next(CardEngine.inMotionCardsList) then
+        return
+    end
+    
+    for i, card in pairs(CardEngine.inMotionCardsList) do
+        local stepSize = 1.0
+        local moveDistance = stepSize * dt * 1
+        local rotateDistance = stepSize * dt * 1
 
-            local cardObj = CardEngine.cards[card.id]
-            local entID = cardObj.entID
-            local entity = Game.FindEntityByID(entID)
-            local doContinue = true
-            if entity == nil then
-                --DualPrint('CE | Card missing! id: '..tostring(card.id)..' overAge: '..tostring(card.overAge))
-                if card.overAge >= 3 then
-                    CardEngine.inMotionCardsList[i] = nil
-                end
-                card.overAge = card.overAge + 1
-                doContinue = false
+        local cardObj = CardEngine.cards[card.id]
+        local entID = cardObj.entID
+        
+        -- Cache entity lookup to avoid repeated Game.FindEntityByID calls
+        local entity = CardEngine.entityCache[card.id]
+        if not entity then
+            entity = Game.FindEntityByID(entID)
+            if entity then
+                CardEngine.entityCache[card.id] = entity
             end
-
-            if doContinue then
-                --instatiate output euler
-                local euler = EulerAngles.new(card.TargetOriRPY.r, card.TargetOriRPY.p, card.TargetOriRPY.y)
-
-                local currentOrientationRPY = entity:GetWorldOrientation():ToEulerAngles()
-                local curOri = {r=currentOrientationRPY.roll,p=currentOrientationRPY.pitch,y=currentOrientationRPY.yaw}
-                local tarOri = {r=card.TargetOriRPY.r,p=card.TargetOriRPY.p,y=card.TargetOriRPY.y}
-                euler = EulerAngles.new(curOri.r,curOri.p,curOri.y)
-
-
-
-                local entityVector4 = entity:GetWorldPosition()
-                local TargetVector4 = card.targetPos
-                local vectorXYZ = {x=TargetVector4.x-entityVector4.x,y=TargetVector4.y-entityVector4.y,z=TargetVector4.z-entityVector4.z}
-                local magnitude = math.sqrt(vectorXYZ.x^2 + vectorXYZ.y^2 + vectorXYZ.z^2)
-                if magnitude <= moveDistance then
-                    Game.GetTeleportationFacility():Teleport(entity, TargetVector4, euler)
-                    if card.flipEnd then
-                        Cron.After(0.5, CardEngine.FlipCard(card.id, card.flipAngle, card.flipDirection, false))
-                    end
-                    CardEngine.inMotionCardsList[i] = nil
-                    break
-                end
-                local directionXYZ = {x=vectorXYZ.x/magnitude,y=vectorXYZ.y/magnitude,z=vectorXYZ.z/magnitude}
-                local newXYZ = {
-                    x=entityVector4.x+directionXYZ.x*moveDistance,
-                    y=entityVector4.y+directionXYZ.y*moveDistance,
-                    z=entityVector4.z+directionXYZ.z*moveDistance}
-                local outPositionVector4 = Vector4.new(newXYZ.x,newXYZ.y,newXYZ.z,1)
-
-                Game.GetTeleportationFacility():Teleport(entity, outPositionVector4, euler)
+        end
+        
+        local doContinue = true
+        if entity == nil then
+            --DualPrint('CE | Card missing! id: '..tostring(card.id)..' overAge: '..tostring(card.overAge))
+            if card.overAge >= 3 then
+                CardEngine.inMotionCardsList[i] = nil
+                CardEngine.entityCache[card.id] = nil -- Clear from cache
             end
+            card.overAge = card.overAge + 1
+            doContinue = false
+        end
+
+        if doContinue then
+            --instatiate output euler
+            local euler = EulerAngles.new(card.TargetOriRPY.r, card.TargetOriRPY.p, card.TargetOriRPY.y)
+
+            local currentOrientationRPY = entity:GetWorldOrientation():ToEulerAngles()
+            local curOri = {r=currentOrientationRPY.roll,p=currentOrientationRPY.pitch,y=currentOrientationRPY.yaw}
+            local tarOri = {r=card.TargetOriRPY.r,p=card.TargetOriRPY.p,y=card.TargetOriRPY.y}
+            euler = EulerAngles.new(curOri.r,curOri.p,curOri.y)
+
+            local entityVector4 = entity:GetWorldPosition()
+            local TargetVector4 = card.targetPos
+            local vectorXYZ = {x=TargetVector4.x-entityVector4.x,y=TargetVector4.y-entityVector4.y,z=TargetVector4.z-entityVector4.z}
+            local magnitude = math.sqrt(vectorXYZ.x^2 + vectorXYZ.y^2 + vectorXYZ.z^2)
+            if magnitude <= moveDistance then
+                Game.GetTeleportationFacility():Teleport(entity, TargetVector4, euler)
+                if card.flipEnd then
+                    Cron.After(0.5, CardEngine.FlipCard(card.id, card.flipAngle, card.flipDirection, false))
+                end
+                CardEngine.inMotionCardsList[i] = nil
+                CardEngine.entityCache[card.id] = nil -- Clear from cache when animation completes
+                break
+            end
+            local directionXYZ = {x=vectorXYZ.x/magnitude,y=vectorXYZ.y/magnitude,z=vectorXYZ.z/magnitude}
+            local newXYZ = {
+                x=entityVector4.x+directionXYZ.x*moveDistance,
+                y=entityVector4.y+directionXYZ.y*moveDistance,
+                z=entityVector4.z+directionXYZ.z*moveDistance}
+            local outPositionVector4 = Vector4.new(newXYZ.x,newXYZ.y,newXYZ.z,1)
+
+            Game.GetTeleportationFacility():Teleport(entity, outPositionVector4, euler)
         end
     end
 end
@@ -215,6 +243,8 @@ function CardEngine.DeleteCard(id)
     --DualPrint('card deleting: '..tostring(id))
     --DualPrint('entity deleting: '..tostring(CardEngine.cards[id].id))
     Game.GetStaticEntitySystem():DespawnEntity(CardEngine.cards[id].entID)
+    -- Clear from cache when card is deleted
+    CardEngine.entityCache[id] = nil
 end
 
 ---Move card to position with animation 'style'
@@ -308,6 +338,12 @@ function CardEngine.setHighlightColor(cardID, colorIndex)
     newRenderHighlight.seeThroughWalls = true
     newRenderHighlight.outlineIndex = colorIndex
     entity:QueueEventForEntityID(entityID, newRenderHighlight)
+end
+
+--- Clears entity cache to prevent memory leaks
+--- Call this periodically or when cards are no longer needed
+function CardEngine.clearEntityCache()
+    CardEngine.entityCache = {}
 end
 
 return CardEngine
