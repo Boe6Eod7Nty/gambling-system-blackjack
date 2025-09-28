@@ -24,19 +24,6 @@ local interactionUI = require("External/interactionUI.lua")-- by keanuwheeze
 local inMenu = true --libaries requirement
 local inGame = false
 
--- Performance optimization: Cache player data to avoid expensive calls every frame
-local function getCachedPlayerData()
-    return SpotManager.cachedPlayer, SpotManager.cachedPlayerPosition
-end
-
--- Update player cache using Cron
-local function updatePlayerCache()
-    SpotManager.cachedPlayer = GetPlayer()
-    if SpotManager.cachedPlayer then
-        SpotManager.cachedPlayerPosition = SpotManager.cachedPlayer:GetWorldPosition()
-    end
-end
-
 --[[
 local spotTemplate = {                                         --Use this as reference when creating new spot
     spot_id = 'default',                                                                                        --REQUIRED | string, unique name. NO REPEATS. DO NOT LEAVE AS 'default'
@@ -92,6 +79,18 @@ local spotTemplate = {                                         --Use this as ref
 
 --Functions
 --=========
+-- Performance optimization: Cache player data to avoid expensive calls every frame
+local function getCachedPlayerData()
+    return SpotManager.cachedPlayer, SpotManager.cachedPlayerPosition
+end
+
+-- Update player cache using Cron
+local function updatePlayerCache()
+    SpotManager.cachedPlayer = GetPlayer()
+    if SpotManager.cachedPlayer then
+        SpotManager.cachedPlayerPosition = SpotManager.cachedPlayer:GetWorldPosition()
+    end
+end
 --- Display Basic UI interaction prompt
 ---@param spotTable table same as spotObject structure
 local function basicInteractionUIPrompt(spotTable) --Display interactionUI menu
