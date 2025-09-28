@@ -2,6 +2,9 @@ HolographicValueDisplay = {
     version = '1.0.1',
     digits = {}
 }
+
+-- Import Cron for optimized timing
+local Cron = require('External/Cron.lua')
 --===================
 --CODE BY Boe6
 --DO NOT DISTRIBUTE
@@ -24,6 +27,8 @@ local holoEntityID = nil
 local holoChipsEntityID = nil
 local holoCenter = nil
 local holoFacingAngle = nil
+local frameCounter = 0
+local UPDATE_EVERY_N_FRAMES = 2 -- Update every 2nd frame (30 FPS when game runs at 60 FPS)
 
 ---Counts the number of digits in a number
 ---@param number number number to count digits of
@@ -97,11 +102,18 @@ local function digitWorldPositionV4(numberLength, digitTensPlace)
     return digitPosition
 end
 
---- Updates the display's value
+--- Updates the display's value (optimized with frame-based rate limiting)
 function HolographicValueDisplay.Update(targetValue)
     if not holoActive or not targetValue or currentValue == targetValue then
         return
     end
+
+    -- Frame-based rate limiting: only update every N frames
+    frameCounter = frameCounter + 1
+    if frameCounter < UPDATE_EVERY_N_FRAMES then
+        return
+    end
+    frameCounter = 0
 
     local difference = targetValue - currentValue
     local divided = math.floor(difference / ANIM_JUMP_DIVISOR)
@@ -169,6 +181,7 @@ function HolographicValueDisplay.startDisplay(locationVector4, facingDirectionAn
     digitCount = 1
     holoCenter = locationVector4
     holoFacingAngle = facingDirectionAngle
+    frameCounter = 0
 
     local spec = StaticEntitySpec.new()
     spec.templatePath = chipsStackHoloProjector
@@ -186,20 +199,19 @@ function HolographicValueDisplay.startDisplay(locationVector4, facingDirectionAn
     spec2.tags = {"HolographicDisplay","chips"}
     holoChipsEntityID = Game.GetStaticEntitySystem():SpawnEntity(spec2) --spawn holodisplay chips sign
 
-
+    local digit1Position = digitWorldPositionV4(1, 1)
     createDigitEntity(1, '0', digit1Position, {r=0, p=0, y=holoFacingAngle+180}) --spawn 0 digit
 end
 
 ---Stop showing the holographic display
 function HolographicValueDisplay.stopDisplay()
-
     holoActive = false
+    
     for i, j in pairs(HolographicValueDisplay.digits) do
         destroyDigitEntity(i)
     end
     Game.GetStaticEntitySystem():DespawnEntity(holoEntityID)
     Game.GetStaticEntitySystem():DespawnEntity(holoChipsEntityID)
-
 end
 
 return HolographicValueDisplay
