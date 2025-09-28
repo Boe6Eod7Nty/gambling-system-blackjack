@@ -1,9 +1,9 @@
 GamblingSystemBlackjack = {
-    version = '1.0.9',
+    version = '1.1.0',
     loaded = false,
     ready = false
 }
---init.lua v1.0.8
+--init.lua v1.0.9
 --===================
 --Copyright (c) 2025 Boe6
 --DO NOT DISTRIBUTE
@@ -275,7 +275,7 @@ registerForEvent('onShutdown', function()
     GameSession.TrySave()
 end)
 
-
+--[[
 registerHotkey('DevHotkey1', 'Dev Hotkey 1', function()
     DualPrint('||=1  Dev hotkey 1 Pressed =')
 
@@ -316,6 +316,7 @@ registerHotkey('DevHotkey9', 'Dev Hotkey 9', function()
     DualPrint('||=9  Dev hotkey 9 Pressed =')
 
 end)
+]]--
 
 
 --[[ animations tested
