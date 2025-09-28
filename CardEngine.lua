@@ -6,7 +6,7 @@
 --Feel free to ask via nexus/discord, I just dont want my stuff stolen :)
 --===================
 CardEngine = {
-    version = '1.0.1',
+    version = '1.0.2',
     cards = {},
     inMotionCardsList = {},
     inFlippingMotionCardsList = {},
