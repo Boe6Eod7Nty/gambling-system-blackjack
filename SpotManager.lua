@@ -1,5 +1,5 @@
 SpotManager = {
-    version = '1.1.14',
+    version = '1.1.15',
     spots = {},
     activeCam = nil,
     forcedCam = false,
@@ -211,6 +211,7 @@ local function interactionUIUpdate(spotTable)
         return
     end
     
+    
     local mapping_pos = spotObj.mappin_worldPosition
     local player2mappinDistance = Vector4.Distance(position, mapping_pos)
 
@@ -359,6 +360,22 @@ function SpotManager.init() --runs on game launch
             spotTable.spotObject.mappin_visible = false
             spotTable.spotObject.mappin_gameMappinID = nil
         end
+        
+        -- Restart the Cron timers that were halted during session end
+        if not SpotManager.playerCacheTimer then
+            SpotManager.playerCacheTimer = Cron.Every(0.05, updatePlayerCache)
+        end
+        if not SpotManager.uiUpdateTimer then
+            SpotManager.uiUpdateTimer = Cron.Every(0.1, function()
+                if not inMenu and inGame then
+                    for _, spotTable in pairs(SpotManager.spots) do
+                        interactionUIUpdate(spotTable)
+                        mappinUIUpdate(spotTable)
+                    end
+                end
+            end)
+        end
+        
     end)
     GameUI.OnSessionEnd(function()
         inGame = false
