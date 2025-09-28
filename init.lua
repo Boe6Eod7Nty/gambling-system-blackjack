@@ -1,5 +1,5 @@
 GamblingSystemBlackjack = {
-    version = '1.0.8',
+    version = '1.0.9',
     loaded = false,
     ready = false
 }
@@ -44,6 +44,7 @@ Global_temp_Counter_ent = nil
 local dealerSpawned = false
 ImmersiveFirstPersonInstalled = false
 DisplayHandValuesOption = {true}
+ForcedCameraOption = {false} -- Default to off (no forced camera)
 local state = { runtime = 0 } --GameSession runtime
 
 --Functions
@@ -102,13 +103,16 @@ registerForEvent( "onInit", function()
 
     GameSession.StoreInDir('sessions')
     GameSession.Persist(DisplayHandValuesOption)
+    GameSession.Persist(ForcedCameraOption)
     GameSession.OnLoad(function()
         -- This state is not reset when the mod is reloaded
         --DualPrint('data loaded; enabled card value: '..tostring(DisplayHandValuesOption[1]))
+        --DualPrint('data loaded; forced camera: '..tostring(ForcedCameraOption[1]))
     end)
     GameSession.TryLoad()
 
     local currentHandValueSetting = DisplayHandValuesOption[1]
+    local currentForcedCameraSetting = ForcedCameraOption[1]
 
     -- Setup observer and GameUI to detect inGame / inMenu, credit: keanuwheeze | init.lua from the sitAnywhere mod
     Observe('RadialWheelController', 'OnIsInMenuChanged', function(_, isInMenu)
@@ -176,7 +180,7 @@ registerForEvent( "onInit", function()
         camera_worldPositionOffset = Vector4.new(0, 0.4, 0.7, 1),
         camera_OrientationOffset = EulerAngles.new(0, -60, 0),
         camera_showElectroshockEffect = true,
-        camera_useForcedCamInWorkspot = true
+        camera_useForcedCamInWorkspot = ForcedCameraOption[1]
     }
     SpotManager.AddSpot(spotObj)
 
@@ -239,6 +243,13 @@ registerForEvent( "onInit", function()
         -- save the changes to session
         DisplayHandValuesOption[1] = state
     end)
+    nativeSettings.addSwitch("/gamblingSystem/blackjack", GameLocale.Text("Top-Down Camera"), 
+            GameLocale.Text("Enable Top-Down camera view while sitting at the table. (Recommended) (Causes flashing when used with ImmersiveFirstPerson mod)"), currentForcedCameraSetting, false, function(state)
+        -- save the changes to session
+        ForcedCameraOption[1] = state
+        -- update the spot configuration
+        SpotManager.changeSpotData(false, {camera_useForcedCamInWorkspot = state}, 'hooh')
+    end)
 
 end)
 registerForEvent('onUpdate', function(dt)
@@ -269,6 +280,7 @@ registerHotkey('DevHotkey2', 'Dev Hotkey 2', function()
     DualPrint('||=2  Dev hotkey 2 Pressed =')
 
     DualPrint('DisplayHandValuesOption[1]: '..tostring(DisplayHandValuesOption[1]))
+    DualPrint('ForcedCameraOption[1]: '..tostring(ForcedCameraOption[1]))
 
     DualPrint('immersiveFirstPerson.API.IsEnabled(): '..tostring(GetMod("ImmersiveFirstPerson").api.IsEnabled()))
 end)

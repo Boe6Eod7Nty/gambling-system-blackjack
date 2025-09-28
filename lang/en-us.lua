@@ -21,4 +21,6 @@ return {
     ["Gambling System"] = "Gambling System",
     ["Show Hand Values"] = "Show Hand Values",
     ["Enable/Disable the automatic calculator for hand values, 21, etc."] = "Enable/Disable the automatic calculator for hand values, 21, etc.",
+    ["Top-Down Camera"] = "Top-Down Camera",
+    ["Enable Top-Down camera view while sitting at the table. (Recommended) (Causes flashing when used with ImmersiveFirstPerson mod)"] = "Enable Top-Down camera view while sitting at the table. (Recommended) (Causes flashing when used with ImmersiveFirstPerson mod)",
 }

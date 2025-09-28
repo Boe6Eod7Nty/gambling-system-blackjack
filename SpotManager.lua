@@ -1,5 +1,5 @@
 SpotManager = {
-    version = '1.1.13',
+    version = '1.1.14',
     spots = {},
     activeCam = nil,
     forcedCam = false,
@@ -187,13 +187,15 @@ end
 
 local function updateForcedCamera()
     if SpotManager.forcedCam and SpotManager.activeCam ~= nil then --fixes the camera being reset by workspot animation
-        local camera = GetPlayer():GetFPPCameraComponent()
-        local o = camera:GetLocalOrientation():ToEulerAngles()
         local spot = SpotManager.spots[SpotManager.activeCam]
-        local camRotation = spot.spotObject.camera_OrientationOffset
-        local isCorrectOrientation = math.abs(o.pitch - camRotation.pitch) < 0.0001 and math.abs(o.yaw - camRotation.yaw) < 0.0001
-        if not isCorrectOrientation then
-            setForcedCamera(true, spot.spotObject)
+        if spot.spotObject.camera_useForcedCamInWorkspot then
+            local camera = GetPlayer():GetFPPCameraComponent()
+            local o = camera:GetLocalOrientation():ToEulerAngles()
+            local camRotation = spot.spotObject.camera_OrientationOffset
+            local isCorrectOrientation = math.abs(o.pitch - camRotation.pitch) < 0.0001 and math.abs(o.yaw - camRotation.yaw) < 0.0001
+            if not isCorrectOrientation then
+                setForcedCamera(true, spot.spotObject)
+            end
         end
     else
         StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl") --insurance/safety
@@ -304,7 +306,9 @@ function TriggeredSpot(spotObject)
             StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "BaseStatusEffect.FatalElectrocutedParticleStatus")
         end
         SpotManager.activeCam = spotObject.spot_id
-        setForcedCamera(true, spotObject)
+        if spotObject.camera_useForcedCamInWorkspot then
+            setForcedCamera(true, spotObject)
+        end
     end
     Cron.After(spotObject.animation_defaultEnterTime, enterCallback)
     Cron.After(spotObject.callback_OnSpotEnterAfterAnimationDelayTime, spotObject.callback_OnSpotEnterAfterAnimation)
