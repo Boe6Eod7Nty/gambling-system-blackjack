@@ -114,22 +114,7 @@ registerForEvent( "onInit", function()
     local currentHandValueSetting = DisplayHandValuesOption[1]
     local currentForcedCameraSetting = ForcedCameraOption[1]
 
-    -- Setup observer and GameUI to detect inGame / inMenu, credit: keanuwheeze | init.lua from the sitAnywhere mod
-    Observe('RadialWheelController', 'OnIsInMenuChanged', function(_, isInMenu)
-        inMenu = isInMenu
-    end)
-    --Setup observer and GameUI to detect inGame / inMenu
-    --credit: keanuwheeze | init.lua from the sitAnywhere mod
-    inGame = false
-    GameUI.OnSessionStart(function()
-        inGame = true
-    end)
-    GameUI.OnSessionEnd(function()
-        inGame = false
-    end)
-    inGame = not GameUI.IsDetached() -- Required to check if ingame after reloading all mods
-
-    -- Define Hooh location
+    -- Define Hooh location (after GameSession.TryLoad() so settings are available)
      local spotObj = {
         spot_id = 'hooh',
         spot_worldPosition = Vector4.new(-1041.2463, 1341.5469, 5.2774734, 1),
@@ -143,7 +128,13 @@ registerForEvent( "onInit", function()
             --pass
         end,
         callback_OnSpotEnter = function ()
-            HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.085, 1), 20)
+            if ForcedCameraOption[1] then
+                -- Top-down camera enabled - use original position
+                HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.075, 1), 20)
+            else
+                -- Top-down camera disabled - use adjusted position
+                HolographicValueDisplay.startDisplay(Vector4.new(-1040.790, 1340.785, 6.075, 1), 30)
+            end
             CardEngine.BuildVisualDeck(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
         end,
         callback_OnSpotEnterAfterAnimationDelayTime = 3.5,        callback_OnSpotEnterAfterAnimation = function ()
@@ -183,6 +174,21 @@ registerForEvent( "onInit", function()
         camera_useForcedCamInWorkspot = ForcedCameraOption[1]
     }
     SpotManager.AddSpot(spotObj)
+
+    -- Setup observer and GameUI to detect inGame / inMenu, credit: keanuwheeze | init.lua from the sitAnywhere mod
+    Observe('RadialWheelController', 'OnIsInMenuChanged', function(_, isInMenu)
+        inMenu = isInMenu
+    end)
+    --Setup observer and GameUI to detect inGame / inMenu
+    --credit: keanuwheeze | init.lua from the sitAnywhere mod
+    inGame = false
+    GameUI.OnSessionStart(function()
+        inGame = true
+    end)
+    GameUI.OnSessionEnd(function()
+        inGame = false
+    end)
+    inGame = not GameUI.IsDetached() -- Required to check if ingame after reloading all mods
 
     -- Save and Load detection, coutesy of psiberx; available in #cet-snippets in discord
     local isLoaded = GetPlayer() and GetPlayer():IsAttached() and not Game.GetSystemRequestsHandler():IsPreGame()
@@ -280,7 +286,6 @@ registerHotkey('DevHotkey2', 'Dev Hotkey 2', function()
     DualPrint('||=2  Dev hotkey 2 Pressed =')
 
     DualPrint('DisplayHandValuesOption[1]: '..tostring(DisplayHandValuesOption[1]))
-    DualPrint('ForcedCameraOption[1]: '..tostring(ForcedCameraOption[1]))
 
     DualPrint('immersiveFirstPerson.API.IsEnabled(): '..tostring(GetMod("ImmersiveFirstPerson").api.IsEnabled()))
 end)
