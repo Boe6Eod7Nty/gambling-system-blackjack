@@ -137,8 +137,14 @@ local function updateEachDisplay()
         local playerDisplay = HandCountDisplay.displays['playerHand'..tostring(i)]
         local tens = math.floor(playerDisplay.value / 10)
         local ones = playerDisplay.value % 10
-        local digit1Entity = Game.FindEntityByID(playerDisplay.ent1ID)
-        local digit2Entity = Game.FindEntityByID(playerDisplay.ent2ID)
+        local digit1Entity = nil
+        local digit2Entity = nil
+        if playerDisplay.ent1ID then
+            digit1Entity = Game.FindEntityByID(playerDisplay.ent1ID)
+        end
+        if playerDisplay.ent2ID then
+            digit2Entity = Game.FindEntityByID(playerDisplay.ent2ID)
+        end
         if playerDisplay.enabled then
             playerDisplay.value = SingleRoundLogic.playerCardsValue[i]
             if playerDisplay.value ~= playerDisplay.appValue then
