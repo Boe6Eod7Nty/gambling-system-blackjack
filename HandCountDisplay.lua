@@ -1,5 +1,5 @@
 HandCountDisplay = {
-    version = '1.0.1',
+    version = '1.0.2',
     displayEnabled = false,
     displays = {},
     playerActiveHands = 0,
