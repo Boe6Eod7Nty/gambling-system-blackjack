@@ -43,13 +43,13 @@ local function shuffleDeckInternal()
                         'Ad','2d','3d','4d','5d','6d','7d','8d','9d','Td','Jd','Qd','Kd'
                     }
     --alignment comment.
-    local devRiggedIndex = {}
+    --local devRiggedIndex = {}
     --local devRiggedIndex = {14,1,9,9} --player and dealer both get BJ
     --local devRiggedIndex = {9,5,4,7,7,7} --player doubles on 11 and busts, dealer also busts.
     --local devRiggedIndex = {11,6,1} --player gets blackjack
     --local devRiggedIndex = {10,10,6,4,8,1,7} --player busts and dealer hits if game broken lmao
     --local devRiggedIndex = {5,10,4,1} --dealer gets blackjack
-    --local devRiggedIndex = {8,34,20} --2 8s to player
+    local devRiggedIndex = {8,34,20} --2 8s to player
     --local devRiggedIndex = {8,34,20,47,3,42,10} --2 8s to player
     --local devRiggedIndex = {1,48,13,46,25,47,45,37} --4 aces all split
     local newDeck = {}
@@ -156,10 +156,14 @@ local function collectRoundCards()
         end
     end
     local function callback()
-        for j = 1, #(SingleRoundLogic.playerHands) do
-            for i = 1, #(SingleRoundLogic.playerHands[j]) do
+        -- Clean up all player cards - iterate through all possible hands and cards
+        for j = 1, 4 do -- Maximum possible hands (4 hands max)
+            for i = 1, 10 do -- Maximum possible cards per hand
                 local curCard = 'playerCard_h'..string.format("%02d", j)..'_c'..string.format("%02d", i)
-                CardEngine.MoveCard(curCard, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), standardOri, 'smooth', false)
+                -- Check if card exists before trying to move it
+                if CardEngine.cards[curCard] then
+                    CardEngine.MoveCard(curCard, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), standardOri, 'smooth', false)
+                end
             end
         end
         for i = 1, SingleRoundLogic.dealerCardCount do
@@ -167,9 +171,14 @@ local function collectRoundCards()
             CardEngine.MoveCard(curCard, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
         end
         Cron.After(3, function()
-            for j = 1, #(SingleRoundLogic.playerHands) do
-                for i = 1, #(SingleRoundLogic.playerHands[j]) do
-                    CardEngine.DeleteCard('playerCard_h'..string.format("%02d", j)..'_c'..string.format("%02d", i))
+            -- Clean up all player cards - iterate through all possible hands and cards
+            for j = 1, 4 do -- Maximum possible hands (4 hands max)
+                for i = 1, 10 do -- Maximum possible cards per hand
+                    local curCard = 'playerCard_h'..string.format("%02d", j)..'_c'..string.format("%02d", i)
+                    -- Check if card exists before trying to delete it
+                    if CardEngine.cards[curCard] then
+                        CardEngine.DeleteCard(curCard)
+                    end
                 end
             end
             for i = 1, SingleRoundLogic.dealerCardCount do
