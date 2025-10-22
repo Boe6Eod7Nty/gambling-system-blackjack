@@ -1,5 +1,5 @@
 SingleRoundLogic = {
-    version = '1.0.3',
+    version = '1.0.4',
     deckShuffle = {},
     dealerCardCount = 0,
     dealerBoardCards = {},
@@ -43,13 +43,13 @@ local function shuffleDeckInternal()
                         'Ad','2d','3d','4d','5d','6d','7d','8d','9d','Td','Jd','Qd','Kd'
                     }
     --alignment comment.
-    --local devRiggedIndex = {}
+    local devRiggedIndex = {}
     --local devRiggedIndex = {14,1,9,9} --player and dealer both get BJ
     --local devRiggedIndex = {9,5,4,7,7,7} --player doubles on 11 and busts, dealer also busts.
     --local devRiggedIndex = {11,6,1} --player gets blackjack
     --local devRiggedIndex = {10,10,6,4,8,1,7} --player busts and dealer hits if game broken lmao
     --local devRiggedIndex = {5,10,4,1} --dealer gets blackjack
-    local devRiggedIndex = {8,34,20} --2 8s to player
+    --local devRiggedIndex = {8,34,20} --2 8s to player
     --local devRiggedIndex = {8,34,20,47,3,42,10} --2 8s to player
     --local devRiggedIndex = {1,48,13,46,25,47,45,37} --4 aces all split
     local newDeck = {}
