@@ -36,6 +36,7 @@ local HolographicValueDisplay = require('HolographicValueDisplay.lua')
 local SimpleCasinoChip = require('SimpleCasinoChip.lua')
 local HandCountDisplay = require('HandCountDisplay.lua')
 local GameSession = require('External/GameSession.lua') --detects game sessions and saves data to disk
+local RelativeCoordinateCalulator = require('RelativeCoordinateCalulator.lua') 
 
 local inMenu = true --libaries requirement
 local inGame = false
@@ -46,6 +47,7 @@ ImmersiveFirstPersonInstalled = false
 DisplayHandValuesOption = {true}
 ForcedCameraOption = {false} -- Default to off (no forced camera)
 local state = { runtime = 0 } --GameSession runtime
+
 
 --Functions
 --=========
@@ -114,6 +116,22 @@ registerForEvent( "onInit", function()
     local currentHandValueSetting = DisplayHandValuesOption[1]
     local currentForcedCameraSetting = ForcedCameraOption[1]
 
+    RelativeCoordinateCalulator.registerTable(
+        'hooh',
+        Vector4.new(-1041.247,1339.675,5.283,1), --actual position of table mesh
+        Quaternion.new(0, 0, 0, 1) --actual orientation of table mesh
+    )
+    RelativeCoordinateCalulator.registerOffset(
+        'top_down_holo_display',
+        Vector4.new(0.514, 0.446, 0.792, 0), 
+        EulerAngles.new(0, 0, 20):ToQuat()
+    )
+    RelativeCoordinateCalulator.registerOffset(
+        'standard_holo_display',
+        Vector4.new(0.457, 1.11, 0.792, 0), 
+        EulerAngles.new(0, 0, 30):ToQuat()
+    )
+
     -- Define Hooh location (after GameSession.TryLoad() so settings are available)
      local spotObj = {
         spot_id = 'hooh',
@@ -130,10 +148,12 @@ registerForEvent( "onInit", function()
         callback_OnSpotEnter = function ()
             if ForcedCameraOption[1] then
                 -- Top-down camera enabled - use original position
-                HolographicValueDisplay.startDisplay(Vector4.new(-1040.733, 1340.121, 6.075, 1), 20)
+                local adjustedPosition, adjustedOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'top_down_holo_display')
+                HolographicValueDisplay.startDisplay(adjustedPosition, adjustedOrientation)
             else
                 -- Top-down camera disabled - use adjusted position
-                HolographicValueDisplay.startDisplay(Vector4.new(-1040.790, 1340.785, 6.075, 1), 30)
+                local adjustedPosition, adjustedOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'standard_holo_display')
+                HolographicValueDisplay.startDisplay(adjustedPosition, adjustedOrientation)
             end
             CardEngine.BuildVisualDeck(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
         end,
@@ -223,7 +243,10 @@ registerForEvent( "onInit", function()
             --print('Game Session Ended')
             isLoaded = false
 
-            Game.GetDynamicEntitySystem():DeleteEntity(dealerEntID)
+            if dealerEntID ~= nil then
+                Game.GetDynamicEntitySystem():DeleteEntity(dealerEntID)
+            end
+            dealerEntID = nil
             dealerSpawned = false
         end
     end)
