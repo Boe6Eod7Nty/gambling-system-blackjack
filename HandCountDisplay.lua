@@ -129,7 +129,7 @@ local function updateEachDisplay()
                     digit1Entity:ScheduleAppearanceChange(tostring(tens))
                     digit2Entity:ScheduleAppearanceChange(tostring(ones))
                 end
-                Cron.After(0.1, callback)
+                Cron.After(1.0, callback)
             end
         end
     end
@@ -154,7 +154,7 @@ local function updateEachDisplay()
                         digit1Entity:ScheduleAppearanceChange(tostring(tens))
                         digit2Entity:ScheduleAppearanceChange(tostring(ones))
                     end
-                    Cron.After(0.1, callback)
+                    Cron.After(1.0, callback)
                 end
             elseif SingleRoundLogic.currentlySplit then
                 if i == SingleRoundLogic.activePlayerHandIndex then
@@ -166,7 +166,7 @@ local function updateEachDisplay()
                                 digit1Entity:ScheduleAppearanceChange(tostring(tens))
                                 digit2Entity:ScheduleAppearanceChange(tostring(ones))
                             end
-                            Cron.After(0.1, callback)
+                            Cron.After(1.0, callback)
                         end
                         HandCountDisplay.displays['playerHand'..tostring(i)].currentlyBlinkingBlue = false
                     end
@@ -176,7 +176,7 @@ local function updateEachDisplay()
                                 digit1Entity:ScheduleAppearanceChange(tostring(tens).."b")
                                 digit2Entity:ScheduleAppearanceChange(tostring(ones).."b")
                             end
-                            Cron.After(0.1, callback)
+                            Cron.After(1.0, callback)
                         end
                         HandCountDisplay.displays['playerHand'..tostring(i)].currentlyBlinkingBlue = true
                     end
@@ -186,7 +186,7 @@ local function updateEachDisplay()
                             digit1Entity:ScheduleAppearanceChange(tostring(tens))
                             digit2Entity:ScheduleAppearanceChange(tostring(ones))
                         end
-                        Cron.After(0.1, callback)
+                        Cron.After(1.0, callback)
                     end
                     HandCountDisplay.displays['playerHand'..tostring(i)].currentlyBlinkingBlue = false
                 end
