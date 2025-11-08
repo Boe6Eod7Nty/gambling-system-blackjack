@@ -1,5 +1,5 @@
 HandCountDisplay = {
-    version = '1.0.2',
+    version = '1.0.3',
     displayEnabled = false,
     displays = {},
     playerActiveHands = 0,
@@ -17,22 +17,46 @@ local Cron = require('External/Cron.lua')
 
 local digitEntPath = "boe6\\gamblingsystemblackjack\\boe6_number_digit_vanilla.ent"
 local blinkingTimer = 12 --use even number
+local tableID = 'hooh'
 
 ---Calculates the 3D origin of a hand count display
 ---@param isDealer boolean true/false
 ---@param handIndex number? hand number to display count for
 ---@return Vector4 origin world location for first digit of display
+---@return Quaternion orientation world orientation for the display
 local function calculateDisplayOrigin(isDealer, handIndex)
-    local justBelowFirstHand = Vector4.new(-1041.175, 1340.821, 6.085, 1)
+    local basePosition, baseOrientation
+    
     if isDealer then
-        local newVector = Vector4.new(justBelowFirstHand.x-0.060, justBelowFirstHand.y-0.511, justBelowFirstHand.z, 1)
-        return newVector
+        -- Dealer offset is relative to player base position, not table directly
+        -- First get the player base position
+        local playerBasePos, playerBaseOri = RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, 'hand_count_display_base_player')
+        -- Then apply dealer offset relative to player base (using table orientation for direction)
+        basePosition, baseOrientation = RelativeCoordinateCalulator.calculateFromPositionWithTable(
+            playerBasePos,
+            tableID,
+            'hand_count_display_base_dealer'
+        )
+    elseif handIndex then
+        -- Use player base offset
+        basePosition, baseOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, 'hand_count_display_base_player')
+        
+        -- For hands beyond the first, apply spacing offsets
+        if handIndex > 1 then
+            for i = 2, handIndex do
+                basePosition, baseOrientation = RelativeCoordinateCalulator.calculateFromPositionWithTable(
+                    basePosition,
+                    tableID,
+                    'hand_count_display_spacing_players'
+                )
+            end
+        end
+    else
+        -- Default to player base offset for hand 1
+        basePosition, baseOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, 'hand_count_display_base_player')
     end
-    if handIndex then
-        local newVector = Vector4.new(justBelowFirstHand.x+(0.18*(handIndex-1)), justBelowFirstHand.y, justBelowFirstHand.z, 1)
-        return newVector
-    end
-    return justBelowFirstHand
+    
+    return basePosition, baseOrientation
 end
 
 ---Spawns digit entity in world. Sets HandCountDisplay.displays[id].entID
@@ -63,19 +87,30 @@ end
 local function displayStartup(isDealer, handIndex)
     local digit1pos
     local digit2pos
+    local digit1orientation
+    local digit2orientation
     local digit1app = "0"
     local digit2app = "0"
     local value
-    local orientation = EulerAngles.new(0,60,0):ToQuat()
 
     if isDealer then
-        digit1pos = calculateDisplayOrigin(true)
-        digit2pos = Vector4.new(digit1pos.x-0.04, digit1pos.y, digit1pos.z, 1)
+        digit1pos, digit1orientation = calculateDisplayOrigin(true)
+        -- Calculate digit2 position relative to digit1 using the spacing offset
+        digit2pos, digit2orientation = RelativeCoordinateCalulator.calculateFromPositionWithTable(
+            digit1pos,
+            tableID,
+            'hand_count_display_digit2_spacing'
+        )
         HandCountDisplay.displays['dealerHand'].enabled = true
         value = SingleRoundLogic.dealerCardsValue
     elseif handIndex then
-        digit1pos = calculateDisplayOrigin(false, handIndex)
-        digit2pos = Vector4.new(digit1pos.x-0.04, digit1pos.y, digit1pos.z+0.005, 1)
+        digit1pos, digit1orientation = calculateDisplayOrigin(false, handIndex)
+        -- Calculate digit2 position relative to digit1 using the spacing offset
+        digit2pos, digit2orientation = RelativeCoordinateCalulator.calculateFromPositionWithTable(
+            digit1pos,
+            tableID,
+            'hand_count_display_digit2_spacing'
+        )
         HandCountDisplay.displays['playerHand'..tostring(handIndex)].enabled = true
         value = SingleRoundLogic.playerCardsValue[handIndex]
     end
@@ -88,12 +123,12 @@ local function displayStartup(isDealer, handIndex)
     end
 
     if isDealer then
-        spawnDigit(1, "dealerHand", digit1app, digit1pos, orientation)
-        spawnDigit(2, "dealerHand", digit2app, digit2pos, orientation)
+        spawnDigit(1, "dealerHand", digit1app, digit1pos, digit1orientation)
+        spawnDigit(2, "dealerHand", digit2app, digit2pos, digit2orientation)
         HandCountDisplay.displays['dealerHand'].appValue = value
     elseif handIndex then
-        spawnDigit(1, "playerHand"..tostring(handIndex), digit1app, digit1pos, orientation)
-        spawnDigit(2, "playerHand"..tostring(handIndex), digit2app, digit2pos, orientation)
+        spawnDigit(1, "playerHand"..tostring(handIndex), digit1app, digit1pos, digit1orientation)
+        spawnDigit(2, "playerHand"..tostring(handIndex), digit2app, digit2pos, digit2orientation)
         HandCountDisplay.displays['playerHand'..tostring(handIndex)].appValue = value
     end
 end
