@@ -41,11 +41,14 @@ end
 function RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, offsetID)
     local table = RelativeCoordinateCalulator.registeredTables[tableID]
     local offset = RelativeCoordinateCalulator.registeredOffsets[offsetID]
-    -- Add the position of the offset to the world position of the table
+    -- Transform the offset position by the table's rotation before adding to table position
+    -- This ensures the offset rotates around the table center when the table rotates
+    local offsetPositionVector = Vector4.new(offset.position.x, offset.position.y, offset.position.z, 0)
+    local transformedOffsetPosition = table.orientation:Transform(offsetPositionVector)
     local relativePosition = Vector4.new(
-        table.position.x + offset.position.x,
-        table.position.y + offset.position.y,
-        table.position.z + offset.position.z,
+        table.position.x + transformedOffsetPosition.x,
+        table.position.y + transformedOffsetPosition.y,
+        table.position.z + transformedOffsetPosition.z,
         table.position.w
     )
     -- Compose rotations properly: get basis vectors from offset, transform by table rotation
