@@ -33,6 +33,99 @@ function RelativeCoordinateCalulator.registerOffset(offsetID, offsetPosition, of
     }
 end
 
+---Calculates position relative to a base position, using table orientation for direction
+---Use this for chaining cards: "right" always means table-right, not card-right
+---@param basePosition Vector4 world position of the base entity (e.g., previous card)
+---@param tableID string tableID to use for orientation reference
+---@param relativeOffset Vector4|string offset position (Vector4) or registered offsetID (string) in table's local space
+---@param relativeOrientation? Quaternion offset orientation (defaults to identity or offset's orientation if using offsetID)
+---@return Vector4 worldPosition resulting world position
+---@return Quaternion worldOrientation resulting world orientation
+function RelativeCoordinateCalulator.calculateFromPositionWithTable(basePosition, tableID, relativeOffset, relativeOrientation)
+    local table = RelativeCoordinateCalulator.registeredTables[tableID]
+    if not table then
+        DualPrint("Table '" .. tableID .. "' not found")
+        return basePosition, Quaternion.new(0, 0, 0, 1)
+    end
+    
+    -- Resolve offset: can be Vector4 or offsetID string
+    local offsetPos, offsetOri
+    if type(relativeOffset) == "string" then
+        local offset = RelativeCoordinateCalulator.registeredOffsets[relativeOffset]
+        if not offset then
+            DualPrint("Offset '" .. relativeOffset .. "' not found")
+            return basePosition, Quaternion.new(0, 0, 0, 1)
+        end
+        offsetPos = offset.position
+        offsetOri = relativeOrientation or offset.orientation
+    else
+        offsetPos = relativeOffset
+        offsetOri = relativeOrientation or Quaternion.new(0, 0, 0, 1)
+    end
+    
+    -- Transform the relative offset by the TABLE's rotation
+    local offsetPositionVector = Vector4.new(offsetPos.x, offsetPos.y, offsetPos.z, 0)
+    local transformedOffsetPosition = table.orientation:Transform(offsetPositionVector)
+    
+    -- Add transformed offset to base position
+    local worldPosition = Vector4.new(
+        basePosition.x + transformedOffsetPosition.x,
+        basePosition.y + transformedOffsetPosition.y,
+        basePosition.z + transformedOffsetPosition.z,
+        basePosition.w
+    )
+    
+    -- Compose rotations: get basis vectors from relative orientation, transform by TABLE rotation
+    local relativeForward = offsetOri:GetForward()
+    local relativeUp = offsetOri:GetUp()
+    
+    -- Transform relative basis vectors by TABLE rotation
+    local transformedForward = table.orientation:Transform(relativeForward)
+    local transformedUp = table.orientation:Transform(relativeUp)
+    
+    -- Build the composed quaternion
+    local worldOrientation = Quaternion.BuildFromDirectionVector(transformedForward, transformedUp)
+    
+    return worldPosition, worldOrientation
+end
+
+---Calculates position relative to a base position/orientation
+---Use this when directions should be relative to the base entity itself
+---@param basePosition Vector4 world position of the base entity
+---@param baseOrientation Quaternion world orientation of the base entity
+---@param relativeOffset Vector4 offset position in base's local space
+---@param relativeOrientation? Quaternion offset orientation (defaults to identity)
+---@return Vector4 worldPosition resulting world position
+---@return Quaternion worldOrientation resulting world orientation
+function RelativeCoordinateCalulator.calculateFromPosition(basePosition, baseOrientation, relativeOffset, relativeOrientation)
+    local offsetOri = relativeOrientation or Quaternion.new(0, 0, 0, 1)
+    
+    -- Transform the relative offset by the base's rotation
+    local offsetPositionVector = Vector4.new(relativeOffset.x, relativeOffset.y, relativeOffset.z, 0)
+    local transformedOffsetPosition = baseOrientation:Transform(offsetPositionVector)
+    
+    -- Add transformed offset to base position
+    local worldPosition = Vector4.new(
+        basePosition.x + transformedOffsetPosition.x,
+        basePosition.y + transformedOffsetPosition.y,
+        basePosition.z + transformedOffsetPosition.z,
+        basePosition.w
+    )
+    
+    -- Compose rotations: get basis vectors from relative orientation, transform by base rotation
+    local relativeForward = offsetOri:GetForward()
+    local relativeUp = offsetOri:GetUp()
+    
+    -- Transform relative basis vectors by base rotation
+    local transformedForward = baseOrientation:Transform(relativeForward)
+    local transformedUp = baseOrientation:Transform(relativeUp)
+    
+    -- Build the composed quaternion
+    local worldOrientation = Quaternion.BuildFromDirectionVector(transformedForward, transformedUp)
+    
+    return worldPosition, worldOrientation
+end
+
 ---Calculates the relative coordinate and rotation of an entity relative to a table
 ---@param tableID string tableID
 ---@param offsetID string offsetID
