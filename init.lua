@@ -3,7 +3,7 @@ GamblingSystemBlackjack = {
     loaded = false,
     ready = false
 }
---init.lua v1.0.9
+--init.lua v1.0.10
 --===================
 --Copyright (c) 2025 Boe6
 --DO NOT DISTRIBUTE
@@ -36,7 +36,8 @@ local HolographicValueDisplay = require('HolographicValueDisplay.lua')
 local SimpleCasinoChip = require('SimpleCasinoChip.lua')
 local HandCountDisplay = require('HandCountDisplay.lua')
 local GameSession = require('External/GameSession.lua') --detects game sessions and saves data to disk
-local RelativeCoordinateCalulator = require('RelativeCoordinateCalulator.lua') 
+local RelativeCoordinateCalulator = require('RelativeCoordinateCalulator.lua')
+local BlackjackCoordinates = require('BlackjackCoordinates.lua') 
 
 local inMenu = true --libaries requirement
 local inGame = false
@@ -116,21 +117,7 @@ registerForEvent( "onInit", function()
     local currentHandValueSetting = DisplayHandValuesOption[1]
     local currentForcedCameraSetting = ForcedCameraOption[1]
 
-    RelativeCoordinateCalulator.registerTable(
-        'hooh',
-        Vector4.new(-1041.247,1339.675,5.283,1), --actual position of table mesh
-        Quaternion.new(0, 0, 0, 1) --actual orientation of table mesh
-    )
-    RelativeCoordinateCalulator.registerOffset(
-        'top_down_holo_display',
-        Vector4.new(0.514, 0.446, 0.792, 0), 
-        EulerAngles.new(0, 0, 20):ToQuat()
-    )
-    RelativeCoordinateCalulator.registerOffset(
-        'standard_holo_display',
-        Vector4.new(0.457, 1.11, 0.792, 0), 
-        EulerAngles.new(0, 0, 30):ToQuat()
-    )
+    BlackjackCoordinates.init() --initializes the ALL blackjack coordinates
 
     -- Define Hooh location (after GameSession.TryLoad() so settings are available)
      local spotObj = {
