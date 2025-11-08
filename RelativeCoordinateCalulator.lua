@@ -48,15 +48,18 @@ function RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, offset
         table.position.z + offset.position.z,
         table.position.w
     )
-    -- Convert quaternions to EulerAngles, combine components, then convert back
-    local tableEuler = table.orientation:ToEulerAngles()
-    local offsetEuler = offset.orientation:ToEulerAngles()
-    local combinedEuler = EulerAngles.new(
-        tableEuler.roll + offsetEuler.roll,
-        tableEuler.pitch + offsetEuler.pitch,
-        tableEuler.yaw + offsetEuler.yaw
-    )
-    local relativeOrientation = combinedEuler:ToQuat()
+    -- Compose rotations properly: get basis vectors from offset, transform by table rotation
+    -- This applies offset rotation first, then table rotation (equivalent to table * offset)
+    local offsetForward = offset.orientation:GetForward()
+    local offsetUp = offset.orientation:GetUp()
+    
+    -- Transform the offset's basis vectors by the table's rotation
+    local transformedForward = table.orientation:Transform(offsetForward)
+    local transformedUp = table.orientation:Transform(offsetUp)
+    
+    -- Build the composed quaternion from the transformed vectors
+    local relativeOrientation = Quaternion.BuildFromDirectionVector(transformedForward, transformedUp)
+    
     return relativePosition, relativeOrientation
 end
 
