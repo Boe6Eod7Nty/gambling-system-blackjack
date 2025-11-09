@@ -52,6 +52,19 @@ function TableManager.spawnDealer(tableID)
     end
     
     local dealerPosition, dealerOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, 'dealer_spawn_position')
+    
+    -- Check if coordinate calculation failed (returns nil or invalid position)
+    if not dealerPosition or not dealerOrientation then
+        DualPrint("Error: Failed to calculate dealer spawn position for table " .. tostring(tableID))
+        return
+    end
+    
+    -- Additional safety check: ensure position is not at origin (0,0,0) which likely indicates failure
+    if dealerPosition.x == 0 and dealerPosition.y == 0 and dealerPosition.z == 0 then
+        DualPrint("Error: Dealer spawn position is at origin (0,0,0) for table " .. tostring(tableID) .. ", aborting spawn")
+        return
+    end
+    
     local dynamicEntitySystem = Game.GetDynamicEntitySystem()
     local spec = DynamicEntitySpec.new()
     spec.recordID = "Character.sts_wat_kab_07_croupiers"
@@ -145,9 +158,13 @@ function TableManager.createSpotForTable(tableID, forcedCameraOption)
             TableManager.ClearActiveTable()
             -- Note: DualPrint is not available here, would need to be passed or required
             HolographicValueDisplay.stopDisplay()
+            -- Clean up game state on mid-game exit
+            SingleRoundLogic.cleanupRound()
         end,
         callback_OnSpotExitAfterAnimation = function()
             CardEngine.RemoveVisualDeck()
+            -- Clear entity cache when exiting table to prevent stale entries
+            CardEngine.clearEntityCache()
         end,
         exit_orientationCorrection = {r=0,p=0,y=150},-- I *think* this corrects for the 180 turn that the exit animation causes.
         exit_worldPositionOffset = {x=0.5,y=0,z=0},

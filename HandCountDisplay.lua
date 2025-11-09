@@ -76,7 +76,7 @@ local function spawnDigit(digit1or2, displayID, appName, worldPosition, orientat
     spec.appearanceName = appName
     spec.position = worldPosition
     spec.orientation = orientation
-    spec.tags = {"HandCountDisplay",tostring(id)}
+    spec.tags = {"HandCountDisplay",tostring(id)}--marked to avoid conflicts with other scripts
 
     local entityID = Game.GetStaticEntitySystem():SpawnEntity(spec)
     if digit1or2 == 1 then

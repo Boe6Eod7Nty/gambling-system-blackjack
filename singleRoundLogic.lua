@@ -1031,6 +1031,9 @@ function SingleRoundLogic.startRound()
         return
     end
     
+    -- Clear entity cache when starting a new round to prevent stale entries
+    CardEngine.clearEntityCache()
+    
     SingleRoundLogic.dealerCardCount = 0
     SingleRoundLogic.dealerBoardCards = {}
     SingleRoundLogic.playerHands = {{}}
@@ -1058,6 +1061,50 @@ function SingleRoundLogic.startRound()
             PlayerAction(1)
         end
     end)
+end
+
+--- Cleanup function for mid-game exit
+--- Immediately cleans up all cards, chips, displays, and resets state
+function SingleRoundLogic.cleanupRound()
+    -- Disable hand count displays
+    HandCountDisplay.DisplayEnabled(false)
+    
+    -- Despawn all chips
+    SimpleCasinoChip.despawnAllChips()
+    
+    -- Immediately delete all cards (no animation for mid-game exit)
+    for j = 1, 4 do -- Maximum possible hands (4 hands max)
+        for i = 1, 10 do -- Maximum possible cards per hand
+            local curCard = 'playerCard_h'..string.format("%02d", j)..'_c'..string.format("%02d", i)
+            if CardEngine.cards[curCard] then
+                CardEngine.DeleteCard(curCard)
+            end
+        end
+    end
+    for i = 1, 10 do -- Maximum possible dealer cards
+        local curCard = 'dCard'..string.format("%02d", i)
+        if CardEngine.cards[curCard] then
+            CardEngine.DeleteCard(curCard)
+        end
+    end
+    
+    -- Clear entity cache
+    CardEngine.clearEntityCache()
+    
+    -- Reset SingleRoundLogic state
+    SingleRoundLogic.dealerCardCount = 0
+    SingleRoundLogic.dealerBoardCards = {}
+    SingleRoundLogic.playerHands = {{}}
+    SingleRoundLogic.activePlayerHandIndex = 1
+    SingleRoundLogic.bustedHands = {false,false,false,false}
+    SingleRoundLogic.blackjackHandsPaid = {false,false,false,false}
+    SingleRoundLogic.doubledHands = {false,false,false,false}
+    SingleRoundLogic.dealerHandRevealed = false
+    SingleRoundLogic.currentlySplit = false
+    SingleRoundLogic.highlightOn = false
+    SingleRoundLogic.highlightIndex = 0
+    SingleRoundLogic.highlightCardsCount = 0
+    SingleRoundLogic.deckShuffle = {}
 end
 
 return SingleRoundLogic
