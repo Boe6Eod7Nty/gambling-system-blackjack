@@ -252,7 +252,15 @@ local function dealStartOfRound()
         CardEngine.MoveCard('dCard01', Vector4.new(dFirstCardXYZ.x, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', true)
     end)
     Cron.After(1.0, function()
-        CardEngine.MoveCard('playerCard_h01_c02', Vector4.new(pFirstCardXYZ.x-0.04, pFirstCardXYZ.y-0.06, pFirstCardXYZ.z+0.0005, 1), standardOri, 'smooth', true)
+        local activeTableID = ensureActiveTable()
+        if activeTableID then
+            local pFirstCardPos = Vector4.new(pFirstCardXYZ.x, pFirstCardXYZ.y, pFirstCardXYZ.z, 1)
+            local newPos, _ = RelativeCoordinateCalulator.calculateFromPositionWithTable(pFirstCardPos, activeTableID, 'card_spacing_player')
+            CardEngine.MoveCard('playerCard_h01_c02', newPos, standardOri, 'smooth', true)
+        else
+            -- Fallback to hardcoded if no table
+            CardEngine.MoveCard('playerCard_h01_c02', Vector4.new(pFirstCardXYZ.x-0.04, pFirstCardXYZ.y-0.06, pFirstCardXYZ.z+0.0005, 1), standardOri, 'smooth', true)
+        end
     end)
     Cron.After(1.5, function()
         CardEngine.MoveCard('dCard02', Vector4.new(dFirstCardXYZ.x-0.005, dFirstCardXYZ.y+0.004, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
@@ -510,13 +518,45 @@ end
 --- @param UpLeftMovement number same as above, diagonal up left, used for payout. starts at 1
 --- @return Vector4 newXYZ world position
 local function chipLocationCalc(handIndex, leftMovement, UpLeftMovement)
-    local startXYZ = {pFirstCardXYZ.x-0.058,pFirstCardXYZ.y+0.142,pFirstCardXYZ.z}
-    local newXYZ = {
-        startXYZ[1] + (0.02 * (UpLeftMovement-1)) + (0.04 * (leftMovement-1)) + (0.18 * (handIndex-1)),
-        startXYZ[2] - (0.035 * (UpLeftMovement-1)),
-        startXYZ[3]
-    }
-    return Vector4.new(newXYZ[1], newXYZ[2], newXYZ[3], 1)
+    local activeTableID = ensureActiveTable()
+    if not activeTableID then
+        DualPrint("Warning: No active table when calculating chip location")
+        -- Fallback to hardcoded calculation
+        local pFirstCardPos = getPFirstCardXYZ()
+        local startXYZ = {pFirstCardPos.x-0.058, pFirstCardPos.y+0.142, pFirstCardPos.z}
+        local newXYZ = {
+            startXYZ[1] + (0.02 * (UpLeftMovement-1)) + (0.04 * (leftMovement-1)) + (0.18 * (handIndex-1)),
+            startXYZ[2] - (0.035 * (UpLeftMovement-1)),
+            startXYZ[3]
+        }
+        return Vector4.new(newXYZ[1], newXYZ[2], newXYZ[3], 1)
+    end
+    
+    -- Start from chip_player_center_position
+    local chipPos, _ = RelativeCoordinateCalulator.calculateRelativeCoordinate(activeTableID, 'chip_player_center_position')
+    
+    -- Apply space_between_hands offset for each hand beyond the first
+    if handIndex > 1 then
+        for i = 2, handIndex do
+            chipPos, _ = RelativeCoordinateCalulator.calculateFromPositionWithTable(chipPos, activeTableID, 'space_between_hands')
+        end
+    end
+    
+    -- Apply chip_player_left1_up1 offset for each UpLeftMovement beyond 1
+    if UpLeftMovement > 1 then
+        for i = 2, UpLeftMovement do
+            chipPos, _ = RelativeCoordinateCalulator.calculateFromPositionWithTable(chipPos, activeTableID, 'chip_player_left1_up1')
+        end
+    end
+    
+    -- Apply chip_player_left1 offset for each leftMovement beyond 1
+    if leftMovement > 1 then
+        for i = 2, leftMovement do
+            chipPos, _ = RelativeCoordinateCalulator.calculateFromPositionWithTable(chipPos, activeTableID, 'chip_player_left1')
+        end
+    end
+    
+    return chipPos
 end
 
 ---After player and dealer have finished, calculate scores, determine winner hands and payout.
@@ -644,7 +684,21 @@ local function dealerAction()
         table.remove(SingleRoundLogic.deckShuffle,1)
         local pCardXcardID = CardEngine.CreateCard(dCardXname,dCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
         table.insert(SingleRoundLogic.dealerBoardCards, dCardXapp)
-        local newLocation = Vector4.new(dFirstCardXYZ.x+((cardsNum-1)*0.09), dFirstCardXYZ.y, dFirstCardXYZ.z, 1)
+        local activeTableID = ensureActiveTable()
+        local newLocation
+        if activeTableID then
+            local dFirstCardPos = Vector4.new(dFirstCardXYZ.x, dFirstCardXYZ.y, dFirstCardXYZ.z, 1)
+            newLocation = dFirstCardPos
+            -- Apply card_spacing_dealer offset for each card beyond the first
+            if cardsNum > 1 then
+                for i = 2, cardsNum do
+                    newLocation, _ = RelativeCoordinateCalulator.calculateFromPositionWithTable(newLocation, activeTableID, 'card_spacing_dealer')
+                end
+            end
+        else
+            -- Fallback to hardcoded if no table
+            newLocation = Vector4.new(dFirstCardXYZ.x+((cardsNum-1)*0.09), dFirstCardXYZ.y, dFirstCardXYZ.z, 1)
+        end
         SingleRoundLogic.dealerCardCount = SingleRoundLogic.dealerCardCount + 1
         Cron.After(0.1, CardEngine.MoveCard(dCardXname, newLocation, standardOri, 'smooth', true))
         Cron.After(1.6, function()
@@ -662,13 +716,33 @@ end
 function FlipDealerTwoCards(triggerDealerAction)
     SingleRoundLogic.currentlySplit = false
     Cron.After(0.5, function()
-        CardEngine.MoveCard('dCard01', Vector4.new(dFirstCardXYZ.x+0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
+        local activeTableID = ensureActiveTable()
+        local newPos
+        if activeTableID then
+            local dFirstCardPos = Vector4.new(dFirstCardXYZ.x, dFirstCardXYZ.y, dFirstCardXYZ.z, 1)
+            newPos, _ = RelativeCoordinateCalulator.calculateFromPositionWithTable(dFirstCardPos, activeTableID, 'card_spacing_dealer')
+        else
+            -- Fallback to hardcoded if no table
+            newPos = Vector4.new(dFirstCardXYZ.x+0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1)
+        end
+        CardEngine.MoveCard('dCard01', newPos, standardOri, 'smooth', false)
     end)
     Cron.After(1.1, function()
         CardEngine.MoveCard('dCard01',Vector4.new(dFirstCardXYZ.x, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', false)
     end)
     Cron.After(1.3, function()
-        CardEngine.MoveCard('dCard02',Vector4.new(dFirstCardXYZ.x-0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1), standardOri, 'smooth', true)
+        local activeTableID = ensureActiveTable()
+        local newPos
+        if activeTableID then
+            local dFirstCardPos = Vector4.new(dFirstCardXYZ.x, dFirstCardXYZ.y, dFirstCardXYZ.z, 1)
+            -- Apply negative offset for moving left
+            local negativeOffset = Vector4.new(-0.09, 0, 0, 0)
+            newPos, _ = RelativeCoordinateCalulator.calculateFromPositionWithTable(dFirstCardPos, activeTableID, negativeOffset)
+        else
+            -- Fallback to hardcoded if no table
+            newPos = Vector4.new(dFirstCardXYZ.x-0.09, dFirstCardXYZ.y, dFirstCardXYZ.z, 1)
+        end
+        CardEngine.MoveCard('dCard02', newPos, standardOri, 'smooth', true)
     end)
     Cron.After(2.0, function()
         SingleRoundLogic.dealerHandRevealed = true
@@ -690,13 +764,37 @@ local function cardTableLocation(handIndex, cardIndex, minus1Boolean)
     if minus1Boolean then
         newHandIndex = handIndex - 1
     end
-    local outVector4 = Vector4.new(
-        pFirstCardXYZ.x-(cardIndex*0.04)+(0.18*(newHandIndex)),
-        pFirstCardXYZ.y-(cardIndex*0.06),
-        pFirstCardXYZ.z+(cardIndex*0.0005),
-        1
-    )
-    return outVector4
+    
+    local activeTableID = ensureActiveTable()
+    if not activeTableID then
+        -- Fallback to hardcoded calculation if no table
+        local outVector4 = Vector4.new(
+            pFirstCardXYZ.x-(cardIndex*0.04)+(0.18*(newHandIndex)),
+            pFirstCardXYZ.y-(cardIndex*0.06),
+            pFirstCardXYZ.z+(cardIndex*0.0005),
+            1
+        )
+        return outVector4
+    end
+    
+    -- Start from player first card position
+    local cardPos = Vector4.new(pFirstCardXYZ.x, pFirstCardXYZ.y, pFirstCardXYZ.z, 1)
+    
+    -- Apply card_spacing_player offset for each card beyond the first
+    if cardIndex > 0 then
+        for i = 1, cardIndex do
+            cardPos, _ = RelativeCoordinateCalulator.calculateFromPositionWithTable(cardPos, activeTableID, 'card_spacing_player')
+        end
+    end
+    
+    -- Apply space_between_hands offset for each hand beyond the first
+    if newHandIndex > 0 then
+        for i = 1, newHandIndex do
+            cardPos, _ = RelativeCoordinateCalulator.calculateFromPositionWithTable(cardPos, activeTableID, 'space_between_hands')
+        end
+    end
+    
+    return cardPos
 end
 
 --- 1 Step of player's action after player hit.
@@ -825,11 +923,18 @@ local function playerActionDouble(handIndex)
     table.insert(SingleRoundLogic.playerHands[handIndex], cardApp)
     SimpleCasinoChip.spawnChip('chip_hand'..tostring(handIndex)..'_left2_up1', BlackjackMainMenu.currentBet, chipLocationCalc(handIndex,2,1), true)
     local calcLocation = cardTableLocation(handIndex, 2, true)
-    local newLocation = Vector4.new(
-        calcLocation.x+0.04,
-        calcLocation.y,
-        calcLocation.z,
-        1)
+    local activeTableID = ensureActiveTable()
+    local newLocation
+    if activeTableID then
+        newLocation, _ = RelativeCoordinateCalulator.calculateFromPositionWithTable(calcLocation, activeTableID, 'card_double_down_offset')
+    else
+        -- Fallback to hardcoded if no table
+        newLocation = Vector4.new(
+            calcLocation.x+0.04,
+            calcLocation.y,
+            calcLocation.z,
+            1)
+    end
     local function callback1()
         --delay move card
         CardEngine.MoveCard(cardID,newLocation,standardOri,'smooth',true)
@@ -919,6 +1024,13 @@ end
 
 ---Signal the start of a round
 function SingleRoundLogic.startRound()
+    -- Verify an active table exists before starting a round
+    local activeTableID = TableManager.GetActiveTable()
+    if not activeTableID then
+        DualPrint("Error: Cannot start round - no active table")
+        return
+    end
+    
     SingleRoundLogic.dealerCardCount = 0
     SingleRoundLogic.dealerBoardCards = {}
     SingleRoundLogic.playerHands = {{}}
