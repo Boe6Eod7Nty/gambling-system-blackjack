@@ -32,34 +32,85 @@ local topOfDeckXYZ_cache = nil
 local pFirstCardXYZ_cache = nil
 local dFirstCardXYZ_cache = nil
 local standardOri_cache = nil
+local cachedTableID = nil  -- Track which table ID was used for caching
+
+-- Invalidates all coordinate caches when table changes
+local function invalidateCoordinateCaches()
+    topOfDeckXYZ_cache = nil
+    pFirstCardXYZ_cache = nil
+    dFirstCardXYZ_cache = nil
+    standardOri_cache = nil
+    cachedTableID = nil
+end
+
+-- Gets the active table ID and invalidates caches if the table changed
+-- @return string|nil active table ID, or nil if no table is active
+local function ensureActiveTable()
+    local activeTableID = TableManager.GetActiveTable()
+    if not activeTableID then
+        return nil
+    end
+    
+    -- Invalidate cache if table changed
+    if cachedTableID ~= activeTableID then
+        invalidateCoordinateCaches()
+        cachedTableID = activeTableID
+    end
+    
+    return activeTableID
+end
 
 local function getTopOfDeckXYZ()
+    local activeTableID = ensureActiveTable()
+    if not activeTableID then
+        DualPrint("Warning: No active table when getting deck position")
+        return {x=0, y=0, z=0}
+    end
+    
     if not topOfDeckXYZ_cache then
-        local topOfDeckPos, _ = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'deck_position')
+        local topOfDeckPos, _ = RelativeCoordinateCalulator.calculateRelativeCoordinate(activeTableID, 'deck_position')
         topOfDeckXYZ_cache = {x=topOfDeckPos.x, y=topOfDeckPos.y, z=topOfDeckPos.z}
     end
     return topOfDeckXYZ_cache
 end
 
 local function getPFirstCardXYZ()
+    local activeTableID = ensureActiveTable()
+    if not activeTableID then
+        DualPrint("Warning: No active table when getting player first card position")
+        return {x=0, y=0, z=0}
+    end
+    
     if not pFirstCardXYZ_cache then
-        local pFirstCardPos, _ = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'player_first_card_position')
+        local pFirstCardPos, _ = RelativeCoordinateCalulator.calculateRelativeCoordinate(activeTableID, 'player_first_card_position')
         pFirstCardXYZ_cache = {x=pFirstCardPos.x, y=pFirstCardPos.y, z=pFirstCardPos.z}
     end
     return pFirstCardXYZ_cache
 end
 
 local function getDFirstCardXYZ()
+    local activeTableID = ensureActiveTable()
+    if not activeTableID then
+        DualPrint("Warning: No active table when getting dealer first card position")
+        return {x=0, y=0, z=0}
+    end
+    
     if not dFirstCardXYZ_cache then
-        local dFirstCardPos, _ = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'dealer_first_card_position')
+        local dFirstCardPos, _ = RelativeCoordinateCalulator.calculateRelativeCoordinate(activeTableID, 'dealer_first_card_position')
         dFirstCardXYZ_cache = {x=dFirstCardPos.x, y=dFirstCardPos.y, z=dFirstCardPos.z}
     end
     return dFirstCardXYZ_cache
 end
 
 local function getStandardOri()
+    local activeTableID = ensureActiveTable()
+    if not activeTableID then
+        DualPrint("Warning: No active table when getting card orientation")
+        return { r = 0, p = 0, y = 0 }
+    end
+    
     if not standardOri_cache then
-        local _, standardOriQuat = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'card_orientation_face_up')
+        local _, standardOriQuat = RelativeCoordinateCalulator.calculateRelativeCoordinate(activeTableID, 'card_orientation_face_up')
         local standardOriEuler = standardOriQuat:ToEulerAngles()
         standardOri_cache = { r = standardOriEuler.roll, p = standardOriEuler.pitch, y = standardOriEuler.yaw }
     end
