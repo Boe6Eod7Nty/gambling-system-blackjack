@@ -26,11 +26,75 @@ SingleRoundLogic = {
 
 local Cron = require('External/Cron.lua')
 local interactionUI = require("External/interactionUI.lua")
+local RelativeCoordinateCalulator = require('RelativeCoordinateCalulator.lua')
 
-local topOfDeckXYZ = {x=-1041.759, y=1340.121, z=6.105}
-local pFirstCardXYZ = {x=-1041.189, y=1340.711, z=6.085}
-local dFirstCardXYZ = {x=-1041.247, y=1340.205, z=6.085}
-local standardOri = { r = 0, p = 0, y = -90 }
+-- Lazy-loaded base coordinates (calculated on first use, after BlackjackCoordinates.init() is called)
+local topOfDeckXYZ_cache = nil
+local pFirstCardXYZ_cache = nil
+local dFirstCardXYZ_cache = nil
+local standardOri_cache = nil
+
+local function getTopOfDeckXYZ()
+    if not topOfDeckXYZ_cache then
+        local topOfDeckPos, _ = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'deck_position')
+        topOfDeckXYZ_cache = {x=topOfDeckPos.x, y=topOfDeckPos.y, z=topOfDeckPos.z}
+    end
+    return topOfDeckXYZ_cache
+end
+
+local function getPFirstCardXYZ()
+    if not pFirstCardXYZ_cache then
+        local pFirstCardPos, _ = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'player_first_card_position')
+        pFirstCardXYZ_cache = {x=pFirstCardPos.x, y=pFirstCardPos.y, z=pFirstCardPos.z}
+    end
+    return pFirstCardXYZ_cache
+end
+
+local function getDFirstCardXYZ()
+    if not dFirstCardXYZ_cache then
+        local dFirstCardPos, _ = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'dealer_first_card_position')
+        dFirstCardXYZ_cache = {x=dFirstCardPos.x, y=dFirstCardPos.y, z=dFirstCardPos.z}
+    end
+    return dFirstCardXYZ_cache
+end
+
+local function getStandardOri()
+    if not standardOri_cache then
+        local _, standardOriQuat = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'card_orientation_face_up')
+        local standardOriEuler = standardOriQuat:ToEulerAngles()
+        standardOri_cache = { r = standardOriEuler.roll, p = standardOriEuler.pitch, y = standardOriEuler.yaw }
+    end
+    return standardOri_cache
+end
+
+-- Create table-like accessors for backward compatibility
+local topOfDeckXYZ = setmetatable({}, {
+    __index = function(t, k)
+        local xyz = getTopOfDeckXYZ()
+        return xyz[k]
+    end
+})
+
+local pFirstCardXYZ = setmetatable({}, {
+    __index = function(t, k)
+        local xyz = getPFirstCardXYZ()
+        return xyz[k]
+    end
+})
+
+local dFirstCardXYZ = setmetatable({}, {
+    __index = function(t, k)
+        local xyz = getDFirstCardXYZ()
+        return xyz[k]
+    end
+})
+
+local standardOri = setmetatable({}, {
+    __index = function(t, k)
+        local ori = getStandardOri()
+        return ori[k]
+    end
+})
 
 --Functions
 --=========
