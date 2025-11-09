@@ -115,6 +115,34 @@ function BlackjackCoordinates.init()
         Vector4.new(0.18, 0, 0, 0),
         EulerAngles.new(0, 0, 0):ToQuat()
     )
+    --Dealer positions
+    RelativeCoordinateCalulator.registerOffset(
+        'dealer_spawn_position',
+        Vector4.new(0, 0, 0, 0),  -- dealer spawns at table position
+        EulerAngles.new(0, 0, 0):ToQuat()  -- same orientation as table
+    )
+    RelativeCoordinateCalulator.registerOffset(
+        'dealer_workspot_position',
+        Vector4.new(0, 0, 0, 0),  -- workspot entity at table position
+        EulerAngles.new(0, 0, 180):ToQuat()  -- 180 degree rotation for workspot
+    )
+    --Spot positions
+    RelativeCoordinateCalulator.registerOffset(
+        'spot_position',
+        Vector4.new(0.0007, 1.8719, -0.0056, 0),  -- offset from table to spot position
+        EulerAngles.new(0, 0, 0):ToQuat()
+    )
+    RelativeCoordinateCalulator.registerOffset(
+        'mappin_position',
+        Vector4.new(0.0007, 1.8719, 0.9303, 0),  -- offset from table to mappin position
+        EulerAngles.new(0, 0, 0):ToQuat()
+    )
+    --Camera offsets
+    RelativeCoordinateCalulator.registerOffset(
+        'camera_position_offset',
+        Vector4.new(0, 0.4, 0.7, 0),  -- camera position offset relative to spot
+        EulerAngles.new(0, 0, 0):ToQuat()
+    )
 
 end
 

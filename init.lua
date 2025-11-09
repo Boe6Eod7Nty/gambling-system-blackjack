@@ -64,13 +64,15 @@ end
             NPC ends up breifly T-posing before animation starts.
             My guess is the transitions aren't setup correctly
                 likely the wrong .anims file linked to the .workspot file, i hope.
-local function attachedDealerToWorkspot()
+---@param tableID string table ID for dealer workspot
+local function attachedDealerToWorkspot(tableID)
+    local workspotPosition, workspotOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, 'dealer_workspot_position')
     local dynamicEntitySystem = Game.GetDynamicEntitySystem()
     local foldHandsEntPath = "boe6\\gamblingsystemblackjack\\npc_handsfolded_workspot.ent"
     local spec2 = DynamicEntitySpec.new()
     spec2.templatePath = foldHandsEntPath
-    spec2.position = Vector4.new(-1041.247,1339.675,5.283,1)
-    spec2.orientation = EulerAngles.new(0.0, 0.0, 180.0):ToQuat()
+    spec2.position = workspotPosition
+    spec2.orientation = workspotOrientation
     spec2.tags = {"Blackjack","dealerAnimation"}
     local animEntID = dynamicEntitySystem:CreateEntity(spec2)
     local function callback1()
@@ -84,13 +86,15 @@ end
 ]]--
 
 --- Spawns NPC dealer behind the blackjack table.
-local function spawnNPCdealer()
+---@param tableID string table ID to spawn dealer at
+local function spawnNPCdealer(tableID)
+    local dealerPosition, dealerOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, 'dealer_spawn_position')
     local dynamicEntitySystem = Game.GetDynamicEntitySystem()
     local spec = DynamicEntitySpec.new()
     spec.recordID = "Character.sts_wat_kab_07_croupiers"
     spec.appearanceName = "Random"
-    spec.position = Vector4.new(-1041.247,1339.675,5.283,1)
-    spec.orientation = EulerAngles.new(0.0, 0.0, 0.0):ToQuat()
+    spec.position = dealerPosition
+    spec.orientation = dealerOrientation
     spec.tags = {"Blackjack","dealer"};
     dealerEntID = dynamicEntitySystem:CreateEntity(spec)
 end
@@ -120,10 +124,11 @@ registerForEvent( "onInit", function()
     BlackjackCoordinates.init() --initializes the ALL blackjack coordinates
 
     -- Define Hooh location (after GameSession.TryLoad() so settings are available)
-     local spotObj = {
-        spot_id = 'hooh',
-        spot_worldPosition = Vector4.new(-1041.2463, 1341.5469, 5.2774734, 1),
-        spot_orientation = EulerAngles.new(0,0,0),
+    local spotID = 'hooh'  -- Capture spot_id in local variable for use in closures
+    local spotObj = {
+        spot_id = spotID,
+        spot_worldPosition = nil,  -- Will be calculated below
+        spot_orientation = nil,    -- Will be calculated below
         spot_entWorkspotPath = "boe6\\gamblingsystemblackjack\\sit_workspot.ent",
         spot_useWorkSpot = true,
         spot_showingInteractUI = false,
@@ -135,14 +140,14 @@ registerForEvent( "onInit", function()
         callback_OnSpotEnter = function ()
             if ForcedCameraOption[1] then
                 -- Top-down camera enabled - use original position
-                local adjustedPosition, adjustedOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'top_down_holo_display')
+                local adjustedPosition, adjustedOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(spotID, 'top_down_holo_display')
                 HolographicValueDisplay.startDisplay(adjustedPosition, adjustedOrientation)
             else
                 -- Top-down camera disabled - use adjusted position
-                local adjustedPosition, adjustedOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'standard_holo_display')
+                local adjustedPosition, adjustedOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(spotID, 'standard_holo_display')
                 HolographicValueDisplay.startDisplay(adjustedPosition, adjustedOrientation)
             end
-            local deckPosition, deckOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'deck_position')
+            local deckPosition, deckOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(spotID, 'deck_position')
             CardEngine.BuildVisualDeck(deckPosition, deckOrientation)
         end,
         callback_OnSpotEnterAfterAnimationDelayTime = 3.5,        callback_OnSpotEnterAfterAnimation = function ()
@@ -162,7 +167,7 @@ registerForEvent( "onInit", function()
         exit_orientationCorrection = {r=0,p=0,y=150},-- I *think* this corrects for the 180 turn that the exit animation causes.
         exit_worldPositionOffset = {x=0.5,y=0,z=0},
         exit_animationName = "sit_chair_table_lean0__2h_on_table__01__to__stand__2h_on_sides__01__turn0l__01",
-        mappin_worldPosition = Vector4.new(-1041.2463, 1341.5469, 6.21331358, 1),
+        mappin_worldPosition = nil,  -- Will be calculated below
         mappin_interactionRange = 1.4,
         mappin_interactionAngle = 80,
         mappin_rangeMax = 6.5,
@@ -176,11 +181,30 @@ registerForEvent( "onInit", function()
         mappin_gameMappinID = nil,
         mappin_visible = false,
         mappin_variant = gamedataMappinVariant.SitVariant,
-        camera_worldPositionOffset = Vector4.new(0, 0.4, 0.7, 1),
+        camera_worldPositionOffset = nil,  -- Will be calculated below
         camera_OrientationOffset = EulerAngles.new(0, -60, 0),
         camera_showElectroshockEffect = true,
         camera_useForcedCamInWorkspot = ForcedCameraOption[1]
     }
+    -- Calculate all positions using relative coordinate system
+    local spotPosition, spotOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(spotID, 'spot_position')
+    spotObj.spot_worldPosition = spotPosition
+    spotObj.spot_orientation = spotOrientation:ToEulerAngles()
+    
+    local mappinPosition, _ = RelativeCoordinateCalulator.calculateRelativeCoordinate(spotID, 'mappin_position')
+    spotObj.mappin_worldPosition = mappinPosition
+    
+    -- Calculate camera offset relative to spot position
+    local cameraOffset = RelativeCoordinateCalulator.registeredOffsets['camera_position_offset']
+    local cameraOffsetVector = Vector4.new(cameraOffset.position.x, cameraOffset.position.y, cameraOffset.position.z, 0)
+    local cameraWorldPosition, _ = RelativeCoordinateCalulator.calculateFromPosition(spotPosition, spotOrientation, cameraOffsetVector)
+    spotObj.camera_worldPositionOffset = Vector4.new(
+        cameraWorldPosition.x - spotPosition.x,
+        cameraWorldPosition.y - spotPosition.y,
+        cameraWorldPosition.z - spotPosition.z,
+        1
+    )
+    
     SpotManager.AddSpot(spotObj)
 
     -- Setup observer and GameUI to detect inGame / inMenu, credit: keanuwheeze | init.lua from the sitAnywhere mod
@@ -218,7 +242,7 @@ registerForEvent( "onInit", function()
             StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
             --GetMod("ImmersiveFirstPerson").api.Enable()
             if not dealerSpawned then
-                spawnNPCdealer()
+                spawnNPCdealer(spotID)
                 dealerSpawned = true
             end
 
@@ -265,7 +289,7 @@ registerForEvent( "onInit", function()
         -- save the changes to session
         ForcedCameraOption[1] = state
         -- update the spot configuration
-        SpotManager.changeSpotData(false, {camera_useForcedCamInWorkspot = state}, 'hooh')
+        SpotManager.changeSpotData(false, {camera_useForcedCamInWorkspot = state}, spotID)
     end)
 
 end)
