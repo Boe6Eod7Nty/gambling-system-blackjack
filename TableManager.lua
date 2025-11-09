@@ -5,12 +5,6 @@ TableManager = {
     dealerSpawned = {} -- Track spawn state per table: dealerSpawned[tableID] = true/false
 }
 
--- Required modules for spot creation
-local RelativeCoordinateCalulator = require('RelativeCoordinateCalulator.lua')
-local SpotManager = require('SpotManager.lua')
-local HolographicValueDisplay = require('HolographicValueDisplay.lua')
-local CardEngine = require('CardEngine.lua')
-local BlackjackMainMenu = require("BlackjackMainMenu.lua")
 local GameLocale = require("External/GameLocale.lua")
 --===================
 --CODE BY Boe6
