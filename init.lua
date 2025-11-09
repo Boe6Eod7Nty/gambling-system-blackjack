@@ -124,6 +124,8 @@ registerForEvent( "onInit", function()
             --pass
         end,
         callback_OnSpotEnter = function ()
+            TableManager.SetActiveTable(spotID)
+            DualPrint('Active table set to: ' .. tostring(TableManager.GetActiveTable()))
             if ForcedCameraOption[1] then
                 -- Top-down camera enabled - use original position
                 local adjustedPosition, adjustedOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(spotID, 'top_down_holo_display')
@@ -145,6 +147,8 @@ registerForEvent( "onInit", function()
         end,
         callback_OnSpotExitAfterAnimationDelayTime = 2.5, --found via trial and error. Aproximate time to finish animation.
         callback_OnSpotExit = function()
+            TableManager.ClearActiveTable()
+            DualPrint('Active table cleared. Current active table: ' .. tostring(TableManager.GetActiveTable()))
             HolographicValueDisplay.stopDisplay()
         end,
         callback_OnSpotExitAfterAnimation = function()

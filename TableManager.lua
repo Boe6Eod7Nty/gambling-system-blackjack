@@ -4,6 +4,14 @@ TableManager = {
     dealerEntIDs = {}, -- Track dealer entity IDs per table: dealerEntIDs[tableID] = entID
     dealerSpawned = {} -- Track spawn state per table: dealerSpawned[tableID] = true/false
 }
+
+-- Required modules for spot creation
+local RelativeCoordinateCalulator = require('RelativeCoordinateCalulator.lua')
+local SpotManager = require('SpotManager.lua')
+local HolographicValueDisplay = require('HolographicValueDisplay.lua')
+local CardEngine = require('CardEngine.lua')
+local BlackjackMainMenu = require("BlackjackMainMenu.lua")
+local GameLocale = require("External/GameLocale.lua")
 --===================
 --CODE BY Boe6
 --DO NOT DISTRIBUTE
@@ -25,12 +33,18 @@ end
 ---Sets the active table
 ---@param tableID string tableID to set as active
 function TableManager.SetActiveTable(tableID)
-    -- TODO: Set active table, ensure only one is active at a time
+    TableManager.activeTableID = tableID
 end
 
 ---Clears the active table
 function TableManager.ClearActiveTable()
-    -- TODO: Clear active table state
+    TableManager.activeTableID = nil
+end
+
+---Gets the currently active table ID
+---@return string|nil active table ID or nil if no table is active
+function TableManager.GetActiveTable()
+    return TableManager.activeTableID
 end
 
 --- Spawns NPC dealer behind the blackjack table.
