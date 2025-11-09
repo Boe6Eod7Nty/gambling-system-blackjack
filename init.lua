@@ -37,13 +37,12 @@ local SimpleCasinoChip = require('SimpleCasinoChip.lua')
 local HandCountDisplay = require('HandCountDisplay.lua')
 local GameSession = require('External/GameSession.lua') --detects game sessions and saves data to disk
 local RelativeCoordinateCalulator = require('RelativeCoordinateCalulator.lua')
-local BlackjackCoordinates = require('BlackjackCoordinates.lua') 
+local BlackjackCoordinates = require('BlackjackCoordinates.lua')
+local TableManager = require('TableManager.lua') 
 
 local inMenu = true --libaries requirement
 local inGame = false
-local dealerEntID = nil
 Global_temp_Counter_ent = nil
-local dealerSpawned = false
 ImmersiveFirstPersonInstalled = false
 DisplayHandValuesOption = {true}
 ForcedCameraOption = {false} -- Default to off (no forced camera)
@@ -85,19 +84,6 @@ local function attachedDealerToWorkspot(tableID)
 end
 ]]--
 
---- Spawns NPC dealer behind the blackjack table.
----@param tableID string table ID to spawn dealer at
-local function spawnNPCdealer(tableID)
-    local dealerPosition, dealerOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, 'dealer_spawn_position')
-    local dynamicEntitySystem = Game.GetDynamicEntitySystem()
-    local spec = DynamicEntitySpec.new()
-    spec.recordID = "Character.sts_wat_kab_07_croupiers"
-    spec.appearanceName = "Random"
-    spec.position = dealerPosition
-    spec.orientation = dealerOrientation
-    spec.tags = {"Blackjack","dealer"};
-    dealerEntID = dynamicEntitySystem:CreateEntity(spec)
-end
 
 -- Register Events
 --================
@@ -241,9 +227,8 @@ registerForEvent( "onInit", function()
             SpotManager.forcedCam = false
             StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
             --GetMod("ImmersiveFirstPerson").api.Enable()
-            if not dealerSpawned then
-                spawnNPCdealer(spotID)
-                dealerSpawned = true
+            if not TableManager.isDealerSpawned(spotID) then
+                TableManager.spawnDealer(spotID)
             end
 
             interactionUI.hideHub()
@@ -255,11 +240,7 @@ registerForEvent( "onInit", function()
             --print('Game Session Ended')
             isLoaded = false
 
-            if dealerEntID ~= nil then
-                Game.GetDynamicEntitySystem():DeleteEntity(dealerEntID)
-            end
-            dealerEntID = nil
-            dealerSpawned = false
+            TableManager.cleanupAllDealers()
         end
     end)
 
