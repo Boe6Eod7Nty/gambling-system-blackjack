@@ -90,8 +90,7 @@ local function digitWorldPositionV4(numberLength, digitTensPlace)
     local xOffset = digitOffset * DIGIT_SPACING * math.cos(angle)
     local yOffset = digitOffset * DIGIT_SPACING * math.sin(angle)
     if holoCenter == nil then
-        --shouldn't ever trigger
-        holoCenter = Vector4.new(-1040.733, 1340.121, 6.085, 1)
+        DualPrint('ERROR: holoCenter is nil')
     end
     local digitPosition = Vector4.new(
         holoCenter.x + xOffset,
