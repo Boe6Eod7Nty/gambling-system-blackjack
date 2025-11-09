@@ -142,7 +142,8 @@ registerForEvent( "onInit", function()
                 local adjustedPosition, adjustedOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'standard_holo_display')
                 HolographicValueDisplay.startDisplay(adjustedPosition, adjustedOrientation)
             end
-            CardEngine.BuildVisualDeck(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
+            local deckPosition, deckOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate('hooh', 'deck_position')
+            CardEngine.BuildVisualDeck(deckPosition, deckOrientation)
         end,
         callback_OnSpotEnterAfterAnimationDelayTime = 3.5,        callback_OnSpotEnterAfterAnimation = function ()
             BlackjackMainMenu.playerChipsMoney = 0        --Reset vars b4 game, safe check
