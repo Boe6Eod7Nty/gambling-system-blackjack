@@ -1,5 +1,5 @@
 BlackjackMainMenu = {
-    version = '1.0.2',
+    version = '1.0.3',
     playerChipsMoney = 0,
     playerChipsHalfDollar = false,
     previousBet = nil,

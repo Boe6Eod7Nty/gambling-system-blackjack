@@ -1,5 +1,5 @@
 SingleRoundLogic = {
-    version = '1.0.4',
+    version = '1.0.5',
     deckShuffle = {},
     dealerCardCount = 0,
     dealerBoardCards = {},
