@@ -324,7 +324,10 @@ function BlackjackMainMenu.StartMainMenu()
     end
     interactionUI.callbacks[4] = function()--Exit
         interactionUI.hideHub()
-        SpotManager.ExitSpot('hooh')
+        local activeTableID = TableManager.GetActiveTable()
+        if activeTableID then
+            SpotManager.ExitSpot(activeTableID)
+        end
         if BlackjackMainMenu.playerChipsMoney > 0 then
             Game.AddToInventory("Items.money", math.floor(BlackjackMainMenu.playerChipsMoney))
             BlackjackMainMenu.playerChipsMoney = 0

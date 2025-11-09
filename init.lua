@@ -146,12 +146,6 @@ registerForEvent( "onInit", function()
             SpotManager.forcedCam = false
             StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
             --GetMod("ImmersiveFirstPerson").api.Enable()
-            -- Spawn dealers for all tables
-            for tableID, _ in pairs(RelativeCoordinateCalulator.registeredTables) do
-                if not TableManager.isDealerSpawned(tableID) then
-                    TableManager.spawnDealer(tableID)
-                end
-            end
 
             interactionUI.hideHub()
         end
@@ -209,6 +203,32 @@ registerForEvent('onUpdate', function(dt)
         BlackjackMainMenu.Update()
         HandCountDisplay.update()
         SingleRoundLogic.update()
+        
+        -- Distance-based dealer spawning/despawning
+        local player = GetPlayer()
+        if player and player:IsAttached() then
+            local playerPosition = player:GetWorldPosition()
+            local spawnDistance = 20.0  -- Spawn dealers when player is within 20 units
+            local despawnDistance = 30.0  -- Despawn dealers when player is beyond 30 units
+            
+            for tableID, tableData in pairs(RelativeCoordinateCalulator.registeredTables) do
+                local tablePosition = tableData.position
+                local dx = playerPosition.x - tablePosition.x
+                local dy = playerPosition.y - tablePosition.y
+                local dz = playerPosition.z - tablePosition.z
+                local distance = math.sqrt(dx * dx + dy * dy + dz * dz)
+                
+                local isSpawned = TableManager.isDealerSpawned(tableID)
+                
+                if distance <= spawnDistance and not isSpawned then
+                    -- Spawn dealer when player is close enough
+                    TableManager.spawnDealer(tableID)
+                elseif distance > despawnDistance and isSpawned then
+                    -- Despawn dealer when player is far enough
+                    TableManager.despawnDealer(tableID)
+                end
+            end
+        end
     end
 end)
 registerForEvent('onShutdown', function()
@@ -219,7 +239,10 @@ end)
 registerHotkey('DevHotkey1', 'Dev Hotkey 1', function()
     DualPrint('||=1  Dev hotkey 1 Pressed =')
 
-    SpotManager.ExitSpot('hooh')
+    local activeTableID = TableManager.GetActiveTable()
+    if activeTableID then
+        SpotManager.ExitSpot(activeTableID)
+    end
     BlackjackMainMenu.playerChipsMoney = 0
 end)
 registerHotkey('DevHotkey2', 'Dev Hotkey 2', function()

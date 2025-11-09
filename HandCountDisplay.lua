@@ -17,7 +17,6 @@ local Cron = require('External/Cron.lua')
 
 local digitEntPath = "boe6\\gamblingsystemblackjack\\boe6_number_digit_vanilla.ent"
 local blinkingTimer = 12 --use even number
-local tableID = 'hooh'
 
 ---Calculates the 3D origin of a hand count display
 ---@param isDealer boolean true/false
@@ -25,35 +24,41 @@ local tableID = 'hooh'
 ---@return Vector4 origin world location for first digit of display
 ---@return Quaternion orientation world orientation for the display
 local function calculateDisplayOrigin(isDealer, handIndex)
+    local activeTableID = TableManager.GetActiveTable()
+    if not activeTableID then
+        DualPrint("Warning: No active table when calculating hand count display origin")
+        return Vector4.new(0, 0, 0, 1), Quaternion.new(0, 0, 0, 1)
+    end
+    
     local basePosition, baseOrientation
     
     if isDealer then
         -- Dealer offset is relative to player base position, not table directly
         -- First get the player base position
-        local playerBasePos, playerBaseOri = RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, 'hand_count_display_base_player')
+        local playerBasePos, playerBaseOri = RelativeCoordinateCalulator.calculateRelativeCoordinate(activeTableID, 'hand_count_display_base_player')
         -- Then apply dealer offset relative to player base (using table orientation for direction)
         basePosition, baseOrientation = RelativeCoordinateCalulator.calculateFromPositionWithTable(
             playerBasePos,
-            tableID,
+            activeTableID,
             'hand_count_display_base_dealer'
         )
     elseif handIndex then
         -- Use player base offset
-        basePosition, baseOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, 'hand_count_display_base_player')
+        basePosition, baseOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(activeTableID, 'hand_count_display_base_player')
         
         -- For hands beyond the first, apply spacing offsets
         if handIndex > 1 then
             for i = 2, handIndex do
                 basePosition, baseOrientation = RelativeCoordinateCalulator.calculateFromPositionWithTable(
                     basePosition,
-                    tableID,
+                    activeTableID,
                     'hand_count_display_spacing_players'
                 )
             end
         end
     else
         -- Default to player base offset for hand 1
-        basePosition, baseOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, 'hand_count_display_base_player')
+        basePosition, baseOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(activeTableID, 'hand_count_display_base_player')
     end
     
     return basePosition, baseOrientation
@@ -93,12 +98,18 @@ local function displayStartup(isDealer, handIndex)
     local digit2app = "0"
     local value
 
+    local activeTableID = TableManager.GetActiveTable()
+    if not activeTableID then
+        DualPrint("Warning: No active table when starting hand count display")
+        return
+    end
+    
     if isDealer then
         digit1pos, digit1orientation = calculateDisplayOrigin(true)
         -- Calculate digit2 position relative to digit1 using the spacing offset
         digit2pos, digit2orientation = RelativeCoordinateCalulator.calculateFromPositionWithTable(
             digit1pos,
-            tableID,
+            activeTableID,
             'hand_count_display_digit2_spacing'
         )
         HandCountDisplay.displays['dealerHand'].enabled = true
@@ -108,7 +119,7 @@ local function displayStartup(isDealer, handIndex)
         -- Calculate digit2 position relative to digit1 using the spacing offset
         digit2pos, digit2orientation = RelativeCoordinateCalulator.calculateFromPositionWithTable(
             digit1pos,
-            tableID,
+            activeTableID,
             'hand_count_display_digit2_spacing'
         )
         HandCountDisplay.displays['playerHand'..tostring(handIndex)].enabled = true
