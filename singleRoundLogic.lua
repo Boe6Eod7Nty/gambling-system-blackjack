@@ -868,9 +868,7 @@ function PlayerAction(handIndex)
 end
 
 ---Signal the start of a round
----@param deckLocation Vector4 location of physical card deck
----@param deckRotationRPY table rotation of physical card deck in RPY form
-function SingleRoundLogic.startRound(deckLocation, deckRotationRPY)
+function SingleRoundLogic.startRound()
     SingleRoundLogic.dealerCardCount = 0
     SingleRoundLogic.dealerBoardCards = {}
     SingleRoundLogic.playerHands = {{}}

@@ -21,7 +21,6 @@ local chip_valuesStr = {"€$1", "€$5", "€$10", "€$25", "€$50", "€$100
 local buy_values = {5,10,25,50,100,250,500,1000,2500,5000,10000,25000,50000,250000,1000000}
 local buy_valuesStr = {"€$5", "€$10", "€$25", "€$50", "€$100", "€$250", "€$500", "€$1,000", "€$2,500", "€$5,000", "€$10,000", "€$25,000", "€$50,000", "€$250,000", "€$1,000,000", "€$10,000,000"}
 
-
 ---Displays UI for different bet amounts
 ---@param refMidIndex number middle index of the 3 bet values to display. see: chip_values
 local function newBetUI(refMidIndex)
@@ -72,7 +71,7 @@ local function newBetUI(refMidIndex)
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
             GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
             Cron.After(1, function()
-                SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
+                SingleRoundLogic.startRound()
             end)
         end
     end
@@ -83,7 +82,7 @@ local function newBetUI(refMidIndex)
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
             GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
             Cron.After(1, function()
-                SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
+                SingleRoundLogic.startRound()
             end)
         end
     end
@@ -94,7 +93,7 @@ local function newBetUI(refMidIndex)
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
             GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
             Cron.After(1, function()
-                SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
+                SingleRoundLogic.startRound()
             end)
         end
     end
@@ -280,7 +279,7 @@ function BlackjackMainMenu.StartMainMenu()
             BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
             GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
             Cron.After(1, function()
-                SingleRoundLogic.startRound(Vector4.new(-1041.759, 1340.121, 6.085, 1), { r = 0, p = 180, y = -90 })
+                SingleRoundLogic.startRound()
             end)
         end
     end
