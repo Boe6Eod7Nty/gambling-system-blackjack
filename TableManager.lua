@@ -51,7 +51,6 @@ function TableManager.spawnDealer(tableID)
         return -- Dealer already spawned for this table
     end
     
-    local RelativeCoordinateCalulator = require('RelativeCoordinateCalulator.lua')
     local dealerPosition, dealerOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, 'dealer_spawn_position')
     local dynamicEntitySystem = Game.GetDynamicEntitySystem()
     local spec = DynamicEntitySpec.new()
