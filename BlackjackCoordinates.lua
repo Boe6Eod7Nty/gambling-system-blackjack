@@ -14,29 +14,44 @@ function BlackjackCoordinates.init()
     --Table
     RelativeCoordinateCalulator.registerTable(
         'hooh',
-        Vector4.new(-1041.247,1339.675,5.283,1), --actual position of table mesh
+        Vector4.new(-1041.2463, 1339.9403, 5.2775, 1), --actual position of table mesh
         Quaternion.new(0, 0, 0, 1) --actual orientation of table mesh
+    )
+    RelativeCoordinateCalulator.registerTable(
+        'jigjig_1',
+        Vector4.new(-640.4950, 809.9148, 19.2496, 1), --actual position of table mesh
+        Quaternion.new(0, 0, 0.766033338, 0.642787635) --actual orientation of table mesh
+    )
+    RelativeCoordinateCalulator.registerTable(
+        'jigjig_2',
+        Vector4.new(-649.7667, 813.1020, 19.2496, 1), --actual position of table mesh
+        Quaternion.new(0, 0, 0.644123852, -0.764921367) --actual orientation of table mesh
+    )
+    RelativeCoordinateCalulator.registerTable(
+        'jigjig_3',
+        Vector4.new(-648.3430, 802.0142, 19.3436, 1), --actual position of table mesh
+        Quaternion.new(0, 0, -0.0340275019, 0.999420941) --actual orientation of table mesh
     )
     --Holographic Value Display
     RelativeCoordinateCalulator.registerOffset(
         'top_down_holo_display',
-        Vector4.new(0.514, 0.446, 0.792, 0), 
+        Vector4.new(0.5133, 0.1807, 0.7975, 0), 
         EulerAngles.new(0, 0, 20):ToQuat()
     )
     RelativeCoordinateCalulator.registerOffset(
         'standard_holo_display',
-        Vector4.new(0.457, 1.11, 0.792, 0), 
+        Vector4.new(0.4563, 0.8447, 0.7975, 0), 
         EulerAngles.new(0, 0, 30):ToQuat()
     )
     --Hand Count Display
     RelativeCoordinateCalulator.registerOffset(
         'hand_count_display_base_player',
-        Vector4.new(0.072, 1.146, 0.802, 0),
+        Vector4.new(0.0713, 0.8807, 0.8075, 0),
         EulerAngles.new(0, 60, 0):ToQuat()
     )
     RelativeCoordinateCalulator.registerOffset(
         'hand_count_display_base_dealer',
-        Vector4.new(-0.060, -0.511, 0, 0),
+        Vector4.new(-0.0607, -0.7763, 0.0055, 0),
         EulerAngles.new(0, 60, 0):ToQuat()
     )
     RelativeCoordinateCalulator.registerOffset(
@@ -52,17 +67,17 @@ function BlackjackCoordinates.init()
     --Card locations
     RelativeCoordinateCalulator.registerOffset(
         'deck_position',
-        Vector4.new(-0.512, 0.446, 0.802, 0),
+        Vector4.new(-0.5127, 0.1807, 0.8075, 0),
         EulerAngles.new(0, 180, -90):ToQuat()
     )
     RelativeCoordinateCalulator.registerOffset(
         'player_first_card_position',
-        Vector4.new(0.058, 1.036, 0.802, 0),
+        Vector4.new(0.0573, 0.7707, 0.8075, 0),
         EulerAngles.new(0, 180, -90):ToQuat()
     )
     RelativeCoordinateCalulator.registerOffset(
         'dealer_first_card_position',
-        Vector4.new(0, 0.530, 0.802, 0),
+        Vector4.new(-0.0007, 0.2647, 0.8075, 0),
         EulerAngles.new(0, 180, -90):ToQuat()
     )
     --Card spacing offsets
@@ -96,7 +111,7 @@ function BlackjackCoordinates.init()
     --Chip locations
     RelativeCoordinateCalulator.registerOffset(
         'chip_player_center_position',
-        Vector4.new(0, 1.178, 0.802, 0),
+        Vector4.new(-0.0007, 0.9127, 0.8075, 0),
         EulerAngles.new(0, 0, 0):ToQuat()
     )
     RelativeCoordinateCalulator.registerOffset(
@@ -118,29 +133,29 @@ function BlackjackCoordinates.init()
     --Dealer positions
     RelativeCoordinateCalulator.registerOffset(
         'dealer_spawn_position',
-        Vector4.new(0, 0, 0, 0),  -- dealer spawns at table position
+        Vector4.new(-0.0007, -0.2653, 0.0055, 0),  -- dealer spawns at table position
         EulerAngles.new(0, 0, 0):ToQuat()  -- same orientation as table
     )
     RelativeCoordinateCalulator.registerOffset(
         'dealer_workspot_position',
-        Vector4.new(0, 0, 0, 0),  -- workspot entity at table position
+        Vector4.new(-0.0007, -0.2653, 0.0055, 0),  -- workspot entity at table position
         EulerAngles.new(0, 0, 180):ToQuat()  -- 180 degree rotation for workspot
     )
     --Spot positions
     RelativeCoordinateCalulator.registerOffset(
         'spot_position',
-        Vector4.new(0.0007, 1.8719, -0.0056, 0),  -- offset from table to spot position
+        Vector4.new(0, 1.6066, -0.0001, 0),  -- offset from table to spot position
         EulerAngles.new(0, 0, 0):ToQuat()
     )
     RelativeCoordinateCalulator.registerOffset(
         'mappin_position',
-        Vector4.new(0.0007, 1.8719, 0.9303, 0),  -- offset from table to mappin position
+        Vector4.new(0, 1.6066, 0.9358, 0),  -- offset from table to mappin position
         EulerAngles.new(0, 0, 0):ToQuat()
     )
     --Camera offsets
     RelativeCoordinateCalulator.registerOffset(
         'camera_position_offset',
-        Vector4.new(0, 0.4, 0.7, 0),  -- camera position offset relative to spot
+        Vector4.new(0, 0.4, 0.7, 0),  -- camera position offset relative to spot (not table, so no adjustment needed)
         EulerAngles.new(0, 0, 0):ToQuat()
     )
 
