@@ -52,17 +52,17 @@ function BlackjackCoordinates.init()
     --Card locations
     RelativeCoordinateCalulator.registerOffset(
         'deck_position',
-        Vector4.new(-0.5127, 0.1807, 0.7945, 0),
+        Vector4.new(-0.5127, 0.1807, 0.7975, 0),
         EulerAngles.new(0, 180, -90):ToQuat()
     )
     RelativeCoordinateCalulator.registerOffset(
         'player_first_card_position',
-        Vector4.new(0.0573, 0.7707, 0.7945, 0),
+        Vector4.new(0.0573, 0.7707, 0.7975, 0),
         EulerAngles.new(0, 180, -90):ToQuat()
     )
     RelativeCoordinateCalulator.registerOffset(
         'dealer_first_card_position',
-        Vector4.new(-0.0007, 0.2647, 0.7945, 0),
+        Vector4.new(-0.0007, 0.2647, 0.7975, 0),
         EulerAngles.new(0, 180, -90):ToQuat()
     )
     --Card spacing offsets
@@ -96,7 +96,7 @@ function BlackjackCoordinates.init()
     --Chip locations
     RelativeCoordinateCalulator.registerOffset(
         'chip_player_center_position',
-        Vector4.new(-0.0007, 0.9127, 0.7945, 0),
+        Vector4.new(-0.0007, 0.9127, 0.7975, 0),
         EulerAngles.new(0, 0, 0):ToQuat()
     )
     RelativeCoordinateCalulator.registerOffset(
