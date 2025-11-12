@@ -39,6 +39,7 @@ local GameSession = require('External/GameSession.lua') --detects game sessions 
 local RelativeCoordinateCalulator = require('RelativeCoordinateCalulator.lua')
 local BlackjackCoordinates = require('BlackjackCoordinates.lua')
 local TableManager = require('TableManager.lua') 
+local JsonData = require("JsonData.lua")
 
 local inMenu = true --libaries requirement
 local inGame = false

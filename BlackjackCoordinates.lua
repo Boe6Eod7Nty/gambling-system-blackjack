@@ -17,21 +17,6 @@ function BlackjackCoordinates.init()
         Vector4.new(-1041.2463, 1339.9403, 5.2775, 1), --actual position of table mesh
         Quaternion.new(0, 0, 0, 1) --actual orientation of table mesh
     )
-    RelativeCoordinateCalulator.registerTable(
-        'jigjig_1',
-        Vector4.new(-640.4950, 809.9148, 19.2496, 1), --actual position of table mesh
-        Quaternion.new(0, 0, 0.766033338, 0.642787635) --actual orientation of table mesh
-    )
-    RelativeCoordinateCalulator.registerTable(
-        'jigjig_2',
-        Vector4.new(-649.7667, 813.1020, 19.2496, 1), --actual position of table mesh
-        Quaternion.new(0, 0, 0.644123852, -0.764921367) --actual orientation of table mesh
-    )
-    RelativeCoordinateCalulator.registerTable(
-        'jigjig_3',
-        Vector4.new(-648.3430, 802.0142, 19.3436, 1), --actual position of table mesh
-        Quaternion.new(0, 0, -0.0340275019, 0.999420941) --actual orientation of table mesh
-    )
     --Holographic Value Display
     RelativeCoordinateCalulator.registerOffset(
         'top_down_holo_display',
@@ -158,6 +143,28 @@ function BlackjackCoordinates.init()
         Vector4.new(0, 0.4, 0.7, 0),  -- camera position offset relative to spot (not table, so no adjustment needed)
         EulerAngles.new(0, 0, 0):ToQuat()
     )
+
+    -- Load tables from JSON files in addons folder (after hardcoded tables)
+    local addonTables = JsonData.ReturnAllFromFolder("addons")
+    for _, tableData in ipairs(addonTables) do
+        -- Convert position to Vector4
+        local position = Vector4.new(tableData.position.x, tableData.position.y, tableData.position.z, 1)
+        
+        -- Convert orientation from roll, pitch, yaw (degrees) to Quaternion
+        local eulerAngles = EulerAngles.new(
+            tableData.orientation.roll or 0,
+            tableData.orientation.pitch or 0,
+            tableData.orientation.yaw or 0
+        )
+        local quaternion = eulerAngles:ToQuat()
+        
+        -- Register the table
+        RelativeCoordinateCalulator.registerTable(
+            tableData.id,
+            position,
+            quaternion
+        )
+    end
 
 end
 
