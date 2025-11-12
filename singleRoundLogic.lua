@@ -117,6 +117,35 @@ local function getStandardOri()
     return standardOri_cache
 end
 
+-- Gets the initial card spawn orientation (face-down) accounting for table rotation
+local function getInitialCardOri()
+    local activeTableID = ensureActiveTable()
+    if not activeTableID then
+        DualPrint("Warning: No active table when getting initial card orientation")
+        return { r = 0, p = 180, y = -90 }
+    end
+    
+    -- Get the face-up orientation relative to the table
+    local _, faceUpQuat = RelativeCoordinateCalulator.calculateRelativeCoordinate(activeTableID, 'card_orientation_face_up')
+    
+    -- Rotate 180 degrees around the card's local pitch axis (right/X axis) to get face-down
+    -- The pitch axis in Euler angles corresponds to the local X axis (right vector) of the card
+    local cardForward = faceUpQuat:GetForward()  -- Get the card's forward vector
+    local cardUp = faceUpQuat:GetUp()            -- Get the card's up vector
+    local cardRight = faceUpQuat:GetRight()      -- Get the card's right vector (rotation axis)
+    local rotationAngle = math.pi  -- 180 degrees in radians
+    
+    -- Rotate forward and up vectors 180 degrees around the right axis
+    local rotatedForward = cardForward.RotateAxis(cardForward, cardRight, rotationAngle)
+    local rotatedUp = cardUp.RotateAxis(cardUp, cardRight, rotationAngle)
+    
+    -- Build the face-down quaternion from the rotated vectors
+    local faceDownQuat = Quaternion.BuildFromDirectionVector(rotatedForward, rotatedUp)
+    local faceDownEuler = faceDownQuat:ToEulerAngles()
+    
+    return { r = faceDownEuler.roll, p = faceDownEuler.pitch, y = faceDownEuler.yaw }
+end
+
 -- Create table-like accessors for backward compatibility
 local topOfDeckXYZ = setmetatable({}, {
     __index = function(t, k)
@@ -226,20 +255,21 @@ end
 
 --- Animate first round deal.
 local function dealStartOfRound()
+    local initialOri = getInitialCardOri()
     local pCard01app = SingleRoundLogic.deckShuffle[1]
-    local pCard01cardID = CardEngine.CreateCard('playerCard_h01_c01', pCard01app, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), { r = 0, p = 180, y = -90 })
+    local pCard01cardID = CardEngine.CreateCard('playerCard_h01_c01', pCard01app, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), initialOri)
     table.remove(SingleRoundLogic.deckShuffle,1)
     table.insert(SingleRoundLogic.playerHands[1], pCard01app)
     local dCard01app = SingleRoundLogic.deckShuffle[1]
-    local dCard01cardID = CardEngine.CreateCard('dCard01', dCard01app, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), { r = 0, p = 180, y = -90 })
+    local dCard01cardID = CardEngine.CreateCard('dCard01', dCard01app, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), initialOri)
     table.remove(SingleRoundLogic.deckShuffle,1)
     table.insert(SingleRoundLogic.dealerBoardCards, dCard01app)
     local pCard02app = SingleRoundLogic.deckShuffle[1]
-    local pCard02cardID = CardEngine.CreateCard('playerCard_h01_c02', pCard02app, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), { r = 0, p = 180, y = -90 })
+    local pCard02cardID = CardEngine.CreateCard('playerCard_h01_c02', pCard02app, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), initialOri)
     table.remove(SingleRoundLogic.deckShuffle,1)
     table.insert(SingleRoundLogic.playerHands[1], pCard02app)
     local dCard02app = SingleRoundLogic.deckShuffle[1]
-    local dCard02cardID = CardEngine.CreateCard('dCard02', dCard02app, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), { r = 0, p = 180, y = -90 })
+    local dCard02cardID = CardEngine.CreateCard('dCard02', dCard02app, Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), initialOri)
     table.remove(SingleRoundLogic.deckShuffle,1)
     table.insert(SingleRoundLogic.dealerBoardCards, dCard02app)
     SingleRoundLogic.dealerCardCount = SingleRoundLogic.dealerCardCount + 2
@@ -678,11 +708,12 @@ local function dealerAction()
     local score = calculateBoardScore(SingleRoundLogic.dealerBoardCards)
     local isSoft = isBoardSoft(SingleRoundLogic.dealerBoardCards)
     if score < 17 or (score == 17 and isSoft) then
+        local initialOri = getInitialCardOri()
         local dCardXapp = SingleRoundLogic.deckShuffle[1]
         local dCardXname = 'dCard'..string.format("%02d", SingleRoundLogic.dealerCardCount+1)
         local cardsNum = SingleRoundLogic.dealerCardCount
         table.remove(SingleRoundLogic.deckShuffle,1)
-        local pCardXcardID = CardEngine.CreateCard(dCardXname,dCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
+        local pCardXcardID = CardEngine.CreateCard(dCardXname,dCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), initialOri)
         table.insert(SingleRoundLogic.dealerBoardCards, dCardXapp)
         local activeTableID = ensureActiveTable()
         local newLocation
@@ -800,11 +831,12 @@ end
 --- 1 Step of player's action after player hit.
 ---@param handIndex integer current player hand Index
 local function playerActionHit(handIndex)
+    local initialOri = getInitialCardOri()
     local cardsNum = #(SingleRoundLogic.playerHands[handIndex])
     local pCardXapp = SingleRoundLogic.deckShuffle[1]
     local pCardXname = 'playerCard_h'..string.format("%02d", handIndex)..'_c'..string.format("%02d", cardsNum+1)
     table.remove(SingleRoundLogic.deckShuffle,1)
-    local pCardXcardID = CardEngine.CreateCard(pCardXname,pCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
+    local pCardXcardID = CardEngine.CreateCard(pCardXname,pCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), initialOri)
     table.insert(SingleRoundLogic.playerHands[handIndex], pCardXapp)
     local newLocation = cardTableLocation(handIndex, cardsNum, true)
     Cron.After(0.1, CardEngine.MoveCard(pCardXname, newLocation, standardOri, 'smooth', true))
@@ -853,10 +885,11 @@ end
 ---spawn and animate new card from a split action.
 ---These variables are nonsense. Sorry future Boe6, I already don't remember what they do. 
 local function newSplitCard(xCardHand,newCardIndex,newCardMinus1Bool)
+    local initialOri = getInitialCardOri()
     local pCardXapp = SingleRoundLogic.deckShuffle[1]
     local pCardXname = 'playerCard_h'..string.format("%02d", xCardHand)..'_c02'
     table.remove(SingleRoundLogic.deckShuffle,1)
-    local pCardXcardID = CardEngine.CreateCard(pCardXname,pCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
+    local pCardXcardID = CardEngine.CreateCard(pCardXname,pCardXapp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), initialOri)
     table.insert(SingleRoundLogic.playerHands[xCardHand], pCardXapp)
     local newLocation = cardTableLocation(newCardIndex, 1, newCardMinus1Bool)
     Cron.After(0.1, function()
@@ -912,13 +945,14 @@ end
 --- stuff when player selects double
 ---@param handIndex integer current player hand
 local function playerActionDouble(handIndex)
+    local initialOri = getInitialCardOri()
     SingleRoundLogic.doubledHands[handIndex] = true
     BlackjackMainMenu.playerChipsMoney = BlackjackMainMenu.playerChipsMoney - BlackjackMainMenu.currentBet
     GetPlayer():PlaySoundEvent("q303_06a_roulette_chips_bet")
 
     local cardID = 'playerCard_h'..string.format("%02d", handIndex)..'_c03'
     local cardApp = SingleRoundLogic.deckShuffle[1]
-    CardEngine.CreateCard(cardID,cardApp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1),{ r = 0, p = 180, y = -90 })
+    CardEngine.CreateCard(cardID,cardApp,Vector4.new(topOfDeckXYZ.x, topOfDeckXYZ.y, pFirstCardXYZ.z, 1), initialOri)
     table.remove(SingleRoundLogic.deckShuffle,1)
     table.insert(SingleRoundLogic.playerHands[handIndex], cardApp)
     SimpleCasinoChip.spawnChip('chip_hand'..tostring(handIndex)..'_left2_up1', BlackjackMainMenu.currentBet, chipLocationCalc(handIndex,2,1), true)
