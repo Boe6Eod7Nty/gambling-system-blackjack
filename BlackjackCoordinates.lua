@@ -17,6 +17,7 @@ function BlackjackCoordinates.init()
         Vector4.new(-1041.2463, 1339.9403, 5.2775, 1), --actual position of table mesh
         Quaternion.new(0, 0, 0, 1) --actual orientation of table mesh
     )
+    
     --Holographic Value Display
     RelativeCoordinateCalulator.registerOffset(
         'top_down_holo_display',
@@ -150,13 +151,13 @@ function BlackjackCoordinates.init()
         -- Convert position to Vector4
         local position = Vector4.new(tableData.position.x, tableData.position.y, tableData.position.z, 1)
         
-        -- Convert orientation from roll, pitch, yaw (degrees) to Quaternion
-        local eulerAngles = EulerAngles.new(
-            tableData.orientation.roll or 0,
-            tableData.orientation.pitch or 0,
-            tableData.orientation.yaw or 0
+        -- Create Quaternion directly from i, j, k, r components
+        local quaternion = Quaternion.new(
+            tableData.orientation.i or 0,
+            tableData.orientation.j or 0,
+            tableData.orientation.k or 0,
+            tableData.orientation.r or 1
         )
-        local quaternion = eulerAngles:ToQuat()
         
         -- Register the table
         RelativeCoordinateCalulator.registerTable(

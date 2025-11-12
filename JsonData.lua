@@ -1,5 +1,5 @@
 JsonData = {
-    version = '1.0.1'
+    version = '1.0.2'
 }
 --===================
 --CODE BY Boe6
@@ -27,7 +27,7 @@ function JsonData.ReturnAllFromFolder(folder)
                         local obj = {
                             id = item.id,
                             position = {x = pos.x, y = pos.y, z = pos.z},
-                            orientation = {roll = orient.roll, pitch = orient.pitch, yaw = orient.yaw}
+                            orientation = {i = orient.i, j = orient.j, k = orient.k, r = orient.r}
                         }
                         table.insert(result, obj)
                     end
