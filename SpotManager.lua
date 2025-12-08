@@ -1,8 +1,9 @@
 SpotManager = {
-    version = '1.1.15',
+    version = '1.1.16',
     spots = {},
     activeCam = nil,
     forcedCam = false,
+    activeSpotID = nil, -- Tracks which spot the player is currently in (nil = not in any spot)
     -- Performance optimization variables
     uiUpdateTimer = nil,
     playerCacheTimer = nil,
@@ -16,6 +17,7 @@ SpotManager = {
 --DO NOT REUPLOAD TO OTHER SITES
 --Feel free to ask via nexus/discord, I just dont want my stuff stolen :)
 --===================
+-- HUGE Credit and thank you to keanuwheeze for worldInteraction.lua, which I referenced heavily for this script.
 
 local Cron = require('External/Cron.lua')
 local GameUI = require("External/GameUI.lua")
@@ -90,6 +92,34 @@ local function updatePlayerCache()
     if SpotManager.cachedPlayer then
         SpotManager.cachedPlayerPosition = SpotManager.cachedPlayer:GetWorldPosition()
     end
+end
+
+local function toggleHUD(state)
+    local player = GetPlayer()
+    if not player then
+        return
+    end
+    local blackboardDefs = Game.GetAllBlackboardDefs()
+    local blackboardPSM = Game.GetBlackboardSystem():GetLocalInstanced(player:GetEntityID(), blackboardDefs.PlayerStateMachine)
+    if not blackboardPSM then
+        return
+    end
+    if state then
+        blackboardPSM:SetInt(blackboardDefs.PlayerStateMachine.SceneTier, 1, true)
+    else
+        blackboardPSM:SetInt(blackboardDefs.PlayerStateMachine.SceneTier, 3, true)
+    end
+end
+
+local function handleHUDToggle(spotObj, state)
+    if not spotObj.mappin_toggleHUD then
+        return
+    end
+    if spotObj.mappin_hudVisible == state then
+        return
+    end
+    toggleHUD(state)
+    spotObj.mappin_hudVisible = state
 end
 --- Display Basic UI interaction prompt
 ---@param spotTable table same as spotObject structure
@@ -219,8 +249,19 @@ local function interactionUIUpdate(spotTable)
     if player2mappinDistance >= spotObj.mappin_interactionRange then
         if spotObj.spot_showingInteractUI then
             spotObj.spot_showingInteractUI = false
-            interactionUI.hideHub()
+            if not spotObj.disableDefaultUI then
+                interactionUI.hideHub()
+            end
+            if spotObj.callback_OnVisibilityChange then
+                spotObj.callback_OnVisibilityChange(false)
+            end
         end
+        return
+    end
+
+    -- Skip all UI looking direction updates if player is already in a spot
+    -- Looking direction checks should only apply to the "Join" prompt
+    if SpotManager.IsPlayerInSpot() then
         return
     end
 
@@ -244,14 +285,23 @@ local function interactionUIUpdate(spotTable)
     end
 
     if shouldShowUI ~= spotObj.spot_showingInteractUI then --show or hide the "join" dialog UI
+        spotTable.spotObject.spot_showingInteractUI = shouldShowUI
         if shouldShowUI then
-            -- currently off, turning on UI
-            spotTable.spotObject.spot_showingInteractUI = true
-            basicInteractionUIPrompt(spotTable)
+            if not spotObj.disableDefaultUI then
+                basicInteractionUIPrompt(spotTable)
+            end
+            -- Always call callback when UI should show (for custom UI systems)
+            if spotObj.callback_OnVisibilityChange then
+                spotObj.callback_OnVisibilityChange(true)
+            end
         else
-            -- currently on, hide UI.s
-            spotTable.spotObject.spot_showingInteractUI = false
-            interactionUI.hideHub()
+            if not spotObj.disableDefaultUI then
+                interactionUI.hideHub()
+            end
+            -- Always call callback when UI should hide
+            if spotObj.callback_OnVisibilityChange then
+                spotObj.callback_OnVisibilityChange(false)
+            end
         end
     end
 end
@@ -278,6 +328,8 @@ local function mappinUIUpdate(spotTable)
         shouldShowIcon = false
     elseif player2mappinDistance < spotObj.mappin_rangeMin then
         shouldShowIcon = false
+    elseif spotObj.mappin_extraVisibilityCheck and not spotObj.mappin_extraVisibilityCheck() then
+        shouldShowIcon = false
     end
 
     if shouldShowIcon ~= currentlyShowingIcon then -- show or hide the mappin
@@ -285,11 +337,16 @@ local function mappinUIUpdate(spotTable)
             spotTable.spotObject.mappin_visible = true
             local mappin_data = MappinData.new({ mappinType = 'Mappins.DefaultStaticMappin', variant = spotObj.mappin_variant, visibleThroughWalls = spotTable.spotObject.mappin_visibleThroughWalls })
             spotTable.spotObject.mappin_gameMappinID = Game.GetMappinSystem():RegisterMappin(mappin_data, spotTable.spotObject.mappin_worldPosition)
+            handleHUDToggle(spotObj, true)
         else
             spotTable.spotObject.mappin_visible = false
             Game.GetMappinSystem():UnregisterMappin(spotTable.spotObject.mappin_gameMappinID)
             spotTable.spotObject.mappin_gameMappinID = nil
+            handleHUDToggle(spotObj, false)
         end
+    elseif shouldShowIcon == false and currentlyShowingIcon == false then
+        -- ensure HUD state follows icon visibility when conditionally hidden
+        handleHUDToggle(spotObj, false)
     end
 end
 
@@ -393,9 +450,6 @@ function SpotManager.init() --runs on game launch
 
 end
 function SpotManager.update(dt) --runs every frame
-    if  not inMenu and inGame then
-        Cron.Update(dt) -- This is required for Cron to function
-    end
     updateForcedCamera()
 end
 
@@ -460,6 +514,29 @@ function SpotManager.spotCoordsToWorldVector(spotID, xyz, rpy)
     local spotDirection = spot.spotObject.spot_orientation  --EulerAngles.new()
 
     --wip
+end
+
+---Set the player as being in a spot
+---@param spotID string|nil The spot ID the player is entering, or nil to clear
+function SpotManager.SetPlayerInSpot(spotID)
+    SpotManager.activeSpotID = spotID
+end
+
+---Check if the player is currently in any spot
+---@return boolean True if player is in a spot, false otherwise
+function SpotManager.IsPlayerInSpot()
+    return SpotManager.activeSpotID ~= nil
+end
+
+---Get the ID of the spot the player is currently in
+---@return string|nil The active spot ID, or nil if not in any spot
+function SpotManager.GetActiveSpotID()
+    return SpotManager.activeSpotID
+end
+
+---Clear the player from the current spot (same as SetPlayerInSpot(nil))
+function SpotManager.ClearPlayerInSpot()
+    SpotManager.activeSpotID = nil
 end
 
 return SpotManager
