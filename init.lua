@@ -63,7 +63,8 @@ end
 --[[    removed due to bugged. future fix.
             NPC ends up breifly T-posing before animation starts.
             My guess is the transitions aren't setup correctly
-                likely the wrong .anims file linked to the .workspot file, i hope.
+                likely the wrong .anims file linked to the .workspot file, i hope. 
+                
 ---@param tableID string table ID for dealer workspot
 local function attachedDealerToWorkspot(tableID)
     local workspotPosition, workspotOrientation = RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, 'dealer_workspot_position')
@@ -109,6 +110,27 @@ registerForEvent( "onInit", function()
     local currentForcedCameraSetting = ForcedCameraOption[1]
 
     BlackjackCoordinates.init() --initializes the ALL blackjack coordinates
+    
+    -- Initialize table center points for all registered tables (cached for performance)
+    for tableID, tableData in pairs(RelativeCoordinateCalulator.registeredTables) do
+        -- Try to get center point from offset, fallback to table position
+        local centerPos, _ = RelativeCoordinateCalulator.calculateRelativeCoordinate(tableID, 'spinner_center_point')
+        
+        if centerPos then
+            TableManager.SetTableCenterPoint(tableID, {
+                x = centerPos.x,
+                y = centerPos.y,
+                z = centerPos.z
+            })
+        else
+            -- Fallback: use table's registered position as center
+            TableManager.SetTableCenterPoint(tableID, {
+                x = tableData.position.x,
+                y = tableData.position.y,
+                z = tableData.position.z
+            })
+        end
+    end
     
     -- Load all tables and create spots for each
     TableManager.LoadTables(ForcedCameraOption)
@@ -213,7 +235,15 @@ registerForEvent('onUpdate', function(dt)
             local despawnDistance = 30.0  -- Despawn dealers when player is beyond 30 units
             
             for tableID, tableData in pairs(RelativeCoordinateCalulator.registeredTables) do
-                local tablePosition = tableData.position
+                -- Use cached center point if available, fallback to table position
+                local centerPoint = TableManager.GetTableCenterPoint(tableID)
+                local tablePosition
+                if centerPoint then
+                    tablePosition = Vector4.new(centerPoint.x, centerPoint.y, centerPoint.z, 1)
+                else
+                    tablePosition = tableData.position
+                end
+                
                 local dx = playerPosition.x - tablePosition.x
                 local dy = playerPosition.y - tablePosition.y
                 local dz = playerPosition.z - tablePosition.z
