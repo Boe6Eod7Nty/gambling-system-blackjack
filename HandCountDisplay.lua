@@ -154,8 +154,20 @@ local function displayShutdown(isDealer, handIndex)
         DualPrint('HCD | Incorrect displayShutdown() call. Error #4027')
         return
     end
-    Game.GetStaticEntitySystem():DespawnEntity(display.ent1ID)
-    Game.GetStaticEntitySystem():DespawnEntity(display.ent2ID)
+    
+    if not display then
+        DualPrint('HCD | Display not found in displayShutdown()')
+        return
+    end
+    
+    if display.ent1ID then
+        Game.GetStaticEntitySystem():DespawnEntity(display.ent1ID)
+        display.ent1ID = nil
+    end
+    if display.ent2ID then
+        Game.GetStaticEntitySystem():DespawnEntity(display.ent2ID)
+        display.ent2ID = nil
+    end
     display.enabled = false
 end
 
