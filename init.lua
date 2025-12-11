@@ -49,6 +49,13 @@ DisplayHandValuesOption = {true}
 ForcedCameraOption = {false} -- Default to off (no forced camera)
 local state = { runtime = 0 } --GameSession runtime
 
+-- Camera management variables (moved from SpotManager)
+local blackjackCamera = {
+    forcedCam = false,
+    activeCam = nil,
+    appliedCameraControlStatus = false
+}
+
 
 --Functions
 --=========
@@ -58,6 +65,55 @@ function DualPrint(string) --prints to both CET console and local .log file
     if not string then return end
     print('[Gambling System] ' .. string) -- CET console
     spdlog.error('[Gambling System] ' .. string) -- .log
+end
+
+---Move player camera to forced position, typically above table (blackjack-specific)
+---@param enable boolean to enable, or disable the forced camera perspective
+---@param spotObject? table spot's animation object (required when enable is true)
+local function setForcedCamera(enable, spotObject)
+    blackjackCamera.forcedCam = enable
+    if enable and spotObject then
+        local camera = GetPlayer():GetFPPCameraComponent()
+        local quatOri = spotObject.camera_OrientationOffset:ToQuat()
+        -- Only apply NoCameraControl if top-down camera is enabled and ImmersiveFirstPerson is installed
+        if ImmersiveFirstPersonInstalled and ForcedCameraOption[1] then
+            StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+            blackjackCamera.appliedCameraControlStatus = true
+        end
+        camera:SetLocalTransform(spotObject.camera_worldPositionOffset, quatOri) --default settings
+    else--reset to normal camera control
+        local camera = GetPlayer():GetFPPCameraComponent()
+        camera:SetLocalPosition(Vector4.new(0, 0, 0, 1))
+        camera:SetLocalOrientation(EulerAngles.new(0, 0, 0):ToQuat())
+        -- Only remove status effect if we applied it ourselves
+        if blackjackCamera.appliedCameraControlStatus then
+            StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+            blackjackCamera.appliedCameraControlStatus = false
+        end
+    end
+end
+
+---Update forced camera to maintain position (blackjack-specific)
+local function updateForcedCamera()
+    if blackjackCamera.forcedCam and blackjackCamera.activeCam ~= nil then --fixes the camera being reset by workspot animation
+        local spot = SpotManager.spots[blackjackCamera.activeCam]
+        if spot and spot.spotObject.camera_useForcedCamInWorkspot then
+            local camera = GetPlayer():GetFPPCameraComponent()
+            local o = camera:GetLocalOrientation():ToEulerAngles()
+            local camRotation = spot.spotObject.camera_OrientationOffset
+            local isCorrectOrientation = math.abs(o.pitch - camRotation.pitch) < 0.0001 and math.abs(o.yaw - camRotation.yaw) < 0.0001
+            if not isCorrectOrientation then
+                setForcedCamera(true, spot.spotObject)
+            end
+        end
+    end
+end
+
+---Check if a spot ID is a blackjack table
+---@param spotID string spot ID to check
+---@return boolean true if it's a blackjack table
+local function isBlackjackSpot(spotID)
+    return RelativeCoordinateCalulator.registeredTables[spotID] ~= nil
 end
 
 --[[    removed due to bugged. future fix.
@@ -166,8 +222,12 @@ registerForEvent( "onInit", function()
             SingleRoundLogic.blackjackHandsPaid = {false,false,false,false}
             SingleRoundLogic.doubledHands = {false,false,false,false}
             SingleRoundLogic.dealerHandRevealed = false
-            SpotManager.forcedCam = false
-            StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+            blackjackCamera.forcedCam = false
+            blackjackCamera.activeCam = nil
+            if blackjackCamera.appliedCameraControlStatus then
+                StatusEffectHelper.RemoveStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+                blackjackCamera.appliedCameraControlStatus = false
+            end
             --GetMod("ImmersiveFirstPerson").api.Enable()
 
             interactionUI.hideHub()
@@ -191,6 +251,43 @@ registerForEvent( "onInit", function()
         DualPrint('ImmersiveFirstPerson mod found. Applying known workarounds, expect some visual bugs.')
         ImmersiveFirstPersonInstalled = true
     end
+    
+    -- Register camera management callbacks for blackjack spots only
+    SpotManager.RegisterOnSpotEnter(function(spotID, spotObject)
+        -- Only handle camera for blackjack spots
+        if not isBlackjackSpot(spotID) then
+            return
+        end
+        
+        -- Only apply NoCameraControl if top-down camera is enabled
+        if ImmersiveFirstPersonInstalled and ForcedCameraOption[1] and spotObject.camera_useForcedCamInWorkspot then
+            --disables camera control. User movement input + Immersive First Person causes visual bug
+            StatusEffectHelper.ApplyStatusEffect(GetPlayer(), "GameplayRestriction.NoCameraControl")
+            blackjackCamera.appliedCameraControlStatus = true
+        end
+    end)
+    
+    SpotManager.RegisterOnSpotEnterAfterAnimation(function(spotID, spotObject)
+        -- Only handle camera for blackjack spots
+        if not isBlackjackSpot(spotID) then
+            return
+        end
+        
+        blackjackCamera.activeCam = spotID
+        if spotObject.camera_useForcedCamInWorkspot then
+            setForcedCamera(true, spotObject)
+        end
+    end)
+    
+    SpotManager.RegisterOnSpotExit(function(spotID, spotObject)
+        -- Only handle camera for blackjack spots
+        if not isBlackjackSpot(spotID) then
+            return
+        end
+        
+        setForcedCamera(false) --disable forced camera perspective
+        blackjackCamera.activeCam = nil
+    end)
 
     --native settings UI
     local nativeSettings = GetMod("nativeSettings")
@@ -220,6 +317,7 @@ registerForEvent('onUpdate', function(dt)
         Cron.Update(dt) -- First update (maintains 2x speed behavior)
         Cron.Update(dt) -- Second update (compensates for removed call in SpotManager.update)
         SpotManager.update(dt)
+        updateForcedCamera() -- Update blackjack camera
         CardEngine.update(dt)
         interactionUI.update()
         local chips = BlackjackMainMenu.getCurrentChips()
