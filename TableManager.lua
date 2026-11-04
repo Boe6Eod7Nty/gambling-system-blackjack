@@ -1,5 +1,5 @@
 TableManager = {
-    version = '1.1.1',
+    version = '1.1.2',
     activeTableID = nil,
     dealerEntIDs = {}, -- Track dealer entity IDs per table: dealerEntIDs[tableID] = entID
     dealerSpawned = {}, -- Track spawn state per table: dealerSpawned[tableID] = true/false
@@ -444,7 +444,7 @@ function TableManager.createSpotForTable(tableID, forcedCameraOption, gameType, 
         mappin_variant = gamedataMappinVariant.SitVariant,
         camera_worldPositionOffset = nil,  -- Will be calculated below
         camera_OrientationOffset = EulerAngles.new(0, -60, 0),
-        camera_showElectroshockEffect = true,
+        camera_showElectroshockEffect = false,
         camera_useForcedCamInWorkspot = forcedCameraOption[1]
     }
     -- Calculate all positions using relative coordinate system
